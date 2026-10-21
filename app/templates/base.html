@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="zh-CN" data-user-theme="{{ g.user.theme if g.user else '' }}">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="csrf-token" content="{{ csrf_token() }}">
+  <meta name="htmx-config" content='{"allowEval":false,"includeIndicatorStyles":false}'>
+  <link rel="icon" href="data:,">
+  <meta name="description" content="职序 CareerFlow，你的求职工作空间。">
+  <title>{% block title %}职序 CareerFlow{% endblock %}</title>
+  <script src="{{ url_for('static', filename='js/theme.js') }}"></script>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}">
+  <script src="{{ url_for('static', filename='vendor/htmx.min.js') }}" defer></script>
+  <script src="{{ url_for('static', filename='js/app.js') }}" defer></script>
+  <script src="{{ url_for('static', filename='vendor/alpine.min.js') }}" defer></script>
+</head>
+<body x-data="shell" data-authenticated="{{ 'yes' if g.user else 'no' }}">
+  <a class="skip-link" href="#main">跳至主要内容</a>
+  <header class="site-header">
+    <a class="brand" href="{{ url_for('web.home') }}" aria-label="职序首页"><span class="brand-mark">序</span><strong>职序</strong><span class="brand-en">CareerFlow</span><span class="version">V1</span></a>
+    <nav class="header-actions" aria-label="主导航">
+      <label class="theme-label"><span class="sr-only">外观主题</span>
+        <select id="theme-select" aria-label="外观主题" @change="changeTheme">
+          <option value="system">跟随系统</option><option value="light">浅色</option><option value="dark">深色</option>
+        </select>
+      </label>
+      {% if g.user %}
+        <a class="nav-link" href="{{ url_for('web.workspace') }}">工作空间</a>
+        <form action="{{ url_for('web.logout') }}" method="post"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="button-quiet" type="submit">退出</button></form>
+      {% else %}<a class="nav-link" href="{{ url_for('web.login') }}">登录</a><a class="button small" href="{{ url_for('web.register') }}">开始使用 <span aria-hidden="true">↗</span></a>{% endif %}
+    </nav>
+  </header>
+  <div id="theme-feedback" role="status" class="toast" hidden></div>
+  {% with notices = get_flashed_messages(with_categories=true) %}
+    {% for category, notice in notices %}<div class="notice container" role="status">{{ notice }}</div>{% endfor %}
+  {% endwith %}
+  <main id="main" class="container">{% block content %}{% endblock %}</main>
+  <footer class="site-footer"><span>职序 CareerFlow</span><span>把经历理清，让下一步更清晰。</span><span>V1 · 持续构建中</span></footer>
+</body>
+</html>

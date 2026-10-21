@@ -1,0 +1,8 @@
+:root[data-theme="dark"] {
+  color-scheme:dark;
+  --brand:#91b49b; --brand-hover:#b1cbbb; --brand-soft:#26372c;
+  --page-bg:#191c19; --surface:#202420; --surface-secondary:#282e28;
+  --text-primary:#e7ebe5; --text-secondary:#a2ada0; --border:#353d34;
+  --success:#91b49b; --warning:#d5b078; --danger:#e89e96;
+}
+:root[data-theme="light"] { color-scheme:light; }

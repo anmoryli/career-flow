@@ -1,0 +1,19 @@
+{% extends 'base.html' %}
+{% block content %}
+<section class="hero">
+  <div class="eyebrow"><span class="status-dot"></span> YOUR NEXT CHAPTER</div>
+  <h1>理清每一段经历。<br><span class="muted">走好职业的下一步。</span></h1>
+  <p class="hero-description">一个安静、有序的求职工作空间。<br>从记录真实经历开始，为每一个重要的职业选择做好准备。</p>
+  <div class="hero-actions"><a class="button" href="{{ url_for('web.register') }}">创建我的工作空间 <span aria-hidden="true">↗</span></a><a class="text-link" href="{{ url_for('web.login') }}">已有账号？登录 →</a></div>
+  <div class="hero-footnote">真实信息优先 · 你的内容，始终由你确认</div>
+</section>
+<section class="intro-grid" aria-label="当前可用能力">
+  <div class="section-caption"><span>01 / START WITH CLARITY</span><h2>先记录，<br>再向前。</h2></div>
+  <div class="feature-list">
+    <article><span class="feature-number">01</span><div><h3>独立的求职记录</h3><p>为不同方向创建对话，保存自己的经历、想法与待办事项。刷新页面后，记录依然在。</p></div></article>
+    <article><span class="feature-number">02</span><div><h3>由你确认的事实</h3><p>把重要信息整理为已确认的对话记忆，明确区分事实与推测，不凭空补全你的经历。</p></div></article>
+    <article><span class="feature-number">03</span><div><h3>舒适、专注的空间</h3><p>浅色、深色与系统主题，电脑与手机自在切换。随时撤销登录，掌握自己的数据。</p></div></article>
+  </div>
+</section>
+<aside class="development-note"><span class="label">当前开发阶段</span><p>工程基础、邮箱认证与对话持久化已接入。简历编辑、岗位诊断、AI 生成与计费尚在开发，当前不会产生 AI 调用或费用。</p></aside>
+{% endblock %}

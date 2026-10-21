@@ -1,0 +1,13 @@
+:root {
+  --brand:#64856f; --brand-hover:#526f5b; --brand-soft:#eaf1eb;
+  --page-bg:#fafaf8; --surface:#fff; --surface-secondary:#f4f5f1;
+  --text-primary:#252923; --text-secondary:#62695f; --border:#e6e8e2;
+  --success:#568467; --warning:#b88745; --danger:#a64c46;
+  --font-sans:Inter,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;
+  --font-mono:"Cascadia Code",Consolas,monospace;
+  --space-1:.25rem; --space-2:.5rem; --space-3:.75rem; --space-4:1rem;
+  --space-5:1.5rem; --space-6:2rem; --space-7:3rem; --space-8:4rem;
+  --radius:6px; --content-width:1120px; --nav-height:80px;
+  --text-sm:.8125rem; --text-base:.9375rem; --text-lg:1.125rem;
+  --shadow:0 4px 18px rgb(0 0 0 / 4%); --duration:140ms;
+}

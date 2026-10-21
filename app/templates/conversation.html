@@ -1,0 +1,18 @@
+{% extends 'base.html' %}
+{% block title %}{{ conversation.title }} · 职序{% endblock %}
+{% block content %}
+<section class="page-heading"><a class="text-link" href="{{ url_for('web.workspace') }}">← 工作空间</a><h1>{{ conversation.title }}</h1><p class="muted">独立保存的对话记录 · 当前为个人记录模式</p></section>
+<div class="workspace-grid">
+  <section aria-label="对话记录">
+    <div class="section-heading"><h2>记录</h2><span class="count">{{ messages|length }} 条</span></div>
+    {% for item in messages %}<article class="message"><div class="message-meta">我 <time>{{ item.created_at.strftime('%Y-%m-%d %H:%M') }} UTC</time></div><p>{{ item.content }}</p></article>{% else %}<div class="empty-state compact"><h3>先写下你的第一个想法。</h3><p>内容会保存到当前对话，可随时继续。</p></div>{% endfor %}
+    {% if conversation.status == 'active' %}<form action="{{ url_for('web.message', conversation_id=conversation.id) }}" method="post" class="stack composer"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><input type="hidden" name="request_key" value="{{ request_key }}"><label for="content">添加记录</label><textarea id="content" name="content" required maxlength="10000" rows="5" placeholder="记录你的经历、问题或下一步计划…"></textarea><button class="button" type="submit">保存记录 <span aria-hidden="true">↗</span></button></form>{% else %}<div class="notice">此对话已只读。</div>{% endif %}
+  </section>
+  <aside class="workspace-aside">
+    <h2>已确认事实</h2><p class="muted">只保存你明确确认的信息，不自动推测。</p>
+    {% for memory in memories %}<dl class="memory"><dt>{{ memory.key }}</dt><dd>{{ memory.value.text }}</dd></dl>{% else %}<p class="muted small-text">暂无已确认事实。</p>{% endfor %}
+    {% if conversation.status == 'active' %}<details><summary>添加一条已确认事实</summary><form action="{{ url_for('web.memory', conversation_id=conversation.id) }}" method="post" class="stack"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><label for="memory-key">名称</label><input id="memory-key" name="key" required maxlength="80" placeholder="例如：求职城市"><label for="memory-value">内容</label><textarea id="memory-value" name="value" required rows="3" maxlength="2000"></textarea><label class="checkbox-label"><input name="confirmed" value="yes" type="checkbox" required>我确认以上内容真实准确</label><button class="button secondary" type="submit">保存确认事实</button></form></details>{% endif %}
+    <details class="danger-zone"><summary>删除此对话</summary><p>永久删除对话、全部消息和确认事实，删除后不再进入上下文。</p><form action="{{ url_for('web.delete_conversation', conversation_id=conversation.id) }}" method="post" class="stack"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><label class="checkbox-label"><input type="checkbox" name="confirm" value="delete" required>确认永久删除，且已自行保存所需内容</label><button class="button danger" type="submit">永久删除</button></form></details>
+  </aside>
+</div>
+{% endblock %}

@@ -1,0 +1,3 @@
+{% extends 'base.html' %}
+{% block title %}请求未完成 · 职序{% endblock %}
+{% block content %}<section class="error-state"><div class="eyebrow">{{ status }} / REQUEST NOT COMPLETED</div><h1>这一步，稍后再试。</h1><p role="alert">{{ message }}</p><p class="muted">请求编号：{{ g.request_id }}</p><a class="button secondary" href="{{ url_for('web.home') }}">返回首页 →</a></section>{% endblock %}

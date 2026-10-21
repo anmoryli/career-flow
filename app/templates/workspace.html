@@ -1,0 +1,18 @@
+{% extends 'base.html' %}
+{% block title %}工作空间 · 职序{% endblock %}
+{% block content %}
+<section class="page-heading"><div class="eyebrow">MY WORKSPACE</div><h1>{{ g.user.display_name }}，从这里继续。</h1><p class="muted">记录当下的想法，让下一步更清晰。</p></section>
+<div class="workspace-grid">
+  <section>
+    <div class="section-heading"><h2>我的对话</h2><span class="count">{{ count }} 个记录</span></div>
+    {% if conversations %}<div class="record-list">{% for item in conversations %}<a class="record-row" href="{{ url_for('web.conversation', conversation_id=item.id) }}"><div><strong>{{ item.title }}</strong><small>{{ item.created_at.strftime('%Y-%m-%d') }} · {{ '进行中' if item.status == 'active' else '只读' }}</small></div><span aria-hidden="true">↗</span></a>{% endfor %}</div>
+    {% else %}<div class="empty-state"><span class="empty-symbol" aria-hidden="true">＋</span><h3>留一页，给下一步。</h3><p>还没有对话记录。为一个求职方向创建对话，<br>记录经历、问题和你已确认的信息。</p></div>{% endif %}
+  </section>
+  <aside class="workspace-aside">
+    <h2>新的思考</h2><p class="muted">一个方向，一份独立的记录。</p>
+    <form action="{{ url_for('web.create_conversation') }}" method="post" class="stack"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><label for="title">对话名称</label><input id="title" name="title" required maxlength="120" placeholder="例如：梳理我的项目经历"><button class="button" type="submit">新建对话 <span aria-hidden="true">＋</span></button></form>
+    <div class="aside-note"><span class="status-dot"></span><p>当前仅保存你的记录与确认事实。AI 服务尚未接入，不会生成模拟回复或收取费用。</p></div>
+    <details class="session-control"><summary>账户安全</summary><p class="muted">撤销全部设备的登录会话，包括当前设备。</p><form method="post" action="{{ url_for('web.revoke_sessions') }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="button secondary" type="submit">退出所有设备</button></form></details>
+  </aside>
+</div>
+{% endblock %}
