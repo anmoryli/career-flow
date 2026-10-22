@@ -157,6 +157,9 @@ document.querySelectorAll('[data-theme-choice]').forEach(button => {
   const photoStatus = document.querySelector('#resume-photo-status');
   const data = {};
   let sampleActive = true;
+  const example = JSON.parse(stage.dataset.example);
+  let previewData = example;
+  const previewMode = document.querySelector('#resume-preview-mode');
   const contactKeys = ['phone', 'email', 'city', 'website', 'github', 'linkedin'];
 
   const getPath = (root, path) => path.split('.').reduce(
@@ -191,12 +194,12 @@ document.querySelectorAll('[data-theme-choice]').forEach(button => {
     return value;
   };
   const hasContent = path => {
-    if (path === 'contacts') return contactKeys.some(key => (data[key] || '').trim());
+    if (path === 'contacts') return contactKeys.some(key => (previewData[key] || '').trim());
     if (path === 'skills' || path.startsWith('skills.')) {
-      const groups = path === 'skills' ? (data.skills || []) : [getPath(data, path)];
+      const groups = path === 'skills' ? (previewData.skills || []) : [getPath(previewData, path)];
       return groups.some(group => group && Array.isArray(group.items) && group.items.length);
     }
-    return hasText(getPath(data, path));
+    return hasText(getPath(previewData, path));
   };
   const fill = () => {
     Object.keys(data).forEach(key => { delete data[key]; });
@@ -206,15 +209,27 @@ document.querySelectorAll('[data-theme-choice]').forEach(button => {
     if (photoStatus && photoStatus.dataset.photo) data.photo = photoStatus.dataset.photo;
   };
   const paint = () => {
+    previewData = sampleActive ? example : data;
+    stage.dataset.previewMode = sampleActive ? 'sample' : 'draft';
+    if (previewMode) previewMode.value = stage.dataset.previewMode;
     const scope = stage || document;
+    scope.querySelectorAll('[data-rf-photo]').forEach(image => {
+      const source = previewData.photo || '';
+      if (source) image.src = source;
+      else image.removeAttribute('src');
+      image.hidden = !source;
+    });
+    scope.querySelectorAll('[data-photo-placeholder]').forEach(element => {
+      element.hidden = Boolean(previewData.photo);
+    });
     scope.querySelectorAll('[data-rf]').forEach(element => {
-      const value = getPath(data, element.dataset.rf);
+      const value = getPath(previewData, element.dataset.rf);
       const text = Array.isArray(value) ? value.join('、') : (value || '');
       element.textContent = text;
       element.hidden = !String(text).trim();
     });
     scope.querySelectorAll('[data-rf-list]').forEach(element => {
-      const value = getPath(data, element.dataset.rfList);
+      const value = getPath(previewData, element.dataset.rfList);
       const items = Array.isArray(value) ? value : [];
       const mode = element.dataset.rfListMode || 'lines';
       element.replaceChildren();
@@ -234,22 +249,28 @@ document.querySelectorAll('[data-theme-choice]').forEach(button => {
       element.hidden = !hasContent(element.dataset.rfSection);
     });
     scope.querySelectorAll('[data-rf-initial]').forEach(element => {
-      const initial = String(getPath(data, element.dataset.rfInitial) || '').trim().slice(0, 1);
+      const initial = String(getPath(previewData, element.dataset.rfInitial) || '').trim().slice(0, 1);
       element.textContent = initial;
       element.hidden = !initial;
     });
     if (emptyHint) {
-      const core = ['name', 'role', 'summary'].some(key => (data[key] || '').trim());
+      const core = ['name', 'role', 'summary'].some(key => (previewData[key] || '').trim());
       emptyHint.hidden = core || hasContent('experiences') || hasContent('projects') || hasContent('education') || hasContent('skills');
     }
   };
   const update = () => {
+    sampleActive = false;
     fill();
     paint();
     if (draftStatus) draftStatus.textContent = '草稿已更新 · 尚未保存';
   };
   fill();
   paint();
+  if (previewMode) previewMode.addEventListener('change', () => {
+    sampleActive = previewMode.value === 'sample';
+    fill();
+    paint();
+  });
   editor.querySelectorAll('[data-rf-field]').forEach(input => input.addEventListener('input', () => {
     update();
   }));
@@ -257,14 +278,10 @@ document.querySelectorAll('[data-theme-choice]').forEach(button => {
   if (clearButton) {
     clearButton.addEventListener('click', () => {
       editor.querySelectorAll('[data-rf-field]').forEach(input => { input.value = ''; });
-      (stage || document).querySelectorAll('[data-rf-photo]').forEach(image => {
-        image.removeAttribute('src');
-        image.hidden = true;
-      });
-      if (photoStatus) {
-        delete photoStatus.dataset.photo;
-        photoStatus.textContent = '照片仅用于本页预览与打印，不会上传。';
-      }
+      photoGeneration++;
+      applyPhoto('');
+      if (photoInput) photoInput.value = '';
+      if (photoStatus) photoStatus.textContent = '照片仅用于本页预览与打印，不会上传。';
       sampleActive = false;
       update();
       if (draftStatus) draftStatus.textContent = '空白草稿 · 尚未保存';
@@ -430,7 +447,7 @@ document.querySelectorAll('[data-theme-choice]').forEach(button => {
   const printButton = document.querySelector('[data-print-resume]');
   if (printButton) {
     printButton.addEventListener('click', () => {
-      if (sampleActive && !window.confirm('当前仍是示例内容，确认要打印或导出吗？建议先清空示例并填写真实经历。')) return;
+      if (sampleActive && !window.confirm('当前预览为虚构模板示例，确认打印示例吗？打印自己的简历请切换到“我的填写”。')) return;
       window.print();
     });
   }

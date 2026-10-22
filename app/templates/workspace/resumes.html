@@ -41,26 +41,29 @@
   'summary':'6 年企业服务与数据产品经验，负责从需求洞察、方案设计到上线验证的完整链路。擅长把复杂业务流程整理为可衡量的产品方案。',
   'photo':'',
   'experiences':[
-    {'company':'示例科技','role':'高级产品经理','period':'2021.06 — 至今','location':'杭州','bullets':['负责企业协作产品的需求规划与迭代，服务 2.3 万家企业客户。','主导权限与审批模块重构，核心流程完成时长下降 28%。']},
-    {'company':'示范网络','role':'产品经理','period':'2018.07 — 2021.05','location':'上海','bullets':['从 0 到 1 搭建数据分析看板，覆盖 12 个业务团队。']}
+    {'company':'示例科技','role':'高级产品经理','period':'2021.06 — 至今','location':'杭州','bullets':['负责企业协作产品的需求规划与迭代，服务 2.3 万家企业客户。','主导权限与审批模块重构，核心流程完成时长下降 28%。','建立用户访谈与迭代复盘机制，协同设计、研发与客户成功团队交付产品。']},
+    {'company':'示范网络','role':'产品经理','period':'2018.07 — 2021.05','location':'上海','bullets':['从 0 到 1 搭建数据分析看板，覆盖 12 个业务团队。','梳理指标口径与埋点方案，完成需求评审、验收与上线培训。']}
   ],
   'projects':[
-    {'name':'企业数据看板','role':'产品负责人','period':'2023','tech':'SQL · Tableau · Figma','description':'整合多源业务数据，提供自助分析能力；上线后周活跃使用率提升 41%。','link':'example.com/dashboard'}
+    {'name':'企业数据看板','role':'产品负责人','period':'2023','tech':'SQL · Tableau · Figma','description':'整合多源业务数据，提供自助分析能力；上线后周活跃使用率提升 41%。','link':'example.com/dashboard'},
+    {'name':'企业协作与审批平台','role':'产品负责人','period':'2022.03 — 2022.12','tech':'流程建模 · 权限设计 · 用户研究','description':'梳理跨部门审批场景，设计角色权限与可配置流程；通过灰度验证与使用反馈持续迭代。','link':'example.com/workflow'}
   ],
-  'education':[{'school':'示例大学','degree':'信息管理 · 本科','period':'2014 — 2018','detail':'校级优秀毕业生'}],
+  'education':[{'school':'示例大学','degree':'信息管理 · 本科','period':'2014 — 2018','detail':'主修数据库、统计分析与管理信息系统；参与校园信息服务项目，获校级优秀毕业生。'}],
   'skills':[
     {'label':'产品能力','items':['需求分析','产品规划','用户研究']},
-    {'label':'工具','items':['Figma','SQL','Tableau']}
+    {'label':'设计与协作','items':['Figma','流程建模','跨团队沟通']},
+    {'label':'数据分析','items':['SQL','Tableau','指标体系']},
+    {'label':'交付方法','items':['敏捷迭代','需求评审','可用性测试']}
   ],
-  'certificates':['PMP 项目管理专业人士'],
+  'certificates':['PMP 项目管理专业人士','数据分析专项课程结业'],
   'languages':['中文（母语）','英语（工作沟通）']
 } %}
-<section class="business-page-heading editor-heading"><div><h1>创建简历</h1><p><span id="resume-draft-status">示例内容 · 未保存</span> · 编辑结构化字段，选择模板并实时预览</p></div><div class="page-actions"><button class="button secondary" type="button" data-editor-preview>{{ icon('eye') }} 查看预览</button><button class="button secondary" type="button" data-print-resume>{{ icon('download') }} 打印 / 导出 PDF</button><button class="button" type="button" disabled aria-describedby="editor-availability">保存简历</button></div></section>
+<section class="business-page-heading editor-heading"><div><h1>创建简历</h1><p><span id="resume-draft-status">空白草稿 · 尚未保存</span> · 编辑结构化字段，选择模板并实时预览</p></div><div class="page-actions"><button class="button secondary" type="button" data-editor-preview>{{ icon('eye') }} 查看预览</button><button class="button secondary" type="button" data-print-resume>{{ icon('download') }} 打印 / 导出 PDF</button><button class="button" type="button" disabled aria-describedby="editor-availability">保存简历</button></div></section>
 <div id="editor-availability">{{ pending('当前填写仅保留在本页，不写入账号。简历保存、版本历史和账号级 PDF 服务尚未接入；打印按钮使用浏览器 A4 打印，可直接另存为 PDF。') }}</div>
 <div class="sample-banner" role="note">
   <span class="sample-banner-icon">{{ icon('spark') }}</span>
-  <p><strong>当前展示的是示例内容</strong>，用于查看三套模板的真实排版效果。示例不会保存到账号，导出前请清空并替换为你的真实经历。</p>
-  <button class="button secondary small" type="button" data-clear-sample>清空示例</button>
+  <p><strong>模板预览提供虚构示例</strong>，仅用于参考排版与写法。左侧字段保持空白，提示文字不会写入简历；开始填写后自动预览你的内容，也可随时切回示例。</p>
+  <button class="button secondary small" type="button" data-clear-sample>清空我的填写</button>
 </div>
 
 <div class="resume-editor" data-resume-editor data-editor-view="edit">
@@ -81,21 +84,21 @@
     <section id="resume-basics" class="editor-section">
       <div class="work-section-heading"><h2>基本信息</h2><span>01</span></div>
       <div class="field-grid">
-        <label>姓名<input id="resume-name" maxlength="80" autocomplete="name" data-rf-field="name" value="{{ sample.name }}" placeholder="你的姓名"></label>
-        <label>目标岗位<input id="resume-role" maxlength="120" data-rf-field="role" value="{{ sample.role }}" placeholder="希望申请的职位"></label>
-        <label>手机号码<input id="resume-phone" type="tel" maxlength="40" autocomplete="tel" data-rf-field="phone" value="{{ sample.phone }}" placeholder="用于联系的号码"></label>
-        <label>邮箱<input id="resume-email" type="email" maxlength="120" autocomplete="email" data-rf-field="email" value="{{ sample.email }}" placeholder="name@example.com"></label>
-        <label>所在城市<input id="resume-city" maxlength="60" data-rf-field="city" value="{{ sample.city }}" placeholder="例如：杭州"></label>
-        <label>个人网站<input id="resume-website" maxlength="160" data-rf-field="website" value="{{ sample.website }}" placeholder="your.site"></label>
-        <label>GitHub<input id="resume-github" maxlength="160" data-rf-field="github" value="{{ sample.github }}" placeholder="github.com/you"></label>
-        <label>LinkedIn<input id="resume-linkedin" maxlength="160" data-rf-field="linkedin" value="{{ sample.linkedin }}" placeholder="linkedin.com/in/you"></label>
+        <label>姓名<input id="resume-name" maxlength="80" autocomplete="name" data-rf-field="name" placeholder="你的姓名"></label>
+        <label>目标岗位<input id="resume-role" maxlength="120" data-rf-field="role" placeholder="希望申请的职位"></label>
+        <label>手机号码<input id="resume-phone" type="tel" maxlength="40" autocomplete="tel" data-rf-field="phone" placeholder="用于联系的号码"></label>
+        <label>邮箱<input id="resume-email" type="email" maxlength="120" autocomplete="email" data-rf-field="email" placeholder="name@example.com"></label>
+        <label>所在城市<input id="resume-city" maxlength="60" data-rf-field="city" placeholder="例如：杭州"></label>
+        <label>个人网站<input id="resume-website" maxlength="160" data-rf-field="website" placeholder="your.site"></label>
+        <label>GitHub<input id="resume-github" maxlength="160" data-rf-field="github" placeholder="github.com/you"></label>
+        <label>LinkedIn<input id="resume-linkedin" maxlength="160" data-rf-field="linkedin" placeholder="linkedin.com/in/you"></label>
       </div>
 
     </section>
 
     <section id="resume-summary-section" class="editor-section">
       <div class="work-section-heading"><h2>个人简介</h2><span>02</span></div>
-      <label class="editor-field">一句话介绍你的经验与方向<textarea id="resume-summary" rows="4" maxlength="600" data-rf-field="summary" placeholder="简要介绍真实的经验、擅长领域与求职方向">{{ sample.summary }}</textarea></label>
+      <label class="editor-field">一句话介绍你的经验与方向<textarea id="resume-summary" rows="4" maxlength="600" data-rf-field="summary" placeholder="简要介绍真实的经验、擅长领域与求职方向"></textarea></label>
       <button type="button" class="inline-assistance" disabled title="AI 优化服务尚未接入">{{ icon('spark') }} 优化这段简介</button>
     </section>
 
@@ -106,12 +109,12 @@
       <fieldset class="repeat-block">
         <legend>工作经历 {{ loop.index }}</legend>
         <div class="field-grid">
-          <label>公司名称<input maxlength="120" data-rf-field="experiences.{{ i }}.company" value="{{ sample.experiences[i].company }}" placeholder="公司名称"></label>
-          <label>职位名称<input maxlength="120" data-rf-field="experiences.{{ i }}.role" value="{{ sample.experiences[i].role }}" placeholder="职位 / 职责"></label>
-          <label>时间区间<input maxlength="60" data-rf-field="experiences.{{ i }}.period" value="{{ sample.experiences[i].period }}" placeholder="2021.06 — 至今"></label>
-          <label>工作地点<input maxlength="60" data-rf-field="experiences.{{ i }}.location" value="{{ sample.experiences[i].location }}" placeholder="城市 / 远程"></label>
+          <label>公司名称<input maxlength="120" data-rf-field="experiences.{{ i }}.company" placeholder="公司名称"></label>
+          <label>职位名称<input maxlength="120" data-rf-field="experiences.{{ i }}.role" placeholder="职位 / 职责"></label>
+          <label>时间区间<input maxlength="60" data-rf-field="experiences.{{ i }}.period" placeholder="2021.06 — 至今"></label>
+          <label>工作地点<input maxlength="60" data-rf-field="experiences.{{ i }}.location" placeholder="城市 / 远程"></label>
         </div>
-        <label class="editor-field">工作内容 <small>每行一条，建议使用可验证的成果</small><textarea rows="5" maxlength="3000" data-rf-field="experiences.{{ i }}.bullets" placeholder="负责的工作与量化成果，每行一条">{{ sample.experiences[i].bullets|join('\n') }}</textarea></label>
+        <label class="editor-field">工作内容 <small>每行一条，建议使用可验证的成果</small><textarea rows="5" maxlength="3000" data-rf-field="experiences.{{ i }}.bullets" placeholder="负责的工作与量化成果，每行一条"></textarea></label>
       </fieldset>
       {% endfor %}
     </section>
@@ -123,13 +126,13 @@
       <fieldset class="repeat-block">
         <legend>项目 {{ loop.index }}</legend>
         <div class="field-grid">
-          <label>项目名称<input maxlength="120" data-rf-field="projects.{{ i }}.name" value="{{ sample.projects[i].name if i < sample.projects|length else '' }}" placeholder="项目名称"></label>
-          <label>项目角色<input maxlength="80" data-rf-field="projects.{{ i }}.role" value="{{ sample.projects[i].role if i < sample.projects|length else '' }}" placeholder="你的角色"></label>
-          <label>项目时间<input maxlength="60" data-rf-field="projects.{{ i }}.period" value="{{ sample.projects[i].period if i < sample.projects|length else '' }}" placeholder="2023"></label>
-          <label>技术 / 方法<input maxlength="160" data-rf-field="projects.{{ i }}.tech" value="{{ sample.projects[i].tech if i < sample.projects|length else '' }}" placeholder="使用的技术、方法或工具"></label>
+          <label>项目名称<input maxlength="120" data-rf-field="projects.{{ i }}.name" placeholder="项目名称"></label>
+          <label>项目角色<input maxlength="80" data-rf-field="projects.{{ i }}.role" placeholder="你的角色"></label>
+          <label>项目时间<input maxlength="60" data-rf-field="projects.{{ i }}.period" placeholder="2023"></label>
+          <label>技术 / 方法<input maxlength="160" data-rf-field="projects.{{ i }}.tech" placeholder="使用的技术、方法或工具"></label>
         </div>
-        <label class="editor-field">项目背景与成果 <small>每行一条</small><textarea rows="4" maxlength="2000" data-rf-field="projects.{{ i }}.description" placeholder="解决的问题、你的贡献与可验证的成果，每行一条">{{ sample.projects[i].description if i < sample.projects|length else '' }}</textarea></label>
-        <label class="editor-field">项目链接 <small>选填</small><input maxlength="200" data-rf-field="projects.{{ i }}.link" value="{{ sample.projects[i].link if i < sample.projects|length else '' }}" placeholder="https://"></label>
+        <label class="editor-field">项目背景与成果 <small>每行一条</small><textarea rows="4" maxlength="2000" data-rf-field="projects.{{ i }}.description" placeholder="解决的问题、你的贡献与可验证的成果，每行一条"></textarea></label>
+        <label class="editor-field">项目链接 <small>选填</small><input maxlength="200" data-rf-field="projects.{{ i }}.link" placeholder="https://"></label>
       </fieldset>
       {% endfor %}
     </section>
@@ -138,10 +141,10 @@
       <div class="work-section-heading"><h2>教育经历</h2><span>05</span></div>
       {% set e = draft.education[0] %}
       <div class="field-grid">
-        <label>学校<input maxlength="120" data-rf-field="education.0.school" value="{{ sample.education[0].school }}" placeholder="学校名称"></label>
-        <label>学历与专业<input maxlength="120" data-rf-field="education.0.degree" value="{{ sample.education[0].degree }}" placeholder="专业 · 本科"></label>
-        <label>时间区间<input maxlength="60" data-rf-field="education.0.period" value="{{ sample.education[0].period }}" placeholder="2014 — 2018"></label>
-        <label>补充信息<input maxlength="160" data-rf-field="education.0.detail" value="{{ sample.education[0].detail }}" placeholder="成绩、荣誉或相关课程"></label>
+        <label>学校<input maxlength="120" data-rf-field="education.0.school" placeholder="学校名称"></label>
+        <label>学历与专业<input maxlength="120" data-rf-field="education.0.degree" placeholder="专业 · 本科"></label>
+        <label>时间区间<input maxlength="60" data-rf-field="education.0.period" placeholder="2014 — 2018"></label>
+        <label>补充信息<input maxlength="160" data-rf-field="education.0.detail" placeholder="成绩、荣誉或相关课程"></label>
       </div>
     </section>
 
@@ -150,13 +153,13 @@
       {% for group in draft.skills %}
       {% set i = loop.index0 %}
       <div class="skill-input-row">
-        <label>技能分类 {{ loop.index }}<input maxlength="40" data-rf-field="skills.{{ i }}.label" value="{{ sample.skills[i].label if i < sample.skills|length else group.label }}"></label>
-        <label>技能内容 <small>用逗号分隔</small><input maxlength="300" data-rf-field="skills.{{ i }}.items" value="{{ sample.skills[i]['items']|join('、') if i < sample.skills|length else '' }}" placeholder="用逗号分隔的技能"></label>
+        <label>技能分类 {{ loop.index }}<input maxlength="40" data-rf-field="skills.{{ i }}.label" placeholder="例如：{{ group.label }}"></label>
+        <label>技能内容 <small>用逗号分隔</small><input maxlength="300" data-rf-field="skills.{{ i }}.items" placeholder="用逗号分隔的技能"></label>
       </div>
       {% endfor %}
       <div class="field-grid editor-field">
-        <label>证书与资格 <small>每行一条</small><textarea rows="3" maxlength="1000" data-rf-field="certificates" placeholder="证书名称">{{ sample.certificates|join('\n') }}</textarea></label>
-        <label>语言能力 <small>每行一条</small><textarea rows="3" maxlength="600" data-rf-field="languages" placeholder="中文（母语）">{{ sample.languages|join('\n') }}</textarea></label>
+        <label>证书与资格 <small>每行一条</small><textarea rows="3" maxlength="1000" data-rf-field="certificates" placeholder="证书名称"></textarea></label>
+        <label>语言能力 <small>每行一条</small><textarea rows="3" maxlength="600" data-rf-field="languages" placeholder="中文（母语）"></textarea></label>
       </div>
     </section>
 
@@ -186,16 +189,16 @@
 
   <section class="resume-preview-panel" aria-label="简历实时预览">
     <div class="preview-toolbar">
-      <span>实时预览</span>
+      <label class="preview-control">预览内容<select id="resume-preview-mode" aria-label="预览内容"><option value="sample">模板示例（虚构）</option><option value="draft">我的填写</option></select></label>
       <span class="preview-controls"><label class="preview-control">模板<select id="resume-template-quick" aria-label="快速切换简历模板"><option value="classic">经典商务</option><option value="technical">技术项目</option><option value="modern">简约现代</option></select></label><button type="button" class="preview-expand" data-preview-expand aria-pressed="false">放大预览</button>
         <label class="preview-control">字号<select id="resume-size" aria-label="预览字号"><option value="compact">紧凑</option><option value="standard" selected>标准</option><option value="large">宽松</option></select></label>
         <span class="accent-picker" role="group" aria-label="主题色"><button type="button" class="accent-dot accent-green" data-accent-choice="green" aria-label="深绿" aria-pressed="false"></button><button type="button" class="accent-dot accent-navy" data-accent-choice="navy" aria-label="深蓝" aria-pressed="false"></button><button type="button" class="accent-dot accent-graphite" data-accent-choice="graphite" aria-label="石墨灰" aria-pressed="false"></button></span>
       </span>
     </div>
-    <div class="resume-stage" data-resume-stage data-active-template="classic" data-size="standard">
-      <div class="resume-panel" data-resume-panel="classic">{{ resume_document('classic', draft) }}</div>
-      <div class="resume-panel" data-resume-panel="technical" hidden>{{ resume_document('technical', draft) }}</div>
-      <div class="resume-panel" data-resume-panel="modern" hidden>{{ resume_document('modern', draft) }}</div>
+    <div class="resume-stage" data-resume-stage data-example="{{ sample|tojson|forceescape }}" data-preview-mode="sample" data-active-template="classic" data-size="standard">
+      <div class="resume-panel" data-resume-panel="classic">{{ resume_document('classic', sample) }}</div>
+      <div class="resume-panel" data-resume-panel="technical" hidden>{{ resume_document('technical', sample) }}</div>
+      <div class="resume-panel" data-resume-panel="modern" hidden>{{ resume_document('modern', sample) }}</div>
       <p class="resume-stage-empty" data-resume-empty>在左侧填写姓名、经历与技能，这里会实时生成对应的简历排版。</p>
     </div>
     <p class="preview-footnote">预览与打印使用同一套模板；打印时请选择 A4 纸张并关闭页眉页脚。</p>

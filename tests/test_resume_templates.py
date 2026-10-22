@@ -1,4 +1,6 @@
+import json
 from datetime import datetime
+from html.parser import HTMLParser
 from types import SimpleNamespace
 
 from flask import g, render_template
@@ -41,7 +43,7 @@ def test_three_templates_have_distinct_visual_structures(app):
 
 def test_sample_and_local_photo_limitations_are_explicit(app):
     html = render_editor(app)
-    assert "当前展示的是示例内容" in html
+    assert "模板预览提供虚构示例" in html
     assert "暂不保存到账号" in html
     assert "data-clear-sample" in html
     assert "data-print-resume" in html
@@ -54,3 +56,50 @@ def test_summary_section_and_input_have_unique_ids(app):
     html = render_editor(app)
     assert html.count('id="resume-summary"') == 1
     assert html.count('id="resume-summary-section"') == 1
+
+
+class EditorParser(HTMLParser):
+    def __init__(self):
+        super().__init__()
+        self.fields = []
+        self.textarea = None
+        self.example = None
+
+    def handle_starttag(self, tag, attrs):
+        attrs = dict(attrs)
+        if "data-example" in attrs:
+            self.example = json.loads(attrs["data-example"])
+        if "data-rf-field" in attrs:
+            self.fields.append(attrs)
+            if tag == "textarea":
+                self.textarea = attrs
+
+    def handle_data(self, data):
+        if self.textarea is not None:
+            self.textarea["value"] = self.textarea.get("value", "") + data
+
+    def handle_endtag(self, tag):
+        if tag == "textarea":
+            self.textarea = None
+
+
+def test_editor_starts_empty_with_placeholders(app):
+    parser = EditorParser()
+    parser.feed(render_editor(app))
+    assert len(parser.fields) == 45
+    for field in parser.fields:
+        assert not field.get("value", "").strip(), field["data-rf-field"]
+        assert field.get("placeholder", "").strip(), field["data-rf-field"]
+
+
+def test_rich_example_is_separate_from_form(app):
+    html = render_editor(app)
+    parser = EditorParser()
+    parser.feed(html)
+    assert 'id="resume-preview-mode"' in html
+    assert 'data-preview-mode="sample"' in html
+    assert len(parser.example["experiences"]) == 2
+    assert len(parser.example["projects"]) == 2
+    assert len(parser.example["skills"]) == 4
+    assert len(parser.example["certificates"]) == 2
+    assert all(len(item["bullets"]) >= 2 for item in parser.example["experiences"])
