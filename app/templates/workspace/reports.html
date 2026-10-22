@@ -1,0 +1,13 @@
+{% from '_ui.html' import icon, pending %}
+<section class="business-page-heading"><div><h1>诊断与报告</h1><p>把匹配结果、真实证据和下一步行动，整理成清晰的参考。</p></div><a class="button" href="{{ url_for('web.workspace', view='jobs') }}">{{ icon('plus') }} 开始岗位分析</a></section>
+{{ pending('诊断与报告服务尚未接入，当前没有可读取的评分、证据或已完成报告。不展示示例分数，也不提供会误导为真实报告的下载入口。') }}
+<section class="report-structure" aria-labelledby="report-structure-title">
+  <div class="work-section-heading"><h2 id="report-structure-title">报告将包含</h2><span>全部内容来自真实诊断数据</span></div>
+  <ol class="report-outline">
+    <li><span>01</span><div><strong>总匹配评分与结果概览</strong><p>关联岗位、简历与诊断日期，给出整体匹配结论。</p></div></li>
+    <li><span>02</span><div><strong>五维评分</strong><p>技能匹配、岗位职责、工作与项目经历、成果与影响力、学历及其他条件。</p></div></li>
+    <li><span>03</span><div><strong>关键发现与证据对照</strong><p>主要优势、关键差距、硬性条件风险，以及岗位要求与简历原文的对应关系。</p></div></li>
+    <li><span>04</span><div><strong>优化建议与后续操作</strong><p>具体可执行的修改建议，并可回到关联简历或继续允许的诊断流程。</p></div></li>
+  </ol>
+</section>
+<section class="list-surface"><div class="list-toolbar"><h2>我的报告</h2><span class="muted small-text">评分与证据仅来自真实诊断</span></div><div class="workspace-empty"><span class="empty-line-icon">{{ icon('report') }}</span><h3>完成第一次诊断后，在这里查看结果</h3><p>报告将围绕技能、职责、经历、成果和岗位条件呈现，<br>并提供证据对照与具体的优化建议。</p><a class="button secondary" href="{{ url_for('web.workspace', view='jobs') }}">开始岗位分析 {{ icon('arrow') }}</a></div></section>

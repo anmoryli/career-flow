@@ -1,0 +1,180 @@
+{% macro rd_icon(name) -%}
+{% set paths = {
+  'phone':'M6.5 3h3l1.5 4-2 1.4a12 12 0 0 0 6.1 6.1L16.5 12.5 20.5 14v3a2 2 0 0 1-2 2A17 17 0 0 1 4.5 5a2 2 0 0 1 2-2z',
+  'mail':'M3 5h18v14H3z M3 6l9 7 9-7',
+  'pin':'M12 21s7-6.1 7-11a7 7 0 1 0-14 0c0 4.9 7 11 7 11z M12 10a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2',
+  'globe':'M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18z M3 12h18 M12 3c3 3.2 3 14.8 0 18 M12 3c-3 3.2-3 14.8 0 18',
+  'github':'M9 19c-4 1.4-4-2-6-2.5 M15 22v-3.4c0-1 .1-1.5-.5-2 3-.3 6-1.5 6-6a4.6 4.6 0 0 0-1.2-3.1 4.2 4.2 0 0 0-.1-3.1s-1-.3-3.4 1.3a12 12 0 0 0-6 0C7.4 4.1 6.4 4.4 6.4 4.4a4.2 4.2 0 0 0-.1 3.1A4.6 4.6 0 0 0 5.1 10.6c0 4.5 3 5.7 6 6-.6.5-.6 1-.5 2V22',
+  'linkedin':'M4 9h4v12H4z M6 3a2 2 0 1 0 0 4 2 2 0 0 0 0-4 M10 9h4v2a4 4 0 0 1 7 3v7h-4v-6a2 2 0 0 0-4 0v6h-3z',
+  'briefcase':'M8 7V4h8v3 M3 7h18v14H3z M3 12a23 23 0 0 0 18 0 M10 12h4',
+  'layers':'m12 3 9 5-9 5-9-5z M3 13l9 5 9-5 M3 17l9 5 9-5',
+  'cap':'M3 9l9-4 9 4-9 4z M7 11v5c0 1.5 2.2 3 5 3s5-1.5 5-3v-5',
+  'spark':'m12 3 2.5 6.5L21 12l-6.5 2.5L12 21l-2.5-6.5L3 12l6.5-2.5z',
+  'award':'M12 15a5 5 0 1 0 0-10 5 5 0 0 0 0 10z M8.5 14 7 22l5-3 5 3-1.5-8',
+  'language':'M4 5h16v14H4z M4 9h16 M8 5v14'
+} %}
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ paths.get(name, paths['spark']) }}"/></svg>
+{%- endmacro %}
+
+{% macro contact_items(data) -%}
+{% set icons = {'phone':'phone','email':'mail','city':'pin','website':'globe','github':'github','linkedin':'linkedin'} %}
+{% for key, label in [('phone','电话'),('email','邮箱'),('city','城市'),('website','网站'),('github','GitHub'),('linkedin','LinkedIn')] %}
+<span class="rd-contact-item" data-rf-if="{{ key }}"><span class="rd-ci-icon">{{ rd_icon(icons[key]) }}</span><b>{{ label }}</b><span data-rf="{{ key }}">{{ data[key] }}</span></span>
+{% endfor %}
+{%- endmacro %}
+
+{% macro skill_groups(data, style) -%}
+{% for group in data.skills %}
+<div class="rd-skill-group {{ style }}" data-rf-entry="skills.{{ loop.index0 }}">
+  <span class="rd-skill-label" data-rf="skills.{{ loop.index0 }}.label">{{ group['label'] }}</span>
+  <span class="rd-skill-items" data-rf-list="skills.{{ loop.index0 }}.items" data-rf-list-mode="{{ 'tags' if style == 'tags' else 'inline' }}">{% for item in group['items'] %}<span>{{ item }}</span>{% endfor %}</span>
+</div>
+{% endfor %}
+{%- endmacro %}
+
+{% macro experience_list(data, variant) -%}
+<section class="rd-section" data-rf-section="experiences">
+  <h2 class="rd-section-title"><span class="rd-sec-icon">{{ rd_icon('briefcase') }}</span><span>工作经历</span></h2>
+  {% for item in data.experiences %}
+  <div class="rd-entry {{ variant }}" data-rf-entry="experiences.{{ loop.index0 }}">
+    <div class="rd-entry-side">
+      <span class="rd-period" data-rf="experiences.{{ loop.index0 }}.period">{{ item.period }}</span>
+      <span class="rd-location" data-rf="experiences.{{ loop.index0 }}.location">{{ item.location }}</span>
+    </div>
+    <div class="rd-entry-body">
+      <div class="rd-entry-heading"><h3 data-rf="experiences.{{ loop.index0 }}.company">{{ item.company }}</h3><span class="rd-entry-role" data-rf="experiences.{{ loop.index0 }}.role">{{ item.role }}</span></div>
+      <ul class="rd-bullets" data-rf-list="experiences.{{ loop.index0 }}.bullets">{% for bullet in item.bullets %}<li>{{ bullet }}</li>{% endfor %}</ul>
+    </div>
+  </div>
+  {% endfor %}
+</section>
+{%- endmacro %}
+
+{% macro project_list(data, variant) -%}
+<section class="rd-section" data-rf-section="projects">
+  <h2 class="rd-section-title"><span class="rd-sec-icon">{{ rd_icon('layers') }}</span><span>项目经历</span></h2>
+  {% for item in data.projects %}
+  <div class="rd-entry {{ variant }}" data-rf-entry="projects.{{ loop.index0 }}">
+    <div class="rd-entry-side"><span class="rd-period" data-rf="projects.{{ loop.index0 }}.period">{{ item.period }}</span></div>
+    <div class="rd-entry-body">
+      <div class="rd-entry-heading"><h3 data-rf="projects.{{ loop.index0 }}.name">{{ item.name }}</h3><span class="rd-entry-role" data-rf="projects.{{ loop.index0 }}.role">{{ item.role }}</span></div>
+      <p class="rd-techline" data-rf="projects.{{ loop.index0 }}.tech">{{ item.tech }}</p>
+      <p class="rd-entry-text" data-rf="projects.{{ loop.index0 }}.description">{{ item.description }}</p>
+      <p class="rd-link" data-rf="projects.{{ loop.index0 }}.link" data-rf-if="projects.{{ loop.index0 }}.link"></p>
+    </div>
+  </div>
+  {% endfor %}
+</section>
+{%- endmacro %}
+
+{% macro education_list(data, variant) -%}
+<section class="rd-section" data-rf-section="education">
+  <h2 class="rd-section-title"><span class="rd-sec-icon">{{ rd_icon('cap') }}</span><span>教育经历</span></h2>
+  {% for item in data.education %}
+  <div class="rd-entry {{ variant }}" data-rf-entry="education.{{ loop.index0 }}">
+    <div class="rd-entry-side"><span class="rd-period" data-rf="education.{{ loop.index0 }}.period">{{ item.period }}</span></div>
+    <div class="rd-entry-body">
+      <div class="rd-entry-heading"><h3 data-rf="education.{{ loop.index0 }}.school">{{ item.school }}</h3><span class="rd-entry-role" data-rf="education.{{ loop.index0 }}.degree">{{ item.degree }}</span></div>
+      <p class="rd-entry-text" data-rf="education.{{ loop.index0 }}.detail">{{ item.detail }}</p>
+    </div>
+  </div>
+  {% endfor %}
+</section>
+{%- endmacro %}
+
+{% macro certificate_list(data) -%}
+<section class="rd-section" data-rf-section="certificates">
+  <h2 class="rd-section-title"><span class="rd-sec-icon">{{ rd_icon('award') }}</span><span>证书与资格</span></h2>
+  <ul class="rd-compact-list" data-rf-list="certificates">{% for item in data.certificates %}<li>{{ item }}</li>{% endfor %}</ul>
+</section>
+{%- endmacro %}
+
+{% macro language_list(data) -%}
+<section class="rd-section" data-rf-section="languages">
+  <h2 class="rd-section-title"><span class="rd-sec-icon">{{ rd_icon('language') }}</span><span>语言能力</span></h2>
+  <ul class="rd-compact-list" data-rf-list="languages">{% for item in data.languages %}<li>{{ item }}</li>{% endfor %}</ul>
+</section>
+{%- endmacro %}
+
+{% macro photo(data) -%}
+<figure class="rd-photo-frame" data-photo-slot aria-label="个人照片区域">
+  <img class="rd-photo" data-rf-photo alt="个人照片"{% if data.photo %} src="{{ data.photo }}"{% else %} hidden{% endif %}>
+  <figcaption class="rd-photo-placeholder" data-photo-placeholder{% if data.photo %} hidden{% endif %}>
+    <svg viewBox="0 0 48 56" fill="none" aria-hidden="true"><circle cx="24" cy="17" r="9" stroke="currentColor" stroke-width="1.5"/><path d="M8 49v-5a16 16 0 0 1 32 0v5" stroke="currentColor" stroke-width="1.5"/><path d="M5 5h7M5 5v7M43 5h-7M43 5v7M5 51h7M5 51v-7M43 51h-7M43 51v-7" stroke="currentColor" stroke-width="1"/></svg>
+    <span>个人照片</span><small>上传后显示</small>
+  </figcaption>
+</figure>
+{%- endmacro %}
+
+{% macro resume_document(template, data, sample=false) -%}
+<article class="resume-doc tpl-{{ template }}" data-resume-doc="{{ template }}"{% if sample %} data-sample="true"{% endif %}>
+  {% if template == 'classic' %}
+  <div class="rd-business-rule" aria-hidden="true"><span></span><span></span></div>
+  <header class="rd-head">
+    <div class="rd-identity">
+      <p class="rd-eyebrow">PROFESSIONAL PROFILE <span>职业履历</span></p>
+      <h1 data-rf="name">{{ data.name }}</h1>
+      <p class="rd-role" data-rf="role">{{ data.role }}</p>
+      <span class="rd-heading-rule" aria-hidden="true"></span>
+    </div>
+    {{ photo(data) }}
+  </header>
+  <div class="rd-head-contact">{{ contact_items(data) }}</div>
+  <section class="rd-profile-intro" data-rf-section="summary"><span class="rd-intro-label">职业概述</span><p class="rd-summary" data-rf="summary">{{ data.summary }}</p></section>
+  <div class="rd-document-content">
+    {{ experience_list(data, 'classic') }}
+    {{ project_list(data, 'classic') }}
+    {{ education_list(data, 'classic') }}
+    <div class="rd-two-col">
+      <section class="rd-section" data-rf-section="skills"><h2 class="rd-section-title"><span class="rd-sec-icon">{{ rd_icon('spark') }}</span><span>专业技能</span></h2>{{ skill_groups(data, 'inline') }}</section>
+      <div class="rd-side-stack">{{ certificate_list(data) }}{{ language_list(data) }}</div>
+    </div>
+  </div>
+
+  {% elif template == 'technical' %}
+  <header class="rd-head">
+    <div class="rd-identity">
+      <p class="rd-eyebrow"><span class="rd-terminal-mark" aria-hidden="true">&gt;_</span> ENGINEERING / 技术项目</p>
+      <h1 data-rf="name">{{ data.name }}</h1>
+      <p class="rd-role" data-rf="role">{{ data.role }}</p>
+      <div class="rd-technical-nodes" aria-hidden="true"><i></i><span></span><i></i><span></span><i></i></div>
+    </div>
+    {{ photo(data) }}
+  </header>
+  <div class="rd-tech-contact">{{ contact_items(data) }}</div>
+  <div class="rd-document-content">
+    <section class="rd-profile-intro" data-rf-section="summary"><p class="rd-summary" data-rf="summary">{{ data.summary }}</p></section>
+    <section class="rd-section" data-rf-section="skills"><h2 class="rd-section-title"><span class="rd-sec-icon">{{ rd_icon('spark') }}</span><span>技能栈 / STACK</span></h2><div class="rd-skill-grid">{{ skill_groups(data, 'tags') }}</div></section>
+    <div class="rd-project-board">{{ project_list(data, 'technical') }}</div>
+    {{ experience_list(data, 'technical') }}
+    {{ education_list(data, 'technical') }}
+    <div class="rd-two-col">{{ certificate_list(data) }}{{ language_list(data) }}</div>
+  </div>
+
+  {% else %}
+  <div class="rd-modern-layout">
+    <aside class="rd-sidebar">
+      <div class="rd-portrait-orbit">{{ photo(data) }}</div>
+      <div class="rd-sidebar-identity"><span class="rd-side-kicker">PROFILE / 个人档案</span></div>
+      <section class="rd-section" data-rf-section="contacts"><h2 class="rd-section-title"><span class="rd-sec-icon">{{ rd_icon('phone') }}</span><span>联系我</span></h2><div class="rd-sidebar-contact">{{ contact_items(data) }}</div></section>
+      <section class="rd-section" data-rf-section="skills"><h2 class="rd-section-title"><span class="rd-sec-icon">{{ rd_icon('spark') }}</span><span>专业能力</span></h2>{{ skill_groups(data, 'stacked') }}</section>
+      {{ education_list(data, 'modern') }}
+      {{ language_list(data) }}
+      {{ certificate_list(data) }}
+      <div class="rd-sidebar-signature" aria-hidden="true"><span></span><i></i></div>
+    </aside>
+    <div class="rd-primary">
+      <header class="rd-head">
+        <p class="rd-eyebrow">CAREER PORTFOLIO <span>个人简历</span></p>
+        <h1 data-rf="name">{{ data.name }}</h1>
+        <p class="rd-role" data-rf="role">{{ data.role }}</p>
+        <span class="rd-heading-rule" aria-hidden="true"></span>
+      </header>
+      <section class="rd-profile-intro" data-rf-section="summary"><h2 class="rd-section-title"><span>关于我</span></h2><p class="rd-lead" data-rf="summary">{{ data.summary }}</p></section>
+      {{ experience_list(data, 'modern') }}
+      {{ project_list(data, 'modern') }}
+    </div>
+  </div>
+  {% endif %}
+</article>
+{%- endmacro %}

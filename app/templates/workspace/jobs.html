@@ -1,0 +1,21 @@
+{% from '_ui.html' import icon, pending %}
+<section class="business-page-heading"><div><h1>岗位分析</h1><p>选择一份简历，了解它与目标岗位之间的匹配与差距。</p></div><a class="subtle-link" href="{{ url_for('web.workspace', view='reports') }}">查看历史诊断 {{ icon('arrow') }}</a></section>
+{{ pending('简历读取、岗位解析与诊断服务尚未接入。你可以填写岗位内容并检查输入；当前不会创建任务、生成评分或扣除积分。') }}
+<ol class="workflow-steps" aria-label="岗位分析流程"><li class="is-current"><span>1</span>选择简历</li><li><span>2</span>填写岗位描述</li><li><span>3</span>确认岗位信息</li><li><span>4</span>开始诊断</li></ol>
+<div class="job-layout">
+  <section class="job-form-panel">
+    <form method="post" data-ui-form="job" class="business-form">
+      <section class="form-section"><h2><span class="step-number">1</span>选择用于分析的简历</h2><label for="analysis-resume">我的简历</label><select id="analysis-resume" disabled><option>简历服务尚未接入，暂无可选择的简历</option></select><div class="inline-links"><a href="{{ url_for('web.workspace', view='resume-new') }}">{{ icon('plus') }} 创建简历</a><a href="{{ url_for('web.workspace', view='resume-import') }}">{{ icon('upload') }} 导入 PDF</a></div></section>
+      <section class="form-section"><h2><span class="step-number">2</span>填写岗位描述</h2><div class="field-grid"><label>岗位名称 <small>选填</small><input id="job-title" maxlength="160" placeholder="例如：产品经理"></label><label>公司名称 <small>选填</small><input id="job-company" maxlength="160" placeholder="公司或团队名称"></label></div><label for="job-description">完整岗位描述 <span class="required-label">必填</span></label><textarea id="job-description" rows="11" required maxlength="20000" placeholder="粘贴完整 JD，包括岗位职责、任职要求和其他条件。岗位名称与公司名称为选填。"></textarea><div class="input-footnote"><span>请尽量保留招聘方的原始要求</span><span id="jd-character-count">0 字</span></div><label for="job-url">招聘链接 <small>选填</small></label><input id="job-url" type="url" placeholder="https://"><p class="small-text muted">仅供你记录来源，当前不抓取链接内容。</p><div class="form-action-row"><button class="button secondary" type="submit">检查已填写内容 {{ icon('arrow') }}</button><button class="inline-assistance" type="button" disabled title="岗位解析服务尚未接入">{{ icon('spark') }} 智能解析</button></div></section>
+    </form>
+  </section>
+  <aside class="job-context"><h2>开始之前</h2><div class="context-point">{{ icon('file') }}<div><strong>使用真实的基础简历</strong><p>分析结果应始终对应你实际提供的经历。</p></div></div><div class="context-point">{{ icon('briefcase') }}<div><strong>一份完整岗位描述即可</strong><p>公司、岗位名称和链接不作为必填步骤。</p></div></div><div class="context-point">{{ icon('lock') }}<div><strong>费用在执行前确认</strong><p>付费能力开放后，先确认上限，再执行诊断。</p></div></div></aside>
+</div>
+<section class="job-review" id="job-review" aria-live="polite" hidden>
+  <div class="work-section-heading"><h2>确认岗位信息</h2><span>来自本页填写，尚未智能解析</span></div>
+  <dl class="account-details"><div><dt>岗位名称</dt><dd id="review-job-title"></dd></div><div><dt>公司名称</dt><dd id="review-job-company"></dd></div></dl>
+  <h3>原始岗位描述</h3>
+  <p id="review-job-description" class="preserve-lines"></p>
+  <p class="data-availability">已检查必填内容。正式解析、结构化字段和诊断需等待服务接入，当前未保存岗位或创建任务。</p>
+  <button type="button" class="button" disabled>开始诊断</button>
+</section>

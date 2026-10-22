@@ -14,27 +14,53 @@
   <script src="{{ url_for('static', filename='js/app.js') }}" defer></script>
   <script src="{{ url_for('static', filename='vendor/alpine.min.js') }}" defer></script>
 </head>
-<body x-data="shell" data-authenticated="{{ 'yes' if g.user else 'no' }}">
+{% from '_ui.html' import icon %}
+{% set current_view = request.args.get('view', 'dashboard') if request.endpoint == 'web.workspace' else 'history' %}
+{% set navigation = [('dashboard','工作台','grid'),('resumes','我的简历','file'),('jobs','岗位分析','briefcase'),('reports','诊断与报告','report'),('history','历史记录','history'),('billing','积分与会员','wallet'),('settings','设置','settings')] %}
+<body class="{{ 'workbench-body' if g.user else 'public-body' }}" x-data="shell" data-authenticated="{{ 'yes' if g.user else 'no' }}">
   <a class="skip-link" href="#main">跳至主要内容</a>
+  {% if g.user %}
+  <aside class="workbench-sidebar" id="workbench-sidebar" aria-label="工作空间导航">
+    <div class="sidebar-brand">
+      <a class="brand" href="{{ url_for('web.workspace') }}" aria-label="职序工作台"><span class="brand-mark">序</span><span class="brand-wordmark"><strong>职序</strong><span>CareerFlow</span></span></a>
+      <button class="icon-button sidebar-collapse" type="button" data-sidebar-collapse aria-label="折叠侧栏" aria-expanded="true">{{ icon('panel') }}</button>
+      <button class="icon-button mobile-sidebar-close" type="button" data-sidebar-close aria-label="关闭导航">{{ icon('close') }}</button>
+    </div>
+    <div class="sidebar-workspace"><span class="workspace-initial">{{ g.user.display_name[:1] }}</span><span class="nav-text">个人工作空间</span></div>
+    <span class="sidebar-section-label nav-text">求职工作</span>
+    <nav class="sidebar-navigation" aria-label="主要功能">
+      {% for key, label, symbol in navigation %}
+      <a class="sidebar-link {{ 'is-current' if current_view == key or (key == 'resumes' and current_view in ['resume-new','resume-import','optimize']) else '' }}" href="{{ url_for('web.workspace', view=key) }}" {% if current_view == key %}aria-current="page"{% endif %} title="{{ label }}">{{ icon(symbol) }}<span class="nav-text">{{ label }}</span>{% if current_view == key %}<span class="nav-current-dot"></span>{% endif %}</a>
+      {% endfor %}
+    </nav>
+    <div class="sidebar-bottom">
+      <label class="sidebar-theme" for="theme-select"><span class="nav-text">外观</span><select id="theme-select" aria-label="外观主题" @change="changeTheme"><option value="system">跟随系统</option><option value="light">浅色</option><option value="dark">深色</option></select></label>
+      <div class="sidebar-account">
+        <span class="account-avatar">{{ g.user.display_name[:1] }}</span>
+        <div class="account-copy nav-text"><strong>{{ g.user.display_name }}</strong><span>{{ g.user.email }}</span></div>
+        <form action="{{ url_for('web.logout') }}" method="post"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="icon-button" type="submit" aria-label="退出登录" title="退出登录">{{ icon('logout') }}</button></form>
+      </div>
+    </div>
+  </aside>
+  <button class="sidebar-backdrop" type="button" data-sidebar-close aria-label="关闭导航" hidden></button>
+  <div class="workbench-main" id="workbench-main">
+    <header class="workbench-topbar">
+      <div class="breadcrumb">
+        <button class="icon-button mobile-menu" type="button" data-sidebar-open aria-label="打开导航" aria-controls="workbench-sidebar" aria-expanded="false">{{ icon('menu') }}</button>
+        <span>求职工作空间</span>{{ icon('chevron') }}<strong>{% block breadcrumb %}工作台{% endblock %}</strong>
+      </div>
+    </header>
+  {% else %}
   <header class="site-header">
     <a class="brand" href="{{ url_for('web.home') }}" aria-label="职序首页"><span class="brand-mark">序</span><strong>职序</strong><span class="brand-en">CareerFlow</span><span class="version">V1</span></a>
-    <nav class="header-actions" aria-label="主导航">
-      <label class="theme-label"><span class="sr-only">外观主题</span>
-        <select id="theme-select" aria-label="外观主题" @change="changeTheme">
-          <option value="system">跟随系统</option><option value="light">浅色</option><option value="dark">深色</option>
-        </select>
-      </label>
-      {% if g.user %}
-        <a class="nav-link" href="{{ url_for('web.workspace') }}">工作空间</a>
-        <form action="{{ url_for('web.logout') }}" method="post"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="button-quiet" type="submit">退出</button></form>
-      {% else %}<a class="nav-link" href="{{ url_for('web.login') }}">登录</a><a class="button small" href="{{ url_for('web.register') }}">开始使用 <span aria-hidden="true">↗</span></a>{% endif %}
-    </nav>
+    <nav class="header-actions" aria-label="主导航"><label class="theme-label"><span class="sr-only">外观主题</span><select id="theme-select" aria-label="外观主题" @change="changeTheme"><option value="system">跟随系统</option><option value="light">浅色</option><option value="dark">深色</option></select></label><a class="nav-link" href="{{ url_for('web.login') }}">登录</a><a class="button small" href="{{ url_for('web.register') }}">开始使用 {{ icon('arrow') }}</a></nav>
   </header>
+  {% endif %}
   <div id="theme-feedback" role="status" class="toast" hidden></div>
   {% with notices = get_flashed_messages(with_categories=true) %}
     {% for category, notice in notices %}<div class="notice container" role="status">{{ notice }}</div>{% endfor %}
   {% endwith %}
-  <main id="main" class="container">{% block content %}{% endblock %}</main>
-  <footer class="site-footer"><span>职序 CareerFlow</span><span>把经历理清，让下一步更清晰。</span><span>V1 · 持续构建中</span></footer>
+  <main id="main" class="{{ 'workbench-content' if g.user else 'container' }}">{% block content %}{% endblock %}</main>
+  {% if g.user %}</div>{% else %}<footer class="site-footer"><span>职序 CareerFlow</span><span>把经历理清，让下一步更清晰。</span><span>V1</span></footer>{% endif %}
 </body>
 </html>
