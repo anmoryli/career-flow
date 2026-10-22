@@ -273,7 +273,13 @@ document.querySelectorAll('[data-theme-choice]').forEach(button => {
 
   const switchTemplate = value => {
     if (!stage) return;
+    if (!['classic', 'technical', 'modern'].includes(value)) return;
     stage.dataset.activeTemplate = value;
+    const quickSelect = document.querySelector('#resume-template-quick');
+    if (quickSelect) quickSelect.value = value;
+    document.querySelectorAll('[name="resume-template"]').forEach(input => {
+      input.checked = input.value === value;
+    });
     document.querySelectorAll('[data-resume-panel]').forEach(panel => {
       panel.hidden = panel.dataset.resumePanel !== value;
     });
@@ -286,6 +292,8 @@ document.querySelectorAll('[data-theme-choice]').forEach(button => {
   });
   const activeTemplate = document.querySelector('[name="resume-template"]:checked');
   if (activeTemplate) switchTemplate(activeTemplate.value);
+  const quickSelect = document.querySelector('#resume-template-quick');
+  if (quickSelect) quickSelect.addEventListener('change', () => switchTemplate(quickSelect.value));
 
   const size = document.querySelector('#resume-size');
   if (size) size.addEventListener('change', () => { if (stage) stage.dataset.size = size.value; });

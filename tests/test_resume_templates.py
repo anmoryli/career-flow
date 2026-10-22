@@ -25,6 +25,7 @@ def test_three_templates_have_visible_photo_slots(app):
     assert "上传个人照片" in html
     assert "data-remove-photo" in html
     assert 'id="resume-photo-position"' in html
+    assert 'id="resume-template-quick"' in html
 
 
 def test_three_templates_have_distinct_visual_structures(app):
