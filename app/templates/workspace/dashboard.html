@@ -1,37 +1,6 @@
-{% from '_ui.html' import icon, business_link %}
-<section class="dashboard-welcome">
-  <div><span class="page-kicker">工作台</span><h1>{{ g.user.display_name }}，今天想完成什么？</h1><p>从一份简历出发，准备好下一次职业机会。</p></div>
-  <div class="page-actions"><a class="button secondary" href="{{ url_for('web.workspace', view='jobs') }}">{{ icon('briefcase') }} 开始岗位分析</a><a class="button" href="{{ url_for('web.workspace', view='resume-new') }}">{{ icon('plus') }} 创建简历</a></div>
-</section>
-
-<section class="dashboard-section" aria-labelledby="business-title">
-  <div class="work-section-heading"><h2 id="business-title">开始你的求职工作</h2><span>按需选择，直接开始</span></div>
-  <div class="business-grid">
-    {{ business_link('resumes', '我的简历', '创建、导入与整理你的职业经历', 'file', '01') }}
-    {{ business_link('jobs', '岗位分析', '选择简历，梳理目标岗位要求', 'briefcase', '02') }}
-    {{ business_link('optimize', '简历优化', '围绕目标岗位，完善每一段经历', 'spark', '03') }}
-    {{ business_link('reports', '诊断与报告', '回顾匹配结果、证据与改进建议', 'report', '04') }}
-  </div>
-</section>
-
-<section class="dashboard-section recent-section" aria-labelledby="recent-title">
-  <div class="work-section-heading"><h2 id="recent-title">最近的工作</h2><a class="subtle-link" href="{{ url_for('web.workspace', view='history') }}">查看全部 {{ icon('arrow') }}</a></div>
-  {% if conversations %}
-  <div class="recent-list">
-    {% for item in conversations[:5] %}
-    <article class="recent-row">
-      <span class="recent-record-icon">{{ icon('file') }}</span>
-      <div class="recent-record-copy"><strong>{{ item.title }}</strong><small>个人记录 · 尚未关联简历或岗位</small></div>
-      <time datetime="{{ item.created_at.isoformat() }}Z">{{ item.created_at.strftime('%Y-%m-%d %H:%M') }}</time>
-      <span class="status-badge {{ 'status-readonly' if item.status != 'active' else '' }}">{{ '可继续' if item.status == 'active' else '只读' }}</span>
-      <a class="subtle-link" href="{{ url_for('web.conversation', conversation_id=item.id) }}">{{ '继续记录' if item.status == 'active' else '查看详情' }} {{ icon('arrow') }}</a>
-    </article>
-    {% endfor %}
-  </div>
-  {% else %}
-  <div class="workspace-empty"><span class="empty-line-icon">{{ icon('file') }}</span><h3>从你的第一份简历开始</h3><p>简历、岗位诊断和报告将在这里集中呈现。<br>先整理经历，再为合适的岗位做好准备。</p><div class="empty-actions"><a class="button secondary" href="{{ url_for('web.workspace', view='resume-new') }}">{{ icon('plus') }} 创建简历</a><a class="subtle-link" href="{{ url_for('web.workspace', view='resume-import') }}">{{ icon('upload') }} 导入 PDF</a></div></div>
-  {% endif %}
-  <p class="data-availability">简历、岗位诊断与报告服务尚未接入，因此不展示数量、评分或虚构记录。已有的个人记录保留在<a href="{{ url_for('web.workspace', view='history') }}">历史记录</a>中。</p>
-</section>
-
-<aside class="workspace-tip"><span>{{ icon('info') }} 小提示</span><p>不同目标岗位可以分别分析，不必为每次工作新建一个通用对话。</p></aside>
+{% from '_ui.html' import icon %}
+<section class="dashboard-welcome"><div><span class="page-kicker">工作台</span><h1>{{ g.user.display_name }}，继续准备下一次机会</h1><p>整理真实经历，为每个目标岗位保留专属版本。</p></div><a class="button" href="{{ url_for('web.workspace', view='resume-new') }}">{{ icon('plus') }} 创建简历</a></section>
+<section class="dashboard-section"><h2>下一步</h2>{% if resumes %}<p>你已有简历，可以继续完善，或选择目标岗位进行对照诊断。</p><a class="button secondary" href="{{ url_for('web.workspace', view='resume-new', resume_id=resumes[0].id) }}">继续编辑最近简历</a><a class="button secondary" href="{{ url_for('web.workspace', view='jobs', resume_id=resumes[0].id) }}">添加目标岗位</a>{% else %}<div class="workspace-empty"><h3>先完成第一份基础简历</h3><p>从基本信息与一段核心经历开始，填写后自动保存。</p><a class="button" href="{{ url_for('web.workspace', view='resume-new') }}">开始填写</a></div>{% endif %}</section>
+<section class="dashboard-section"><h2>最近简历</h2>{% for item in resumes[:5] %}<article class="recent-row"><div class="recent-record-copy"><strong>{{ item.title }}</strong><small>第 {{ item.revision }} 版</small></div><a href="{{ url_for('web.workspace', view='resume-new', resume_id=item.id) }}">继续编辑</a></article>{% else %}<p class="muted">还没有保存的简历。</p>{% endfor %}</section>
+<section class="dashboard-section"><h2>目标岗位</h2>{% for item in jobs[:5] %}<article class="recent-row"><strong>{{ item.title or '未命名岗位' }}</strong><span>{{ item.company }}</span><a href="{{ url_for('diagnosis.detail', job_id=item.id) }}">继续诊断 / 查看报告</a></article>{% else %}<p class="muted">保存简历后，添加一份完整 JD。</p>{% endfor %}</section>
+<p class="small-text muted">个人思考与确认事实仍可在<a href="{{ url_for('web.workspace', view='history') }}">历史记录</a>中继续。真实 AI 未配置时，付费诊断入口会明确提示。</p>

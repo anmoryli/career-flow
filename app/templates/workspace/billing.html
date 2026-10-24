@@ -1,7 +1,4 @@
-{% from '_ui.html' import pending %}
-<section class="business-page-heading"><div><h1>积分与会员</h1><p>清晰管理每一次用量与权益。</p></div></section>
-{{ pending('积分账户、会员、套餐和订单服务尚未接入。当前不显示虚构余额、有效期或套餐价格，不开放购买或模拟支付。') }}
-<div class="account-section"><div><h2>积分账户</h2><p>账户接入后展示会员积分、体验积分与购买积分。</p></div><span class="neutral-status">尚未接入</span></div>
-<div class="account-section"><div><h2>积分流水</h2><p>费用确认、冻结、实际结算与退回均应保留独立记录。</p></div><span class="muted small-text">暂无可读取的流水</span></div>
-<div class="account-section"><div><h2>会员与套餐</h2><p>开通状态、有效周期和续费操作将在账户服务接入后呈现。</p></div><span class="neutral-status">尚未接入</span></div>
-<div class="account-section"><div><h2>订单记录</h2><p>订单确认与支付结果页将在模拟支付流程实现后开放。</p></div><span class="muted small-text">暂无订单</span></div>
+<section class="business-page-heading"><div><h1>积分与会员</h1><p>每次冻结、结算和释放都有独立记录。</p></div></section>
+<section class="account-section"><h2>积分账户</h2><p>可用 {{ balance.available if balance else 0 }} · 冻结 {{ balance.frozen if balance else 0 }}</p></section>
+<section class="account-section"><h2>积分流水</h2><div>{% for item in entries %}<p>{{ item.created_at.strftime('%Y-%m-%d %H:%M') }} UTC · {{ {'freeze':'冻结','settle':'结算','release':'释放','grant':'发放'}.get(item.kind, item.kind) }} · 可用变动 {{ item.available_delta }} · 冻结变动 {{ item.frozen_delta }}</p>{% else %}<p>尚无积分流水。未确认的费用预估不会扣费。</p>{% endfor %}</div></section>
+<p class="small-text muted">会员购买与支付尚未开放。本页不提供真实支付或自动充值。</p>

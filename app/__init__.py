@@ -30,6 +30,18 @@ def create_app(overrides: dict | None = None) -> Flask:
     from app.web.routes import web
 
     app.register_blueprint(web)
+    from app.web.career import career_web
+
+    app.register_blueprint(career_web)
+    from app.web.diagnosis import diagnosis_web
+
+    app.register_blueprint(diagnosis_web)
+    from app.web.imports import imports_web
+
+    app.register_blueprint(imports_web)
+    from app.web.admin import admin_web
+
+    app.register_blueprint(admin_web)
     register_commands(app)
 
     @app.before_request
@@ -41,6 +53,10 @@ def create_app(overrides: dict | None = None) -> Flask:
         from app.services.auth import resolve_session
 
         g.user = resolve_session(request.cookies.get("cf_session", ""))
+        if g.user and request.method == "POST" and request.path.startswith("/api/"):
+            from app.services.infrastructure import rate_limit
+
+            rate_limit("business-write", str(g.user.id), 240, 60)
 
     csrf.init_app(app)
 
@@ -62,10 +78,13 @@ def create_app(overrides: dict | None = None) -> Flask:
             response.headers["Cache-Control"] = "no-store"
         return response
 
-    def error_response(message: str, status: int):
+    def error_response(message: str, status: int, field_errors=None):
         db.session.rollback()
         if request.is_json or request.path.startswith("/health/"):
-            return {"error": message, "request_id": getattr(g, "request_id", "")}, status
+            body = {"error": message, "request_id": getattr(g, "request_id", "")}
+            if field_errors:
+                body["fields"] = field_errors
+            return body, status
         return render_template("error.html", message=message, status=status), status
 
     @app.errorhandler(BusinessError)
@@ -74,8 +93,27 @@ def create_app(overrides: dict | None = None) -> Flask:
 
     @app.errorhandler(ValidationError)
     def validation_error(error):
-        fields = ", ".join(sorted({str(item["loc"][0]) for item in error.errors()}))
-        return error_response(f"请检查填写内容：{fields}", 422)
+        fields = ", ".join(
+            sorted({str(item["loc"][0]) if item["loc"] else "表单" for item in error.errors()})
+        )
+        labels = {
+            "email": "邮箱",
+            "password": "密码",
+            "current_password": "当前密码",
+            "new_password": "新密码",
+            "confirm_password": "确认密码",
+            "display_name": "称呼",
+            "code": "验证码",
+            "title": "名称",
+            "document": "简历内容",
+            "description": "岗位描述",
+        }
+        errors = {
+            str(item["loc"][0]): f"请检查{labels.get(str(item['loc'][0]), '该字段')}的格式与长度。"
+            for item in error.errors()
+            if item["loc"]
+        }
+        return error_response(f"请检查填写内容：{fields}", 422, errors)
 
     @app.errorhandler(SQLAlchemyError)
     def database_error(error):

@@ -23,7 +23,13 @@ def config():
 
 @pytest.fixture
 def app(config):
-    return create_app(config)
+    application = create_app(config)
+    yield application
+    from app.extensions import db
+
+    with application.app_context():
+        db.session.remove()
+        db.engine.dispose()
 
 
 @pytest.fixture
@@ -43,7 +49,13 @@ def mysql_app(config):
             "MAIL_PORT": 1026,
         }
     )
-    return create_app(config)
+    application = create_app(config)
+    yield application
+    from app.extensions import db
+
+    with application.app_context():
+        db.session.remove()
+        db.engine.dispose()
 
 
 @pytest.fixture

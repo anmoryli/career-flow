@@ -22,13 +22,32 @@
     ]
   },
   {
+    "name": "anyio",
+    "version": "4.15.1",
+    "license": "MIT",
+    "project_urls": [
+      "Documentation, https://anyio.readthedocs.io/en/latest/",
+      "Changelog, https://anyio.readthedocs.io/en/stable/versionhistory.html",
+      "Source code, https://github.com/agronholm/anyio",
+      "Issue tracker, https://github.com/agronholm/anyio/issues"
+    ]
+  },
+  {
     "name": "blinker",
     "version": "1.9.0",
-    "license": "UNSPECIFIED",
+    "license": "See distribution license files",
     "project_urls": [
       "Chat, https://discord.gg/pallets",
       "Documentation, https://blinker.readthedocs.io",
       "Source, https://github.com/pallets-eco/blinker/"
+    ]
+  },
+  {
+    "name": "certifi",
+    "version": "2026.10.19",
+    "license": "MPL-2.0",
+    "project_urls": [
+      "Source, https://github.com/certifi/python-certifi"
     ]
   },
   {
@@ -42,6 +61,17 @@
       "Contact, https://groups.google.com/forum/#!forum/python-cffi",
       "Source Code, https://github.com/python-cffi/cffi",
       "Issue Tracker, https://github.com/python-cffi/cffi/issues"
+    ]
+  },
+  {
+    "name": "charset-normalizer",
+    "version": "3.5.2",
+    "license": "MIT",
+    "project_urls": [
+      "Changelog, https://github.com/jawah/charset_normalizer/blob/master/CHANGELOG.md",
+      "Documentation, https://charset-normalizer.readthedocs.io/",
+      "Code, https://github.com/jawah/charset_normalizer",
+      "Issue tracker, https://github.com/jawah/charset_normalizer/issues"
     ]
   },
   {
@@ -94,7 +124,7 @@
     "project_urls": []
   },
   {
-    "name": "Flask",
+    "name": "flask",
     "version": "3.1.3",
     "license": "BSD-3-Clause",
     "project_urls": [
@@ -106,7 +136,7 @@
     ]
   },
   {
-    "name": "Flask-Migrate",
+    "name": "flask-migrate",
     "version": "4.1.0",
     "license": "MIT",
     "project_urls": [
@@ -115,9 +145,9 @@
     ]
   },
   {
-    "name": "Flask-SQLAlchemy",
+    "name": "flask-sqlalchemy",
     "version": "3.1.1",
-    "license": "UNSPECIFIED",
+    "license": "See distribution license files",
     "project_urls": [
       "Changes, https://flask-sqlalchemy.palletsprojects.com/changes/",
       "Chat, https://discord.gg/pallets",
@@ -128,7 +158,7 @@
     ]
   },
   {
-    "name": "Flask-WTF",
+    "name": "flask-wtf",
     "version": "1.3.0",
     "license": "Copyright 2010 WTForms\n\nRedistribution and use in source and binary forms, with or without\nmodification, are permitted provided that the following conditions are\nmet:\n\n1.  Redistributions of source code must retain the above copyright\n    notice, this list of conditions and the following disclaimer.\n\n2.  Redistributions in binary form must reproduce the above copyright\n    notice, this list of conditions and the following disclaimer in the\n    documentation and/or other materials provided with the distribution.\n\n3.  Neither the name of the copyright holder nor the names of its\n    contributors may be used to endorse or promote products derived from\n    this software without specific prior written permission.\n\nTHIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS\n\"AS IS\" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT\nLIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A\nPARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT\nHOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,\nSPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED\nTO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR\nPROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF\nLIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING\nNEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS\nSOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.",
     "project_urls": [
@@ -137,6 +167,16 @@
       "Source Code, https://github.com/pallets-eco/flask-wtf/",
       "Issue Tracker, https://github.com/pallets-eco/flask-wtf/issues/",
       "Chat, https://discord.gg/pallets"
+    ]
+  },
+  {
+    "name": "genai-prices",
+    "version": "0.0.73",
+    "license": "MIT",
+    "project_urls": [
+      "Homepage, https://github.com/pydantic/genai-prices",
+      "Source, https://github.com/pydantic/genai-prices",
+      "Changelog, https://github.com/pydantic/genai-prices/releases"
     ]
   },
   {
@@ -152,6 +192,21 @@
     ]
   },
   {
+    "name": "griffelib",
+    "version": "2.4.1",
+    "license": "ISC",
+    "project_urls": [
+      "Homepage, https://mkdocstrings.github.io/griffe",
+      "Documentation, https://mkdocstrings.github.io/griffe",
+      "Changelog, https://mkdocstrings.github.io/griffe/changelog",
+      "Repository, https://github.com/mkdocstrings/griffe",
+      "Issues, https://github.com/mkdocstrings/griffe/issues",
+      "Discussions, https://github.com/mkdocstrings/griffe/discussions",
+      "Gitter, https://gitter.im/mkdocstrings/griffe",
+      "Funding, https://github.com/sponsors/pawamoy"
+    ]
+  },
+  {
     "name": "gunicorn",
     "version": "23.0.0",
     "license": "MIT",
@@ -161,6 +216,53 @@
       "Issue tracker, https://github.com/benoitc/gunicorn/issues",
       "Source code, https://github.com/benoitc/gunicorn",
       "Changelog, https://docs.gunicorn.org/en/stable/news.html"
+    ]
+  },
+  {
+    "name": "h11",
+    "version": "0.16.0",
+    "license": "MIT",
+    "project_urls": []
+  },
+  {
+    "name": "httpcore",
+    "version": "1.0.9",
+    "license": "BSD-3-Clause",
+    "project_urls": [
+      "Documentation, https://www.encode.io/httpcore",
+      "Homepage, https://www.encode.io/httpcore/",
+      "Source, https://github.com/encode/httpcore"
+    ]
+  },
+  {
+    "name": "httpcore2",
+    "version": "2.16.0",
+    "license": "BSD-3-Clause",
+    "project_urls": [
+      "Changelog, https://github.com/pydantic/httpx2/blob/main/src/httpcore2/CHANGELOG.md",
+      "Homepage, https://github.com/pydantic/httpx2",
+      "Source, https://github.com/pydantic/httpx2/blob/main/src/httpcore2"
+    ]
+  },
+  {
+    "name": "httpx",
+    "version": "0.28.1",
+    "license": "BSD-3-Clause",
+    "project_urls": [
+      "Changelog, https://github.com/encode/httpx/blob/master/CHANGELOG.md",
+      "Documentation, https://www.python-httpx.org",
+      "Homepage, https://github.com/encode/httpx",
+      "Source, https://github.com/encode/httpx"
+    ]
+  },
+  {
+    "name": "httpx2",
+    "version": "2.16.0",
+    "license": "BSD-3-Clause",
+    "project_urls": [
+      "Changelog, https://github.com/pydantic/httpx2/blob/main/src/httpx2/CHANGELOG.md",
+      "Homepage, https://github.com/pydantic/httpx2",
+      "Source, https://github.com/pydantic/httpx2"
     ]
   },
   {
@@ -176,7 +278,7 @@
   {
     "name": "itsdangerous",
     "version": "2.2.0",
-    "license": "UNSPECIFIED",
+    "license": "See distribution license files",
     "project_urls": [
       "Changes, https://itsdangerous.palletsprojects.com/changes/",
       "Chat, https://discord.gg/pallets",
@@ -186,9 +288,9 @@
     ]
   },
   {
-    "name": "Jinja2",
+    "name": "jinja2",
     "version": "3.1.6",
-    "license": "UNSPECIFIED",
+    "license": "See distribution license files",
     "project_urls": [
       "Changes, https://jinja.palletsprojects.com/changes/",
       "Chat, https://discord.gg/pallets",
@@ -198,7 +300,19 @@
     ]
   },
   {
-    "name": "Mako",
+    "name": "jiter",
+    "version": "0.18.0",
+    "license": "MIT",
+    "project_urls": []
+  },
+  {
+    "name": "logfire-api",
+    "version": "5.3.0",
+    "license": "MIT",
+    "project_urls": []
+  },
+  {
+    "name": "mako",
     "version": "1.4.3",
     "license": "MIT",
     "project_urls": [
@@ -208,7 +322,7 @@
     ]
   },
   {
-    "name": "MarkupSafe",
+    "name": "markupsafe",
     "version": "3.0.4",
     "license": "BSD-3-Clause",
     "project_urls": [
@@ -220,12 +334,59 @@
     ]
   },
   {
+    "name": "openai",
+    "version": "3.37.0",
+    "license": "Apache-2.0",
+    "project_urls": [
+      "Homepage, https://github.com/openai/openai-python",
+      "Repository, https://github.com/openai/openai-python"
+    ]
+  },
+  {
+    "name": "opentelemetry-api",
+    "version": "1.45.1",
+    "license": "Apache-2.0",
+    "project_urls": [
+      "Homepage, https://github.com/open-telemetry/opentelemetry-python/tree/main/opentelemetry-api",
+      "Repository, https://github.com/open-telemetry/opentelemetry-python"
+    ]
+  },
+  {
     "name": "packaging",
     "version": "26.3",
     "license": "Apache-2.0 OR BSD-2-Clause",
     "project_urls": [
       "Documentation, https://packaging.pypa.io/",
       "Source, https://github.com/pypa/packaging"
+    ]
+  },
+  {
+    "name": "pdfminer-six",
+    "version": "20260107",
+    "license": "MIT",
+    "project_urls": [
+      "Homepage, https://github.com/pdfminer/pdfminer.six"
+    ]
+  },
+  {
+    "name": "pdfplumber",
+    "version": "0.11.10",
+    "license": "See distribution license files",
+    "project_urls": []
+  },
+  {
+    "name": "pillow",
+    "version": "13.0.0",
+    "license": "MIT-CMU",
+    "project_urls": [
+      "Release notes, https://pillow.readthedocs.io/en/stable/releasenotes/index.html",
+      "Changelog, https://github.com/python-pillow/Pillow/releases",
+      "Documentation, https://pillow.readthedocs.io",
+      "Funding, https://tidelift.com/lifter/search/pypi/pillow",
+      "Homepage, https://python-pillow.org",
+      "Mastodon, https://fosstodon.org/@pillow",
+      "Security, https://pillow.readthedocs.io/en/stable/handbook/security.html",
+      "Source, https://github.com/python-pillow/Pillow"
     ]
   },
   {
@@ -249,7 +410,18 @@
     ]
   },
   {
-    "name": "pydantic_core",
+    "name": "pydantic-ai-slim",
+    "version": "1.107.9",
+    "license": "MIT",
+    "project_urls": [
+      "Homepage, https://github.com/pydantic/pydantic-ai/tree/main/pydantic_ai_slim",
+      "Source, https://github.com/pydantic/pydantic-ai/tree/main/pydantic_ai_slim",
+      "Documentation, https://ai.pydantic.dev/install/#slim-install",
+      "Changelog, https://github.com/pydantic/pydantic-ai/releases"
+    ]
+  },
+  {
+    "name": "pydantic-core",
     "version": "2.50.1",
     "license": "MIT",
     "project_urls": [
@@ -259,13 +431,35 @@
     ]
   },
   {
-    "name": "PyMySQL",
+    "name": "pydantic-graph",
+    "version": "1.107.9",
+    "license": "MIT",
+    "project_urls": [
+      "Homepage, https://ai.pydantic.dev/graph/tree/main/pydantic_graph",
+      "Source, https://github.com/pydantic/pydantic-ai",
+      "Documentation, https://ai.pydantic.dev/graph",
+      "Changelog, https://github.com/pydantic/pydantic-ai/releases"
+    ]
+  },
+  {
+    "name": "pymysql",
     "version": "1.2.3",
     "license": "MIT",
     "project_urls": [
       "Project, https://github.com/PyMySQL/PyMySQL",
       "Documentation, https://pymysql.readthedocs.io/",
       "Changelog, https://github.com/PyMySQL/PyMySQL/blob/main/CHANGELOG.md"
+    ]
+  },
+  {
+    "name": "pypdfium2",
+    "version": "5.14.0",
+    "license": "BSD-3-Clause, Apache-2.0, dependency licenses",
+    "project_urls": [
+      "Source, https://github.com/pypdfium2-team/pypdfium2",
+      "Tracker, https://github.com/pypdfium2-team/pypdfium2/issues",
+      "Documentation, https://pypdfium2.readthedocs.io",
+      "Changelog, https://pypdfium2.readthedocs.io/en/stable/changelog.html"
     ]
   },
   {
@@ -298,6 +492,23 @@
     ]
   },
   {
+    "name": "regex",
+    "version": "2026.9.29",
+    "license": "Apache-2.0 AND CNRI-Python",
+    "project_urls": [
+      "Homepage, https://github.com/mrabarnett/mrab-regex"
+    ]
+  },
+  {
+    "name": "requests",
+    "version": "2.34.2",
+    "license": "Apache-2.0",
+    "project_urls": [
+      "Documentation, https://requests.readthedocs.io",
+      "Source, https://github.com/psf/requests"
+    ]
+  },
+  {
     "name": "rq",
     "version": "2.12.0",
     "license": "BSD-2-Clause",
@@ -315,12 +526,54 @@
     "project_urls": []
   },
   {
-    "name": "SQLAlchemy",
+    "name": "sniffio",
+    "version": "1.3.1",
+    "license": "MIT OR Apache-2.0",
+    "project_urls": [
+      "Homepage, https://github.com/python-trio/sniffio",
+      "Documentation, https://sniffio.readthedocs.io/",
+      "Changelog, https://sniffio.readthedocs.io/en/latest/history.html"
+    ]
+  },
+  {
+    "name": "sqlalchemy",
     "version": "2.0.55",
     "license": "MIT",
     "project_urls": [
       "Documentation, https://docs.sqlalchemy.org",
       "Issue Tracker, https://github.com/sqlalchemy/sqlalchemy/"
+    ]
+  },
+  {
+    "name": "tiktoken",
+    "version": "0.14.0",
+    "license": "MIT License\n\nCopyright (c) 2022 OpenAI, Shantanu Jain\n\nPermission is hereby granted, free of charge, to any person obtaining a copy\nof this software and associated documentation files (the \"Software\"), to deal\nin the Software without restriction, including without limitation the rights\nto use, copy, modify, merge, publish, distribute, sublicense, and/or sell\ncopies of the Software, and to permit persons to whom the Software is\nfurnished to do so, subject to the following conditions:\n\nThe above copyright notice and this permission notice shall be included in all\ncopies or substantial portions of the Software.\n\nTHE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR\nIMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,\nFITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE\nAUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER\nLIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,\nOUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE\nSOFTWARE.\n",
+    "project_urls": [
+      "homepage, https://github.com/openai/tiktoken",
+      "repository, https://github.com/openai/tiktoken",
+      "changelog, https://github.com/openai/tiktoken/blob/main/CHANGELOG.md"
+    ]
+  },
+  {
+    "name": "truststore",
+    "version": "0.10.5",
+    "license": "MIT",
+    "project_urls": [
+      "Documentation, https://truststore.readthedocs.io",
+      "Source, https://github.com/sethmlarson/truststore"
+    ]
+  },
+  {
+    "name": "typing-extensions",
+    "version": "4.16.0",
+    "license": "PSF-2.0",
+    "project_urls": [
+      "Bug Tracker, https://github.com/python/typing_extensions/issues",
+      "Changes, https://github.com/python/typing_extensions/blob/main/CHANGELOG.md",
+      "Documentation, https://typing-extensions.readthedocs.io/",
+      "Home, https://github.com/python/typing_extensions",
+      "Q & A, https://github.com/python/typing/discussions",
+      "Repository, https://github.com/python/typing_extensions"
     ]
   },
   {
@@ -335,20 +588,19 @@
     ]
   },
   {
-    "name": "typing_extensions",
-    "version": "4.16.0",
-    "license": "PSF-2.0",
+    "name": "urllib3",
+    "version": "2.8.0",
+    "license": "MIT",
     "project_urls": [
-      "Bug Tracker, https://github.com/python/typing_extensions/issues",
-      "Changes, https://github.com/python/typing_extensions/blob/main/CHANGELOG.md",
-      "Documentation, https://typing-extensions.readthedocs.io/",
-      "Home, https://github.com/python/typing_extensions",
-      "Q & A, https://github.com/python/typing/discussions",
-      "Repository, https://github.com/python/typing_extensions"
+      "Changelog, https://github.com/urllib3/urllib3/blob/main/CHANGES.rst",
+      "Documentation, https://urllib3.readthedocs.io",
+      "Code, https://github.com/urllib3/urllib3",
+      "Issue tracker, https://github.com/urllib3/urllib3/issues",
+      "Security policy, https://urllib3.readthedocs.io/en/latest/security.html"
     ]
   },
   {
-    "name": "Werkzeug",
+    "name": "werkzeug",
     "version": "3.1.9",
     "license": "BSD-3-Clause",
     "project_urls": [
@@ -360,7 +612,7 @@
     ]
   },
   {
-    "name": "WTForms",
+    "name": "wtforms",
     "version": "3.2.2",
     "license": "Copyright 2008 WTForms\n\nRedistribution and use in source and binary forms, with or without\nmodification, are permitted provided that the following conditions are\nmet:\n\n1.  Redistributions of source code must retain the above copyright\n    notice, this list of conditions and the following disclaimer.\n\n2.  Redistributions in binary form must reproduce the above copyright\n    notice, this list of conditions and the following disclaimer in the\n    documentation and/or other materials provided with the distribution.\n\n3.  Neither the name of the copyright holder nor the names of its\n    contributors may be used to endorse or promote products derived from\n    this software without specific prior written permission.\n\nTHIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS\n\"AS IS\" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT\nLIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A\nPARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT\nHOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,\nSPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED\nTO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR\nPROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF\nLIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING\nNEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS\nSOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.",
     "project_urls": [

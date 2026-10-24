@@ -1,6 +1,6 @@
 from datetime import UTC, datetime
 
-from sqlalchemy import JSON, ForeignKey, String, Text, UniqueConstraint
+from sqlalchemy import JSON, Boolean, ForeignKey, String, Text, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.extensions import db
@@ -23,6 +23,7 @@ class User(db.Model):
     email: Mapped[str] = mapped_column(String(254), unique=True)
     display_name: Mapped[str] = mapped_column(String(80))
     theme: Mapped[str] = mapped_column(String(10), default="system")
+    is_admin: Mapped[bool] = mapped_column(Boolean, default=False, server_default="0")
     created_at: Mapped[datetime] = mapped_column(default=utcnow)
 
 
@@ -46,6 +47,16 @@ class UserSession(db.Model):
 
 class EmailVerificationCode(db.Model):
     __tablename__ = "email_verification_codes"
+    __table_args__ = TABLE_OPTIONS
+    id: Mapped[int] = mapped_column(primary_key=True)
+    email: Mapped[str] = mapped_column(String(254), unique=True)
+    code_hash: Mapped[str] = mapped_column(String(64))
+    attempts: Mapped[int] = mapped_column(default=0)
+    expires_at: Mapped[datetime]
+
+
+class PasswordResetCode(db.Model):
+    __tablename__ = "password_reset_codes"
     __table_args__ = TABLE_OPTIONS
     id: Mapped[int] = mapped_column(primary_key=True)
     email: Mapped[str] = mapped_column(String(254), unique=True)
@@ -90,3 +101,16 @@ class ConversationMemory(db.Model):
     value: Mapped[dict] = mapped_column(JSON)
     provenance: Mapped[str] = mapped_column(String(24), default="user_confirmed")
     updated_at: Mapped[datetime] = mapped_column(default=utcnow, onupdate=utcnow)
+
+
+from app.models.admin import ActiveConfig, AdminAudit, ConfigRevision  # noqa: E402, F401
+from app.models.career import JobTarget, Resume, ResumeVersion  # noqa: E402, F401
+from app.models.diagnosis import (  # noqa: E402, F401
+    AIOperation,
+    CreditAccount,
+    CreditEntry,
+    Diagnostic,
+    DiagnosticAnswer,
+)
+from app.models.imports import ResumeImport  # noqa: E402, F401
+from app.models.interactions import StructuredInteraction  # noqa: E402, F401

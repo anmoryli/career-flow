@@ -7,11 +7,14 @@ from sqlalchemy import delete, func, select
 from app.extensions import db
 from app.models import Conversation, ConversationMemory, ConversationMessage
 from app.schemas import (
+    AccountDeleteInput,
+    ChangePasswordInput,
     ConversationInput,
     EmailInput,
     LoginInput,
     MemoryInput,
     MessageInput,
+    PasswordResetInput,
     RegisterInput,
     ThemeInput,
 )
@@ -93,6 +96,8 @@ def send_code():
     data = EmailInput.model_validate(input_data())
     rate_limit("code-email", data.email, 1, 60)
     auth.send_registration_code(data.email)
+    if request.is_json:
+        return {"message": "若邮箱可以注册，验证码已发送，请检查收件箱。", "retry_after": 60}
     flash("若邮箱可以注册，验证码已发送，请检查收件箱。", "success")
     return redirect(url_for("web.register"), code=303)
 
@@ -105,6 +110,36 @@ def login():
     data = LoginInput.model_validate(input_data())
     rate_limit("login-email", data.email, 10, 600)
     return set_session(auth.authenticate(data.email, data.password))
+
+
+@web.get("/password/reset")
+def password_reset_page():
+    return render_template("password_reset.html")
+
+
+@web.post("/password/reset/code")
+def password_reset_code():
+    rate_limit("reset-ip", request.remote_addr or "unknown", 10, 600)
+    data = EmailInput.model_validate(input_data())
+    rate_limit("reset-email", data.email, 1, 60)
+    auth.send_password_reset_code(data.email)
+    message = "如果该邮箱已有账号，验证码已发送，请检查收件箱。"
+    if request.is_json:
+        return {"message": message, "retry_after": 60}
+    flash(message, "success")
+    return redirect(url_for("web.password_reset_page"), code=303)
+
+
+@web.post("/password/reset")
+def password_reset_submit():
+    rate_limit("reset-confirm-ip", request.remote_addr or "unknown", 20, 600)
+    data = PasswordResetInput.model_validate(input_data())
+    auth.reset_password(data)
+    session.clear()
+    response = redirect(url_for("web.login"), code=303)
+    response.delete_cookie("cf_session", httponly=True, samesite="Lax")
+    flash("密码已重置，请重新登录。", "success")
+    return response
 
 
 @web.post("/logout")
@@ -120,6 +155,41 @@ def logout():
 @web.get("/workspace")
 @login_required
 def workspace():
+    from app.models import AIOperation, CreditAccount, CreditEntry, Diagnostic, JobTarget, Resume
+    from app.services.career import owned, serialize_resume
+
+    resumes = db.session.scalars(
+        select(Resume)
+        .where(Resume.user_id == g.user.id)
+        .order_by(Resume.updated_at.desc())
+        .limit(100)
+    ).all()
+    jobs = db.session.scalars(
+        select(JobTarget)
+        .where(JobTarget.user_id == g.user.id)
+        .order_by(JobTarget.id.desc())
+        .limit(100)
+    ).all()
+    resume_id = request.args.get("resume_id", type=int)
+    current_resume = serialize_resume(owned(Resume, g.user.id, resume_id)) if resume_id else None
+    reports = db.session.execute(
+        select(AIOperation, Diagnostic)
+        .join(Diagnostic, AIOperation.diagnostic_id == Diagnostic.id)
+        .where(
+            AIOperation.user_id == g.user.id,
+            AIOperation.kind == "report",
+            AIOperation.state == "succeeded",
+        )
+        .order_by(AIOperation.id.desc())
+        .limit(100)
+    ).all()
+    balance = db.session.get(CreditAccount, g.user.id)
+    entries = db.session.scalars(
+        select(CreditEntry)
+        .where(CreditEntry.user_id == g.user.id)
+        .order_by(CreditEntry.id.desc())
+        .limit(100)
+    ).all()
     conversations = db.session.scalars(
         select(Conversation)
         .where(
@@ -135,7 +205,17 @@ def workspace():
             Conversation.user_id == g.user.id,
         )
     )
-    return render_template("workspace.html", conversations=conversations, count=count)
+    return render_template(
+        "workspace.html",
+        conversations=conversations,
+        count=count,
+        resumes=resumes,
+        jobs=jobs,
+        current_resume=current_resume,
+        reports=reports,
+        balance=balance,
+        entries=entries,
+    )
 
 
 @web.post("/settings/theme")
@@ -154,6 +234,30 @@ def revoke_sessions():
     session.clear()
     response = redirect(url_for("web.login"), code=303)
     response.delete_cookie("cf_session")
+    return response
+
+
+@web.post("/settings/password")
+@login_required
+def change_password():
+    rate_limit("password-change", str(g.user.id), 5, 600)
+    auth.change_password(g.user.id, ChangePasswordInput.model_validate(input_data()))
+    session.clear()
+    response = redirect(url_for("web.login"), code=303)
+    response.delete_cookie("cf_session", httponly=True, samesite="Lax")
+    flash("密码已更新，请重新登录。", "success")
+    return response
+
+
+@web.post("/settings/delete")
+@login_required
+def delete_account():
+    rate_limit("account-delete", str(g.user.id), 3, 600)
+    auth.delete_account(g.user.id, AccountDeleteInput.model_validate(input_data()))
+    session.clear()
+    response = redirect(url_for("web.home"), code=303)
+    response.delete_cookie("cf_session", httponly=True, samesite="Lax")
+    flash("账号与全部个人数据已永久删除。", "success")
     return response
 
 
@@ -216,7 +320,11 @@ def memory(conversation_id):
 @web.post("/conversations/<int:conversation_id>/delete")
 @login_required
 def delete_conversation(conversation_id):
+    from app.models import Diagnostic
+
     item = owned_conversation(g.user.id, conversation_id, lock=True)
+    if db.session.scalar(select(Diagnostic.id).where(Diagnostic.conversation_id == item.id)):
+        raise BusinessError("此记录关联岗位诊断，不能单独删除。", 409)
     if request.form.get("confirm") != "delete":
         raise BusinessError("请确认永久删除此对话。")
     db.session.execute(delete(Conversation).where(Conversation.id == item.id))

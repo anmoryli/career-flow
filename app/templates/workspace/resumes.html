@@ -2,18 +2,18 @@
 {% from 'resume/_document.html' import resume_document %}
 {% if view == 'resumes' %}
 <section class="business-page-heading"><div><h1>我的简历</h1><p>将你的经历整理成一份清晰、专业的简历。</p></div><div class="page-actions"><a class="button secondary" href="{{ url_for('web.workspace', view='resume-import') }}">{{ icon('upload') }} 导入 PDF</a><a class="button" href="{{ url_for('web.workspace', view='resume-new') }}">{{ icon('plus') }} 创建简历</a></div></section>
-{{ pending('简历存储服务尚未接入。你可以进入字段编辑、模板预览与打印界面；当前填写不会保存到账号，也不会产生虚构简历记录。') }}
-<section class="list-surface"><div class="list-toolbar"><h2>全部简历</h2><span class="muted small-text">尚无可读取的简历数据</span></div><div class="workspace-empty"><span class="empty-line-icon">{{ icon('file') }}</span><h3>把下一次机会，写进简历里</h3><p>从空白简历开始整理，或选择一份已有的 PDF。</p><div class="empty-actions"><a class="button" href="{{ url_for('web.workspace', view='resume-new') }}">创建简历 {{ icon('arrow') }}</a><a class="button secondary" href="{{ url_for('web.workspace', view='resume-import') }}">导入 PDF</a></div></div></section>
+<p class="small-text muted">草稿保存到账号，可复制岗位版本并查看历史。</p>
+<section class="list-surface"><div class="list-toolbar"><h2>全部简历</h2></div>
+{% for item in resumes %}<article class="recent-row"><div class="recent-record-copy"><strong>{{ item.title }}</strong><small>第 {{ item.revision }} 版 · {{ item.updated_at.strftime('%Y-%m-%d %H:%M') }} UTC</small></div><a class="button secondary" href="{{ url_for('web.workspace', view='resume-new', resume_id=item.id) }}">继续编辑</a><a class="subtle-link" href="{{ url_for('web.workspace', view='jobs', resume_id=item.id) }}">分析岗位</a><button type="button" data-copy-resume="{{ item.id }}">复制版本</button><button type="button" data-delete-resume="{{ item.id }}">删除</button></article>{% else %}<div class="workspace-empty"><h3>创建第一份可以持续修改的简历</h3><a class="button" href="{{ url_for('web.workspace', view='resume-new') }}">创建简历</a></div>{% endfor %}<p data-list-feedback role="status"></p></section>
 
 {% elif view == 'resume-import' %}
 <section class="business-page-heading"><div><h1>导入简历</h1><p>选择已有的 PDF，准备整理为可编辑的结构化简历。</p></div><a class="subtle-link" href="{{ url_for('web.workspace', view='resumes') }}">返回我的简历</a></section>
-{{ pending('PDF 上传与解析服务尚未接入。此处仅选择并检查本地文件；文件不会发送至服务器，解析、照片提取与账号保存尚未开放。') }}
-<section class="import-panel"><label class="file-drop" for="resume-file">{{ icon('upload') }}<strong>选择一份 PDF 简历</strong><span>支持点击选择；文件仍保留在你的设备上</span><input id="resume-file" type="file" accept="application/pdf,.pdf"><span class="button secondary">选择 PDF 文件</span></label><div class="file-selection" id="file-selection" role="status" hidden></div><button class="button" type="button" disabled aria-describedby="import-status">开始解析</button><p id="import-status" class="small-text muted">等待 PDF 解析服务接入后开放。</p></section>
+<p class="small-text muted">支持不超过 4 MB、20 页的文字 PDF。提取后先核对再保存；原始文件处理后删除。扫描件 OCR 和照片提取尚未开放。</p>
+<section class="import-panel"><label class="file-drop" for="resume-file">{{ icon('upload') }}<strong>选择一份 PDF 简历</strong><span>选择文件后，点击上传解析</span><input id="resume-file" type="file" accept="application/pdf,.pdf"><span class="button secondary">选择 PDF 文件</span></label><div class="file-selection" id="file-selection" role="status" hidden></div><button class="button" type="button" data-upload-pdf>上传并解析文字</button></section>
 
 {% elif view == 'optimize' %}
 <section class="business-page-heading"><div><h1>针对岗位，优化简历</h1><p>先选择已有简历，再围绕岗位要求逐条完善，不覆盖基础简历。</p></div></section>
-{{ pending('当前没有可读取的简历或已确认岗位。优化服务尚未接入，不会生成候选内容或扣除积分。') }}
-<section class="flow-start"><div class="step-number">1</div><div><h2>选择要优化的简历</h2><p>先整理一份基础简历，再开始针对性的优化。</p><div class="empty-actions"><a class="button" href="{{ url_for('web.workspace', view='resume-new') }}">创建简历 {{ icon('arrow') }}</a><a class="subtle-link" href="{{ url_for('web.workspace', view='resume-import') }}">导入 PDF</a></div></div></section>
+<section class="flow-start"><div><h2>选择目标岗位</h2><p>诊断后逐条核实并采纳建议，保存为岗位版本，原始简历继续保留。</p>{% for item in jobs %}<p><a href="{{ url_for('diagnosis.detail', job_id=item.id) }}">{{ item.title or '未命名岗位' }} · {{ item.company }} → 继续优化</a></p>{% else %}<a class="button" href="{{ url_for('web.workspace', view='jobs') }}">先添加目标岗位</a>{% endfor %}</div></section>
 
 {% else %}
 {% set draft = {
@@ -58,28 +58,28 @@
   'certificates':['PMP 项目管理专业人士','数据分析专项课程结业'],
   'languages':['中文（母语）','英语（工作沟通）']
 } %}
-<section class="business-page-heading editor-heading"><div><h1>创建简历</h1><p><span id="resume-draft-status">空白草稿 · 尚未保存</span> · 编辑结构化字段，选择模板并实时预览</p></div><div class="page-actions"><button class="button secondary" type="button" data-editor-preview>{{ icon('eye') }} 查看预览</button><button class="button secondary" type="button" data-print-resume>{{ icon('download') }} 打印 / 导出 PDF</button><button class="button" type="button" disabled aria-describedby="editor-availability">保存简历</button></div></section>
-<div id="editor-availability">{{ pending('当前填写仅保留在本页，不写入账号。简历保存、版本历史和账号级 PDF 服务尚未接入；打印按钮使用浏览器 A4 打印，可直接另存为 PDF。') }}</div>
+<section class="business-page-heading editor-heading"><div><h1>创建简历</h1><p><span id="resume-draft-status">空白草稿 · 尚未保存</span> · 编辑结构化字段，选择模板并实时预览</p></div><div class="page-actions"><button class="button secondary" type="button" data-editor-preview>{{ icon('eye') }} 查看预览</button><button class="button secondary" type="button" data-print-resume>{{ icon('download') }} 打印 / 导出 PDF</button><button class="button" type="button" data-save-resume aria-describedby="editor-availability">保存简历</button></div></section>
+<div id="editor-availability"><p class="small-text muted">填写后自动保存到账号。保存失败时请保留页面并重试；打印使用浏览器 A4 打印。</p><label>简历名称<input id="resume-title" maxlength="120" value="未命名简历"></label><button type="button" data-version-history>版本历史</button><div id="version-history" hidden></div></div>
 <div class="sample-banner" role="note">
   <span class="sample-banner-icon">{{ icon('spark') }}</span>
   <p><strong>模板预览提供虚构示例</strong>，仅用于参考排版与写法。左侧字段保持空白，提示文字不会写入简历；开始填写后自动预览你的内容，也可随时切回示例。</p>
   <button class="button secondary small" type="button" data-clear-sample>清空我的填写</button>
 </div>
 
-<div class="resume-editor" data-resume-editor data-editor-view="edit">
+<div class="resume-editor" data-resume-editor data-editor-view="edit" data-saved='{{ (current_resume or none)|tojson }}'>
   <div class="editor-mobile-tabs" role="group" aria-label="简历视图"><button type="button" class="is-active" data-editor-tab="edit" aria-pressed="true">编辑</button><button type="button" data-editor-tab="preview" aria-pressed="false">预览</button></div>
   <section class="resume-fields" aria-label="简历字段编辑">
     <div class="editor-section-nav"><a href="#resume-basics">基本信息</a><a href="#resume-summary-section">简介</a><a href="#resume-experience">经历</a><a href="#resume-projects">项目</a><a href="#resume-education">教育</a><a href="#resume-skills">技能</a><a href="#resume-template">模板</a></div>
 
-    <section class="resume-photo-editor" aria-labelledby="photo-editor-heading">
-      <div class="photo-editor-heading"><div><h2 id="photo-editor-heading">个人照片</h2><p>三套模板均有专属照片位，选择后立即同步。</p></div><span class="photo-local-tag">本页使用</span></div>
+    <details class="resume-photo-editor" aria-labelledby="photo-editor-heading"><summary>个人照片（选填）</summary>
+      <div class="photo-editor-heading"><div><h2 id="photo-editor-heading">个人照片</h2><p>三套模板均有专属照片位，选择后立即同步。</p></div><span class="photo-local-tag">随简历保存</span></div>
       <div class="photo-editor-body">
         <div class="photo-control-preview"><img data-photo-control-image alt="已选择的个人照片" hidden><span data-photo-control-placeholder>{{ icon('file') }}<small>照片预览</small></span></div>
         <div class="photo-editor-actions"><label class="button secondary photo-upload-button" for="resume-photo">{{ icon('upload') }} 上传个人照片<input id="resume-photo" type="file" accept="image/jpeg,image/png,image/webp"></label><button type="button" class="photo-remove-button" data-remove-photo disabled>移除照片</button><small>JPG / PNG / WebP · 最大 2.5 MB</small></div>
       </div>
       <label class="photo-alignment-control">照片取景<select id="resume-photo-position" aria-label="照片取景位置"><option value="center">居中</option><option value="top">靠上（保留头部）</option><option value="bottom">靠下</option></select></label>
-      <p class="small-text muted" id="resume-photo-status" role="status">照片仅在本页预览与打印中显示，暂不保存到账号。</p>
-    </section>
+      <p class="small-text muted" id="resume-photo-status" role="status">照片随简历保存到账号，用于预览与打印。</p>
+    </details>
 
     <section id="resume-basics" class="editor-section">
       <div class="work-section-heading"><h2>基本信息</h2><span>01</span></div>
@@ -89,10 +89,11 @@
         <label>手机号码<input id="resume-phone" type="tel" maxlength="40" autocomplete="tel" data-rf-field="phone" placeholder="用于联系的号码"></label>
         <label>邮箱<input id="resume-email" type="email" maxlength="120" autocomplete="email" data-rf-field="email" placeholder="name@example.com"></label>
         <label>所在城市<input id="resume-city" maxlength="60" data-rf-field="city" placeholder="例如：杭州"></label>
+      </div><details><summary>个人网站与社交链接（选填）</summary><div class="field-grid">
         <label>个人网站<input id="resume-website" maxlength="160" data-rf-field="website" placeholder="your.site"></label>
         <label>GitHub<input id="resume-github" maxlength="160" data-rf-field="github" placeholder="github.com/you"></label>
         <label>LinkedIn<input id="resume-linkedin" maxlength="160" data-rf-field="linkedin" placeholder="linkedin.com/in/you"></label>
-      </div>
+      </div></details>
 
     </section>
 
@@ -139,13 +140,14 @@
 
     <section id="resume-education" class="editor-section">
       <div class="work-section-heading"><h2>教育经历</h2><span>05</span></div>
-      {% set e = draft.education[0] %}
+      {% for e in draft.education %}<fieldset class="repeat-block"><legend>教育经历 {{ loop.index }}</legend>
       <div class="field-grid">
-        <label>学校<input maxlength="120" data-rf-field="education.0.school" placeholder="学校名称"></label>
-        <label>学历与专业<input maxlength="120" data-rf-field="education.0.degree" placeholder="专业 · 本科"></label>
-        <label>时间区间<input maxlength="60" data-rf-field="education.0.period" placeholder="2014 — 2018"></label>
-        <label>补充信息<input maxlength="160" data-rf-field="education.0.detail" placeholder="成绩、荣誉或相关课程"></label>
+        <label>学校<input maxlength="120" data-rf-field="education.{{ loop.index0 }}.school" placeholder="学校名称"></label>
+        <label>学历与专业<input maxlength="120" data-rf-field="education.{{ loop.index0 }}.degree" placeholder="专业 · 本科"></label>
+        <label>时间区间<input maxlength="60" data-rf-field="education.{{ loop.index0 }}.period" placeholder="2014 — 2018"></label>
+        <label>补充信息<input maxlength="160" data-rf-field="education.{{ loop.index0 }}.detail" placeholder="成绩、荣誉或相关课程"></label>
       </div>
+      </fieldset>{% endfor %}
     </section>
 
     <section id="resume-skills" class="editor-section">

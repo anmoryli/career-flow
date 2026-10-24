@@ -1,0 +1,46 @@
+{% extends 'base.html' %}
+{% block title %}服务配置 · 职序管理{% endblock %}
+{% block breadcrumb %}服务配置{% endblock %}
+{% block content %}
+<section class="business-page-heading"><div><span class="page-kicker">管理后台</span><h1>服务配置</h1><p>先保存草稿并核对，再确认发布。新请求使用发布版本；密钥只保存在服务端。</p></div></section>
+{% for category, title in [('mail','邮件发送'),('model','大模型'),('model_routes','按任务选择模型'),('prompt_diagnosis','岗位诊断提示词')] %}
+{% set history = configurations[category] %}
+{% set active = (history.revisions|selectattr('id','equalto',history.active_id)|list|first) if history.active_id else none %}
+<section class="dashboard-section admin-config-section" data-admin-section="{{ category }}"><h2>{{ title }}</h2><p class="muted">{{ '当前：第 ' ~ active.version ~ ' 版 · ' ~ active.label if active else '当前使用本地环境配置' }}</p>
+<form data-admin-config-form="{{ category }}" class="admin-config-form">
+  <label>配置名称<input name="label" maxlength="100" required placeholder="例如：主服务"></label>
+  {% if category == 'mail' %}
+  <label>SMTP 主机<input name="host" required value="{{ active.settings.host if active else '' }}" placeholder="smtp.qq.com"></label>
+  <label>端口<input name="port" type="number" min="1" max="65535" required value="{{ active.settings.port if active else 587 }}"></label>
+  <label>邮箱账号<input name="username" type="email" value="{{ active.settings.username if active else '' }}"></label>
+  <label>发件人<input name="sender" required value="{{ active.settings.sender if active else '' }}" placeholder="职序 &lt;you@qq.com&gt;"></label>
+  <label>授权码<input name="secret" type="password" autocomplete="new-password" placeholder="{{ '留空沿用当前版本' if active and active.secret_configured else '输入授权码' }}"></label>
+  <label class="admin-check"><input name="use_tls" type="checkbox" {% if not active or active.settings.use_tls %}checked{% endif %}>STARTTLS（通常 587）</label>
+  <label class="admin-check"><input name="use_ssl" type="checkbox" {% if active and active.settings.use_ssl %}checked{% endif %}>SSL（通常 465）</label>
+  {% elif category == 'model' %}
+  <label>服务商<input name="provider" required value="{{ active.settings.provider if active else '' }}" placeholder="OpenAI 兼容服务"></label>
+  <label>模型 ID<input name="model_id" required value="{{ active.settings.model_id if active else '' }}" placeholder="服务商提供的模型标识"></label>
+  <div><button class="button secondary" type="button" data-admin-load-models>读取已发布服务的模型</button><select data-admin-model-list aria-label="可用模型" hidden><option value="">选择模型 ID</option></select><p class="small-text muted">若服务商不支持列表接口，可以直接填写模型 ID。</p></div>
+  <label>API 地址<input name="base_url" type="url" required value="{{ active.settings.base_url if active else '' }}" placeholder="https://example.com/v1"></label>
+  <label>每积分 Token 数<input name="tokens_per_credit" type="number" min="1" max="1000000" required value="{{ active.settings.tokens_per_credit if active else 1000 }}"></label>
+  <label>API Key<input name="secret" type="password" autocomplete="new-password" placeholder="{{ '留空沿用当前版本' if active and active.secret_configured else '输入服务端密钥' }}"></label>
+  {% elif category == 'model_routes' %}
+  <p class="small-text muted admin-full-row">留空的任务沿用当前大模型配置。仅在任务实际接入后生效；诊断和报告已接入。</p>
+  {% for key, label in [('resume_optimize','简历优化'),('jd_parse','JD 解析'),('resume_extract','简历字段提取'),('analysis','岗位评分'),('followup','诊断追问'),('report','最终报告'),('conversation_summary','对话摘要'),('long_term_memory','长期记忆'),('structured_ui','结构化表单'),('ocr_correction','OCR 校正'),('prompt_test','提示词测试')] %}
+  <label>{{ label }}<input name="route_{{ key }}" maxlength="120" value="{{ active.settings.routes.get(key, '') if active else '' }}" placeholder="沿用默认模型"></label>
+  {% endfor %}
+  {% else %}
+  <label>输入变量<input name="variables" readonly value="document, jd, answers, kind, rounds"></label>
+  <label>输出 Schema<input name="output_schema" readonly value="diagnosis-v1"></label>
+  <label class="admin-prompt-field">补充说明<textarea name="instructions" rows="8" minlength="10" maxlength="12000" required placeholder="例如：报告重点说明当前岗位最值得补充的证据。">{{ active.settings.instructions if active else '' }}</textarea></label>
+  <p class="small-text muted">固定安全规则和输出校验不能通过提示词修改。发布后仅影响新的报价；已有任务沿用当时版本。</p>
+  {% endif %}
+  <label class="admin-check"><input name="enabled" type="checkbox" {% if active and active.settings.enabled %}checked{% endif %}>启用该配置</label>
+  <div><button class="button" type="submit">保存草稿</button></div>
+</form>
+{% if category in ['mail','model'] %}<p class="small-text muted">已保存的密钥只显示“已配置”，不会返回原文。</p>{% endif %}
+<div class="admin-version-list">{% for item in history.revisions %}<article class="recent-row"><div class="recent-record-copy"><strong>第 {{ item.version }} 版 · {{ item.label }}</strong><small>{{ '当前生效' if item.id == history.active_id else ('草稿' if item.state == 'draft' else '历史版本') }}{% if category in ['mail','model'] %} · {{ '密钥已配置' if item.secret_configured else '未配置密钥' }}{% endif %}</small></div>{% if item.state == 'draft' %}<button class="button secondary" type="button" data-admin-publish="{{ category }}:{{ item.id }}">确认发布</button>{% elif item.id != history.active_id %}<button type="button" data-admin-rollback="{{ category }}:{{ item.id }}">回滚到此版本</button>{% endif %}</article>{% else %}<p>还没有管理员配置版本。</p>{% endfor %}</div>
+</section>
+{% endfor %}
+<p id="admin-config-feedback" role="status" aria-live="polite"></p>
+{% endblock %}

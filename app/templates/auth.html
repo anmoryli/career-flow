@@ -6,24 +6,15 @@
   <div class="auth-form">
     <h2>{{ '创建你的工作空间' if mode == 'register' else '欢迎回来' }}</h2>
     <p class="muted">{{ '使用邮箱验证码，开启一段新的职业记录。' if mode == 'register' else '登录后继续整理你的职业经历。' }}</p>
-    {% if mode == 'register' %}
-    <details class="code-details" open><summary>第一步 · 获取邮箱验证码</summary>
-      <form method="post" action="{{ url_for('web.send_code') }}" class="stack">
-        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-        <label for="code-email">邮箱</label><input id="code-email" type="email" name="email" required maxlength="254" autocomplete="email" placeholder="you@example.com">
-        <button class="button secondary" type="submit">发送验证码</button>
-      </form>
-    </details>
-    {% endif %}
-    <form method="post" class="stack">
+    <form method="post" class="stack" data-ui-form="auth"><p id="auth-feedback" role="alert" hidden></p>
       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
       {% if mode == 'register' %}<label for="display-name">称呼</label><input id="display-name" name="display_name" required maxlength="80" autocomplete="nickname" placeholder="希望我们如何称呼你">{% endif %}
       <label for="email">邮箱</label><input id="email" type="email" name="email" required maxlength="254" autocomplete="email" placeholder="you@example.com">
-      {% if mode == 'register' %}<label for="code">验证码</label><input id="code" name="code" required pattern="[0-9]{6}" maxlength="6" inputmode="numeric" autocomplete="one-time-code" placeholder="六位数字 · 10 分钟内有效">{% endif %}
+      {% if mode == 'register' %}<button class="button secondary" type="button" data-send-code>发送验证码</button><label for="code">验证码</label><input id="code" name="code" required pattern="[0-9]{6}" maxlength="6" inputmode="numeric" autocomplete="one-time-code" placeholder="六位数字 · 10 分钟内有效">{% endif %}
       <label for="password">密码</label><input id="password" name="password" type="password" required minlength="12" maxlength="128" autocomplete="{{ 'new-password' if mode == 'register' else 'current-password' }}" aria-describedby="password-help"><small id="password-help" class="muted">12–128 个字符，建议使用独立的长密码。</small>
-      <button class="button" type="submit">{{ '验证并创建账号' if mode == 'register' else '登录工作空间' }} <span aria-hidden="true">→</span></button>
+      <button type="button" data-password-toggle aria-controls="password" aria-pressed="false">显示密码</button><button class="button" type="submit">{{ '验证并创建账号' if mode == 'register' else '登录工作空间' }} <span aria-hidden="true">→</span></button>
     </form>
-    <p class="auth-switch">{% if mode == 'register' %}已经有账号？<a href="{{ url_for('web.login') }}">直接登录</a>{% else %}还没有账号？<a href="{{ url_for('web.register') }}">创建账号</a>{% endif %}</p>
+    <p class="auth-switch">{% if mode == 'register' %}已经有账号？<a href="{{ url_for('web.login') }}">直接登录</a>{% else %}还没有账号？<a href="{{ url_for('web.register') }}">创建账号</a> · <a href="{{ url_for('web.password_reset_page') }}">忘记密码</a>{% endif %}</p>
   </div>
 </section>
 {% endblock %}

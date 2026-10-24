@@ -34,7 +34,18 @@ env.update(
 for command in [
     [sys.executable, "-m", "flask", "--app", "wsgi", "db", "upgrade"],
     [sys.executable, "-m", "flask", "--app", "wsgi", "db", "check"],
-    [sys.executable, "-m", "pytest", "-q", "--junitxml=output/pytest-native.xml"],
+    [
+        sys.executable,
+        "-m",
+        "pytest",
+        "-q",
+        "--junitxml=output/pytest-native.xml",
+        "--cov=app",
+        "--cov-branch",
+        "--cov-report=term-missing",
+        "--cov-report=html:output/coverage",
+        "--cov-report=json:output/coverage.json",
+    ],
 ]:
     result = subprocess.run(command, cwd=root, env=env)
     if result.returncode:

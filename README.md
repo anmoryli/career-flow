@@ -1,6 +1,6 @@
 # 职序 CareerFlow V1
 
-当前是实际可运行的首批实现，**不是全部 V1 功能已完成**。依照 `PROMPT.md` 的实施顺序，先交付工程基础、认证与对话持久化。
+当前已有工程、认证、个人记录和用户求职流程实现，**不是全部 V1 功能已完成或全部外部能力已验收**。2026-10-24 的实现范围与测试矩阵见 [交互实现](docs/UX_IMPLEMENTATION_2026-10-24.md) 和 [测试矩阵](docs/UX_TEST_MATRIX.md)。
 
 ## 当前可用
 
@@ -12,7 +12,14 @@
 - 共享视觉 Token、浅色/深色/跟随系统、响应式布局与登录用户主题同步。
 - Redis + RQ 原生 Worker；Windows 使用 SpawnWorker，Linux 使用 Worker。
 
-**尚未交付**：真实 AI 接入、自动摘要/长期记忆、完整动态表单、简历/PDF/OCR、JD/诊断/报告、积分会员支付、管理端及最终上线验收。当前记录模式不会伪造 AI 回复，也不产生模型费用。
+- 简历账号保存、版本/副本、动态经历、模板/照片/排版保存、浏览器 A4 打印；冲突恢复和本地备份。
+- 文字 PDF 上传、RQ 提取、人工核对后保存；JD 保存并关联具体简历版本。
+- 诊断/报告持久化、十轮追问、建议核实与副本；费用预估/确认/冻结/结算/释放及失败恢复。
+- PydanticAI 的 OpenAI 兼容适配器已实现；默认关闭。真实模型质量、网络、费用仍需供应商配置和费用授权后验收，不把测试适配器当作真实 AI。
+
+**尚未交付或验收**：OCR/照片提取、完整经历自动结构化、服务器 PDF 引擎、自动摘要/长期偏好、完整会员支付、管理端其他模块及生产上线。已有个人记录不会伪造 AI 回复。
+
+管理端目前包含独立权限、概览、用户只读列表、邮箱与模型配置草稿/发布/回滚及操作审计。首个管理员通过本地 `uv run flask --app wsgi bootstrap-admin <邮箱>` 创建，临时密码只写入忽略提交的 `instance/admin-first-login.txt`。服务密钥仅从本地环境或加密配置读取，真实模型默认关闭。
 
 ## 本机运行：Windows + WSL Ubuntu 原生服务
 
@@ -51,7 +58,10 @@ uv run python scripts/test-integration.py
 uv run python scripts/verify-db-lifecycle.py
 uv run python scripts/verify-worker.py
 uv run flask --app wsgi check-services
+npx playwright test
 ```
+
+配置真实模型前保持 `AI_ENABLED=false`。需要启用时在服务端配置 `AI_MODEL`、`AI_API_KEY`、`AI_BASE_URL` 和积分换算；开发测试积分通过 `uv run flask --app wsgi grant-development-credits USER_ID AMOUNT` 显式发放。不得把真实密钥放在页面或提交到 Git。
 
 集成测试只使用 `careerflow_test`；备份恢复与降级测试只使用 `careerflow_restore_test`。两个数据库由原生初始化脚本创建，不会清空应用库。测试 XML、扫描结果与浏览器截图位于 `output/`，不提交用户数据或凭证。
 

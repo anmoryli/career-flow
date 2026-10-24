@@ -1,0 +1,8 @@
+{% extends 'base.html' %}
+{% block title %}管理概览 · 职序{% endblock %}
+{% block breadcrumb %}运营概览{% endblock %}
+{% block content %}
+<section class="business-page-heading"><div><span class="page-kicker">管理后台</span><h1>运营概览</h1><p>查看当前服务状态和业务总量。统计仅在打开页面时刷新。</p></div><a class="button secondary" href="{{ url_for('admin.dashboard') }}">刷新数据</a></section>
+<div class="admin-metrics"><section><span>用户</span><strong>{{ counts.users }}</strong></section><section><span>AI 任务</span><strong>{{ counts.ai_calls }}</strong></section><section><span>失败任务</span><strong>{{ counts.failed_ai }}</strong></section><section><span>已结算积分</span><strong>{{ counts.credits }}</strong></section></div>
+<section class="dashboard-section"><h2>管理事项</h2><div class="admin-links"><a href="{{ url_for('admin.users') }}">查看用户 →</a><a href="{{ url_for('admin.settings') }}">管理邮箱与模型 →</a><a href="{{ url_for('admin.audit') }}">查看操作记录 →</a></div></section>
+{% endblock %}

@@ -1,0 +1,30 @@
+.import-extracted { white-space:pre-wrap; overflow-wrap:anywhere; max-height:65vh; overflow:auto; padding:var(--space-4,16px); border:1px solid var(--border); }
+[data-repeat-actions] { display:flex; gap:16px; margin-top:12px; color:var(--text-secondary); }
+[data-import-confirm] { display:flex; flex-direction:column; gap:12px; }
+#version-history { display:flex; flex-wrap:wrap; gap:12px; padding:12px 0; }
+#version-history[hidden] { display:none; }
+.print-actions { padding:20px; }
+.resume-print-page { background:var(--page-bg); margin:0; }
+.resume-print-page>.resume-panel { margin:20px auto; width:794px; }
+.print-stage { width:794px; max-width:100%; margin:20px auto; }
+.editor-section-nav { position:sticky; top:0; background:var(--surface); z-index:2; }
+@media(max-width:760px) { .recent-row { flex-wrap:wrap; } .resume-print-page>.resume-panel { max-width:100%; overflow:auto; } }
+@media print { #editor-availability,.print-actions,#version-history { display:none!important; } .print-stage { margin:0!important; } .resume-print-page>.resume-panel { margin:0; } .rd-photo-frame:has(img[hidden]),.rd-portrait-orbit:has(img[hidden]) { display:none!important; } }
+.admin-metrics { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:12px; margin:24px 0; }
+.admin-metrics section { padding:20px; border:1px solid var(--border); border-radius:var(--radius); background:var(--surface); display:grid; gap:12px; }
+.admin-metrics span { color:var(--text-secondary); font-size:12px; }
+.admin-metrics strong { color:var(--text-primary); font-size:26px; font-weight:600; }
+.admin-links { display:flex; flex-wrap:wrap; gap:20px; }
+.admin-config-section { margin-bottom:30px; }
+.admin-config-form { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:16px; max-width:850px; margin:20px 0 30px; }
+.admin-config-form label { display:grid; gap:7px; color:var(--text-secondary); font-size:12px; }
+.admin-config-form input:not([type="checkbox"]) { width:100%; min-width:0; }
+.admin-config-form .admin-prompt-field { grid-column:1/-1; }
+.admin-config-form .admin-full-row { grid-column:1/-1; }
+.admin-config-form textarea { width:100%; min-width:0; resize:vertical; }
+.admin-config-form .admin-check { display:flex; align-items:center; gap:8px; }
+.admin-config-form .admin-check input { margin:0; }
+.admin-version-list { border-top:1px solid var(--border); }
+.admin-version-list .recent-row,.admin-list .recent-row { grid-template-columns:minmax(0,1fr) auto; gap:12px; }
+.admin-version-list .recent-record-copy,.admin-list .recent-record-copy { grid-area:auto; }
+@media(max-width:760px) { .admin-metrics { grid-template-columns:repeat(2,minmax(0,1fr)); } .admin-config-form { grid-template-columns:1fr; } }

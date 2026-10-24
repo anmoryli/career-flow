@@ -1,5 +1,13 @@
 # 测试方法
 
+2026-10-24新增用户流程矩阵见 `UX_TEST_MATRIX.md`。`scripts/test-integration.py` 升级真实MySQL测试库、检查迁移差异并执行包含分支统计的完整pytest，输出XML/HTML/JSON覆盖报告。Playwright通过 `npx playwright test` 运行，测试服务器限定8011/测试数据库，使用明确标记的测试模型，不代表真实供应商验收。
+
+管理员配置新增权限、密钥脱敏、草稿发布/回滚、真实本地 Mailpit 发信、CLI 初始账号和三种屏幕尺寸浏览器用例。当前阶段的实际数字和限制见 `ADMIN_STATUS_2026-10-24.md`；旧的 `UX_ACCEPTANCE_2026-10-24.md` 是上一阶段快照。
+
+结构化诊断追问新增 MySQL 表单定义/提交状态测试；密码修改测试覆盖当前密码、重复密码和全设备会话失效。管理端可从已配置模型服务的 `/models` 读取列表，也允许手填 ID；本地网络把该服务域名解析到保留地址，故真实模型列表及模型调用没有完成外部联调。模型列表用 MockTransport 验证协议与错误处理。
+
+新增测试依赖安装后执行 `npx playwright install chromium`。浏览器覆盖1440/820/390宽度、三种主题与各工作台页面，输出实际PDF及截图。正式应用没有测试登录入口；`scripts/e2e-server.py` 仅在隔离测试时使用。
+
 ## 自动化
 
 - `uv run pytest tests/test_foundation.py -q`：不连接真实数据库的配置、首页、CSRF、脱敏、主题/结构化 Schema、生产约束测试。

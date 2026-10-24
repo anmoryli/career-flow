@@ -10,3 +10,4 @@ instance/
 output/
 .playwright-cli/
 *.egg-info/
+.coverage

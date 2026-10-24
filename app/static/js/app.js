@@ -14,7 +14,7 @@ document.addEventListener('alpine:init', () => {
       const feedback = document.querySelector('#theme-feedback');
       try {
         const response = await fetch('/settings/theme', {
-          method: 'POST', credentials: 'same-origin', redirect: 'error',
+          method: 'POST', credentials: 'same-origin', redirect: 'error', keepalive: true,
           headers: { 'Content-Type': 'application/json',
             'X-CSRFToken': document.querySelector('meta[name="csrf-token"]').content },
           body: JSON.stringify({ theme }),
@@ -156,7 +156,7 @@ document.querySelectorAll('[data-theme-choice]').forEach(button => {
   const draftStatus = document.querySelector('#resume-draft-status');
   const photoStatus = document.querySelector('#resume-photo-status');
   const data = {};
-  let sampleActive = true;
+  let sampleActive = !JSON.parse(editor.dataset.saved || "null");
   const example = JSON.parse(stage.dataset.example);
   let previewData = example;
   const previewMode = document.querySelector('#resume-preview-mode');
@@ -246,7 +246,8 @@ document.querySelectorAll('[data-theme-choice]').forEach(button => {
       element.hidden = !hasContent(element.dataset.rfEntry);
     });
     scope.querySelectorAll('[data-rf-section]').forEach(element => {
-      element.hidden = !hasContent(element.dataset.rfSection);
+      const hidden = sampleActive ? [] : JSON.parse(editor.dataset.hiddenSections || '[]');
+      element.hidden = !hasContent(element.dataset.rfSection) || hidden.includes(element.dataset.rfSection);
     });
     scope.querySelectorAll('[data-rf-initial]').forEach(element => {
       const initial = String(getPath(previewData, element.dataset.rfInitial) || '').trim().slice(0, 1);
@@ -262,7 +263,8 @@ document.querySelectorAll('[data-theme-choice]').forEach(button => {
     sampleActive = false;
     fill();
     paint();
-    if (draftStatus) draftStatus.textContent = '草稿已更新 · 尚未保存';
+    if (draftStatus) draftStatus.textContent = '正在保存…';
+    editor.dispatchEvent(new CustomEvent('cf:change', { detail: { ...data } }));
   };
   fill();
   paint();
@@ -271,17 +273,27 @@ document.querySelectorAll('[data-theme-choice]').forEach(button => {
     fill();
     paint();
   });
-  editor.querySelectorAll('[data-rf-field]').forEach(input => input.addEventListener('input', () => {
-    update();
-  }));
+  editor.addEventListener('input', event => { if (event.target.matches('[data-rf-field]')) update(); });
+  editor.addEventListener('cf:refresh', update);
+  editor.addEventListener('cf:load', event => {
+    const documentData = event.detail.document;
+    editor.querySelectorAll('[data-rf-field]').forEach(input => {
+      const value = getPath(documentData, input.dataset.rfField);
+      input.value = Array.isArray(value) ? value.join(input.dataset.rfField.endsWith('.items') ? '?' : '\n') : (value || '');
+    });
+    applyPhoto(documentData.photo || '');
+    switchTemplate(event.detail.template);
+    sampleActive = false; fill(); paint();
+  });
   const clearButton = document.querySelector('[data-clear-sample]');
   if (clearButton) {
     clearButton.addEventListener('click', () => {
+      if (!window.confirm('确认清空当前填写？保存后仍可从版本历史恢复。')) return;
       editor.querySelectorAll('[data-rf-field]').forEach(input => { input.value = ''; });
       photoGeneration++;
       applyPhoto('');
       if (photoInput) photoInput.value = '';
-      if (photoStatus) photoStatus.textContent = '照片仅用于本页预览与打印，不会上传。';
+      if (photoStatus) photoStatus.textContent = '照片已清除，保存时同步到账号。';
       sampleActive = false;
       update();
       if (draftStatus) draftStatus.textContent = '空白草稿 · 尚未保存';
@@ -377,7 +389,7 @@ document.querySelectorAll('[data-theme-choice]').forEach(button => {
           throw new Error('dimensions');
         }
         applyPhoto(source);
-        photoStatus.textContent = `已载入 ${file.name} · ${decoded.naturalWidth} × ${decoded.naturalHeight}。三套模板及打印已同步；照片未发送到服务器。`;
+        photoStatus.textContent = `已载入 ${file.name} · ${decoded.naturalWidth} × ${decoded.naturalHeight}。保存简历时同步到账号。`;
         update();
       } catch (_) {
         if (generation === photoGeneration) photoStatus.textContent = '照片读取失败，请选择可解码且边长在 96–4096 像素之间的图片。原有照片已保留。';
@@ -448,9 +460,12 @@ document.querySelectorAll('[data-theme-choice]').forEach(button => {
   if (printButton) {
     printButton.addEventListener('click', () => {
       if (sampleActive && !window.confirm('当前预览为虚构模板示例，确认打印示例吗？打印自己的简历请切换到“我的填写”。')) return;
+      if (!sampleActive && (!data.name || (!data.phone && !data.email)) &&
+          !window.confirm('姓名或联系方式尚未填写完整，仍要打印当前内容吗？')) return;
       window.print();
     });
   }
+  editor.dispatchEvent(new CustomEvent('cf:ready'));
 })();
 
 (() => {

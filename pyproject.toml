@@ -4,11 +4,14 @@ version = "1.0.0"
 description = "职序 CareerFlow V1"
 requires-python = ">=3.12,<3.13"
 dependencies = [
+    "cryptography>=50,<51",
     "flask>=3.1,<4",
     "flask-migrate>=4,<5",
     "flask-sqlalchemy>=3.1,<4",
     "flask-wtf>=1.2,<2",
     "gunicorn>=23,<24",
+    "pdfplumber>=0.11,<0.12",
+    "pydantic-ai-slim[openai]>=1,<2",
     "pydantic[email]>=2,<3",
     "pymysql[rsa]>=1.1,<2",
     "python-dotenv>=1,<2",
@@ -33,5 +36,6 @@ markers = ["integration: requires isolated MySQL 8.4 and Redis instances"]
 dev = [
     "pip-audit>=2.10.1",
     "pytest>=9.1.1",
+    "pytest-cov>=7.1.0",
     "ruff>=0.17.1",
 ]

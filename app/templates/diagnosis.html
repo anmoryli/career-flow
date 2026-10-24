@@ -1,0 +1,22 @@
+{% extends 'base.html' %}
+{% block title %}{{ job.title or '岗位诊断' }} · 职序{% endblock %}
+{% block content %}
+<section class="business-page-heading"><div><h1>{{ job.title or '岗位诊断' }}</h1><p>{{ job.company }} · 已回答 {{ diagnostic.rounds }}/10 轮 · {{ '报告已完成，对话只读' if diagnostic.state == 'completed' else '可继续诊断' }}</p></div><a href="{{ url_for('web.workspace', view='jobs') }}">返回岗位</a></section>
+<details><summary>岗位原文与简历版本</summary><p class="preserve-lines">{{ job.description }}</p><p>简历快照编号 {{ job.resume_version_id }}，后续编辑不会改变此诊断的依据。</p></details>
+<p>可用积分 {{ balance.available }} · 冻结 {{ balance.frozen }}。评分仅供参考，不保证 ATS 或录用结果。</p>
+{% if not configured %}<p class="notice">真实 AI 尚未配置，当前不能执行付费任务。已保存的简历与岗位不受影响。</p>{% endif %}
+<div data-diagnostic="{{ diagnostic.id }}" data-revision="{{ diagnostic.revision }}">
+{% if diagnostic.state != 'completed' %}
+<div class="page-actions"><button class="button secondary" type="button" data-quote="analysis" {% if not configured or diagnostic.rounds >= 10 %}disabled{% endif %}>预估诊断费用</button><button class="button" type="button" data-quote="report" {% if not configured %}disabled{% endif %}>预估最终报告费用</button></div>
+<section id="fee-confirmation" hidden><h2>确认本次费用</h2><p id="fee-description"></p><button class="button" type="button" data-confirm-operation>确认并冻结积分</button><button type="button" data-dismiss-quote>暂不执行</button></section>
+{% if diagnostic.question %}<section class="form-section"><h2>补充一个问题</h2><p>{{ question_form.definition.message if question_form else diagnostic.question }}</p><textarea id="diagnostic-answer" rows="4" maxlength="2000" aria-label="你的回答"></textarea><button type="button" data-answer="answer">提交真实回答</button><button type="button" data-answer="skip">跳过（计入一轮）</button></section>{% endif %}
+{% endif %}
+<p id="diagnosis-feedback" role="status" aria-live="polite"></p>
+{% for op in operations %}<section class="form-section" data-operation="{{ op.id }}" data-operation-state="{{ op.state }}"><h2>{{ '最终报告' if op.kind == 'report' else '诊断结果' }} · {{ {'quoted':'待确认','queued':'排队中','running':'处理中','succeeded':'已完成','failed':'失败已释放','cancelled':'已取消'}[op.state] }}</h2><p>预估上限 {{ op.ceiling }} 积分 · 实际结算 {{ op.charged }} 积分</p>{% if op.state in ['queued','running'] %}<p>任务正在处理，刷新后可恢复状态。</p><button type="button" data-cancel-operation="{{ op.id }}">取消并释放冻结积分</button>{% endif %}{% if op.error %}<p>{{ op.error }}</p>{% endif %}
+{% if op.result %}<p><strong>总体匹配度 {{ op.result.overall_score }}/100</strong> · 五项各占20%，仅供参考</p><p>{{ op.result.summary }}</p><dl class="account-details">{% for dimension in op.result.dimensions %}<div><dt>{{ dimension.name }} {{ dimension.score }}/100</dt><dd>{{ dimension.reason }}</dd></div>{% endfor %}</dl>
+<h3>要求与证据</h3>{% for finding in op.result.findings %}<article><strong>{{ {'hard':'硬性条件','bonus':'加分项','missing':'缺失信息'}[finding.category] }}：{{ finding.requirement }}</strong><blockquote>{{ finding.evidence or '简历未体现，待用户确认' }}</blockquote><p>{{ finding.explanation }}</p></article>{% endfor %}
+{% if op.result.suggestions %}<form data-apply-suggestions="{{ op.id }}" data-ui-form="suggestions"><h3>逐条修改建议</h3>{% for suggestion in op.result.suggestions %}<article class="form-section"><label><input type="checkbox" name="suggestion" value="{{ loop.index0 }}"> 采纳本条</label><p>原文：{{ suggestion.original }}</p><label>修改建议（可编辑）<textarea name="edit-{{ loop.index0 }}" rows="4" maxlength="3000">{{ suggestion.proposed }}</textarea></label><p>{{ suggestion.reason }}</p></article>{% endfor %}<label>新简历名称<input name="title" maxlength="120" required value="{{ (job.title or '目标岗位')[:100] }} · 优化版"></label><label><input type="checkbox" name="confirmed" required>我已逐条核实所选建议符合真实经历</label><button class="button" type="submit">保存为岗位版本，保留基础简历</button></form>{% endif %}
+{% endif %}</section>{% endfor %}
+<details><summary>已保存的回答</summary>{% for answer in answers %}<p>{{ answer.round }}. {{ answer.question }}</p><p>{{ '已跳过' if answer.skipped else answer.answer }}</p>{% endfor %}</details>
+</div>
+{% endblock %}
