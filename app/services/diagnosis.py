@@ -13,37 +13,19 @@ from app.models import (
     AIOperation,
     Conversation,
     ConversationMessage,
-    CreditAccount,
-    CreditEntry,
     Diagnostic,
     DiagnosticAnswer,
     JobTarget,
     ResumeVersion,
-    User,
     utcnow,
 )
+from app.services import credits
 from app.services.career import owned, save_resume
+from app.services.credits import account as account
+from app.services.credits import owner_lock
 from app.services.errors import BusinessError
 
 PROMPT_VERSION = "career-diagnosis-1"
-
-
-def owner_lock(user_id):
-    db.session.scalar(select(User).where(User.id == user_id).with_for_update())
-
-
-def account(user_id):
-    item = db.session.scalar(
-        select(CreditAccount)
-        .where(CreditAccount.user_id == user_id)
-        .with_for_update()
-        .execution_options(populate_existing=True)
-    )
-    if item is None:
-        item = CreditAccount(user_id=user_id, available=0, frozen=0)
-        db.session.add(item)
-        db.session.flush()
-    return item
 
 
 def get_diagnostic(user_id, job_id):
@@ -200,38 +182,14 @@ def confirm(user_id, operation_id):
         or item.input_snapshot.get("prompt_revision_id") != prompt["revision_id"]
     ):
         raise BusinessError("模型配置不可用或已改变，请重新预估。", 503)
-    balance = account(user_id)
-    if balance.available < item.ceiling:
-        raise BusinessError("可用积分不足，尚未扣费。", 409)
-    balance.available -= item.ceiling
-    balance.frozen += item.ceiling
-    db.session.add(
-        CreditEntry(
-            user_id=user_id,
-            operation_id=item.id,
-            kind="freeze",
-            available_delta=-item.ceiling,
-            frozen_delta=item.ceiling,
-        )
-    )
+    credits.freeze(user_id, item.id, item.ceiling)
     item.state = "queued"
     db.session.commit()
     return item
 
 
 def release(item, state, error=""):
-    balance = account(item.user_id)
-    balance.available += item.ceiling
-    balance.frozen -= item.ceiling
-    db.session.add(
-        CreditEntry(
-            user_id=item.user_id,
-            operation_id=item.id,
-            kind="release",
-            available_delta=item.ceiling,
-            frozen_delta=-item.ceiling,
-        )
-    )
+    credits.release(item.user_id, item.id, item.ceiling)
     item.state = state
     item.error = error
 
@@ -401,18 +359,7 @@ def run_operation(operation_id):
         release(item, "failed", "模型超时、输出无效或费用不可查询；冻结积分已全额释放。")
     else:
         charged = min(item.ceiling, math.ceil(tokens / snapshot["tokens_per_credit"]))
-        balance = account(user_id)
-        balance.available += item.ceiling - charged
-        balance.frozen -= item.ceiling
-        db.session.add(
-            CreditEntry(
-                user_id=user_id,
-                operation_id=item.id,
-                kind="settle",
-                available_delta=item.ceiling - charged,
-                frozen_delta=-item.ceiling,
-            )
-        )
+        credits.settle(user_id, item.id, item.ceiling, charged)
         item.result = result
         item.charged = charged
         item.state = "succeeded"

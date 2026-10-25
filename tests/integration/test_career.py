@@ -19,7 +19,7 @@ from app.models import (
     User,
     utcnow,
 )
-from app.services import auth, career, diagnosis
+from app.services import auth, career, credits, diagnosis
 from app.services.errors import BusinessError
 
 pytestmark = pytest.mark.integration
@@ -257,6 +257,54 @@ def test_success_billing_report_readonly_and_apply(mysql_app, context):
         assert sum(e.frozen_delta for e in entries) == 0
         with pytest.raises(BusinessError):
             make_operation(uid, did)
+
+
+def test_credit_categories_spend_in_order_and_release_on_cancel(mysql_app, context):
+    uid, _, _, did = context
+    with mysql_app.app_context():
+        op = make_operation(uid, did)
+        balance = credits.account(uid)
+        balance.available = 2
+        db.session.add(
+            CreditEntry(
+                user_id=uid,
+                kind="adjust",
+                category="experience",
+                available_delta=-9998,
+                frozen_delta=0,
+            )
+        )
+        credits.grant(uid, 2, "member")
+        credits.grant(uid, op.ceiling, "purchased")
+        db.session.commit()
+
+        diagnosis.confirm(uid, op.id)
+        frozen = db.session.scalars(
+            select(CreditEntry).where(
+                CreditEntry.operation_id == op.id, CreditEntry.kind == "freeze"
+            )
+        ).all()
+        assert {entry.category: -entry.available_delta for entry in frozen} == {
+            "member": 2,
+            "experience": 2,
+            "purchased": op.ceiling - 4,
+        }
+        diagnosis.run_operation(op.id)
+        assert credits.category_balances(uid) == {
+            "member": (0, 0),
+            "experience": (2, 0),
+            "purchased": (op.ceiling, 0),
+        }
+
+        retry = make_operation(uid, did)
+        diagnosis.confirm(uid, retry.id)
+        diagnosis.cancel(uid, retry.id)
+        diagnosis.cancel(uid, retry.id)
+        assert credits.category_balances(uid) == {
+            "member": (0, 0),
+            "experience": (2, 0),
+            "purchased": (op.ceiling, 0),
+        }
 
 
 @pytest.mark.parametrize("mode", ["timeout", "invalid_json", "evidence", "usage", "path"])
