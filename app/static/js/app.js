@@ -361,14 +361,15 @@ document.querySelectorAll('[data-theme-choice]').forEach(button => {
       else delete photoStatus.dataset.photo;
     }
   };
-  // 照片先在浏览器内压缩到 1600px / 2.5 MB 以内，保证选完立即显示。
-  const PHOTO_LIMIT = 2.5 * 1024 * 1024;
-  const PHOTO_MAX_EDGE = 1600;
+  // 照片在浏览器内压缩：目标约 400 KB、边长 1200px以内，质量阶梯从视觉无损的
+  // 0.95 开始递减，普通手机照片一般落在几百 KB；小图不重新编码保留原画质。
+  const PHOTO_TARGET = 400 * 1024;
+  const PHOTO_MAX_EDGE = 1200;
   const shrinkPhoto = (source, image) => {
     const data = source.split(',')[1] || '';
     const bytes = Math.floor(data.length * 3 / 4);
     const edge = Math.max(image.naturalWidth, image.naturalHeight);
-    if (bytes <= PHOTO_LIMIT && edge <= PHOTO_MAX_EDGE) {
+    if (bytes <= PHOTO_TARGET && edge <= PHOTO_MAX_EDGE) {
       return { source, width: image.naturalWidth, height: image.naturalHeight, compressed: false };
     }
     const scale = Math.min(1, PHOTO_MAX_EDGE / edge);
@@ -376,11 +377,24 @@ document.querySelectorAll('[data-theme-choice]').forEach(button => {
     canvas.width = Math.round(image.naturalWidth * scale);
     canvas.height = Math.round(image.naturalHeight * scale);
     canvas.getContext('2d').drawImage(image, 0, 0, canvas.width, canvas.height);
-    for (const quality of [0.85, 0.7, 0.55]) {
+    for (const quality of [0.95, 0.9, 0.85, 0.8]) {
       const out = canvas.toDataURL('image/jpeg', quality);
       const outBytes = Math.floor((out.split(',')[1] || '').length * 3 / 4);
-      if (outBytes <= PHOTO_LIMIT) {
+      if (outBytes <= PHOTO_TARGET) {
         return { source: out, width: canvas.width, height: canvas.height, compressed: true };
+      }
+    }
+    // 极少出现：即便 0.8 质量仍超标的超大图，继续缩小尺寸直到达标。
+    for (let scale = 0.8; scale >= 0.3; scale -= 0.1) {
+      const width = Math.round(canvas.width * scale);
+      const height = Math.round(canvas.height * scale);
+      const small = document.createElement('canvas');
+      small.width = width; small.height = height;
+      small.getContext('2d').drawImage(canvas, 0, 0, width, height);
+      const out = small.toDataURL('image/jpeg', 0.85);
+      const outBytes = Math.floor((out.split(',')[1] || '').length * 3 / 4);
+      if (outBytes <= PHOTO_TARGET) {
+        return { source: out, width, height, compressed: true };
       }
     }
     throw new Error('too-large');
