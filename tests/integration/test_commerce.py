@@ -7,7 +7,7 @@ from sqlalchemy import func, select
 
 from app.admin_schemas import CommerceSettings
 from app.extensions import db
-from app.models import CommerceOrder, CreditEntry, Membership, MembershipCycle, utcnow
+from app.models import CreditEntry, Membership, MembershipCycle, utcnow
 from app.services import commerce, credits
 from app.services.errors import BusinessError
 from tests.integration.test_admin import commerce_settings
@@ -48,7 +48,9 @@ def test_credit_order_snapshot_failure_retry_and_idempotent_grant(mysql_app, che
         assert commerce.settle_mock(uid, paid.id, "success").state == "paid"
         assert credits.category_balances(uid) == {"purchased": (100, 0)}
         assert db.session.scalar(
-            select(func.count()).select_from(CreditEntry).where(CreditEntry.source_order_id == paid.id)
+            select(func.count())
+            .select_from(CreditEntry)
+            .where(CreditEntry.source_order_id == paid.id)
         ) == 1
 
 
