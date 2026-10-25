@@ -35,9 +35,9 @@ uv run flask --app wsgi db current
 
 此前 head `05373fa1964b`：`c1282dd22221` 新增简历/版本/岗位，`066d81b874d1` 新增积分账户/诊断/回答/AI任务/流水，`05373fa1964b` 新增PDF导入，当时共16业务表。均使用InnoDB/utf8mb4，保留原7表和历史数据，无删除原表或数据重写。
 
-2026-10-24 新增 `a8f6d92b37e1`：`users.is_admin` 默认关闭；增加 `config_revisions`、`active_configs`、`admin_audit_entries`。当前 head 为 `a8f6d92b37e1`，共19业务表。配置版本及审计与管理员账户受外键约束，删除管理员前须按数据保留策略处理其历史记录。服务密钥仅以 Fernet 密文存于配置版本，独立加密密钥来自本地环境变量。
+2026-10-24 新增 `a8f6d92b37e1`：`users.is_admin` 默认关闭；增加 `config_revisions`、`active_configs`、`admin_audit_entries`。该阶段 head 为 `a8f6d92b37e1`，共19业务表。配置版本及审计与管理员账户受外键约束，删除管理员前须按数据保留策略处理其历史记录。服务密钥仅以 Fernet 密文存于配置版本，独立加密密钥来自本地环境变量。
 
-后续 `9c75e89d41a0` 新增 `structured_interactions`，按对话和 AI 操作关联经过验证的结构化表单、状态与提交结果；当前 head 为该版本，共20业务表。测试库已验证升级及 Alembic 差异检查；开发库升级前备份保存于忽略提交的 `output/careerflow-before-interactions-*.sql`。
+后续 `9c75e89d41a0` 新增 `structured_interactions`，按对话和 AI 操作关联经过验证的结构化表单、状态与提交结果。`3e019acf2e31` 新增 `password_reset_codes`，保存一次性验证码摘要、有效期和错误次数；当前 head 为该版本，共21业务表。隔离 MySQL 测试库已验证升级、降级、备份恢复及 Alembic 差异检查；开发库当前也已升级至该版本。
 
 简历版本文档为不可变JSON快照，其他业务关联为独立外键；岗位指向具体版本。用户行锁串行化账务和幂等写入，关键读取使用MySQL当前读，避免认证查询建立的旧快照导致并发重扣。账本的冻结/结算/释放分别记录，任务/流水有唯一约束。
 
