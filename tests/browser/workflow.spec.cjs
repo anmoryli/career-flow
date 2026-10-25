@@ -100,6 +100,23 @@ test('themes, navigation, registration single email and keyboard', async ({ page
   await expect(page.locator('#password')).toHaveAttribute('type', 'text');
 });
 
+test('password recovery is usable on each screen size', async ({ browser, page }) => {
+  const context = await browser.newContext({ viewport: page.viewportSize() });
+  const recovery = await context.newPage();
+  try {
+    await recovery.goto('/login');
+    await expect(recovery.getByRole('link', { name: '忘记密码' })).toHaveAttribute('href', '/password/reset');
+    await recovery.goto('/password/reset');
+    await expect(recovery.getByRole('heading', { name: '找回密码' })).toBeVisible();
+    await recovery.locator('#reset-email').fill(`missing-${test.info().project.name}-${uid}@example.com`);
+    await expect(recovery.getByRole('button', { name: '发送验证码' })).toBeEnabled();
+    await expect(recovery.locator('#reset-code')).toBeVisible();
+    expect(await recovery.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBeTruthy();
+  } finally {
+    await context.close();
+  }
+});
+
 test('PDF upload, text extraction, explicit confirmation, saved editor', async ({ page }) => {
   const source = await page.context().newPage();
   await source.setContent('<h1>Test Candidate</h1><p>candidate@example.com 13800138000</p><p>Product experience</p>');
