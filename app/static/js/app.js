@@ -227,13 +227,17 @@ document.querySelectorAll('[data-theme-choice]').forEach(button => {
       image.hidden = !source;
     });
     scope.querySelectorAll('[data-photo-placeholder]').forEach(element => {
-      element.hidden = Boolean(previewData.photo);
+      element.hidden = false;
+      element.closest('[data-photo-slot]')?.classList.toggle('has-photo', Boolean(previewData.photo));
     });
     scope.querySelectorAll('[data-rf]').forEach(element => {
       const value = getPath(previewData, element.dataset.rf);
       const text = Array.isArray(value) ? value.join('、') : (value || '');
-      element.textContent = text;
-      element.hidden = !String(text).trim();
+      const hint = editor.querySelector(`[data-rf-field="${element.dataset.rf}"]`)?.placeholder || '待填写';
+      element.textContent = text || (sampleActive ? '' : hint);
+      element.classList.toggle('rd-placeholder-only', !sampleActive && !String(text).trim());
+      element.dataset.placeholderHint = sampleActive ? '' : hint;
+      element.hidden = sampleActive && !String(text).trim();
     });
     scope.querySelectorAll('[data-rf-list]').forEach(element => {
       const value = getPath(previewData, element.dataset.rfList);
@@ -245,16 +249,29 @@ document.querySelectorAll('[data-theme-choice]').forEach(button => {
         node.textContent = item;
         element.appendChild(node);
       });
+      if (!sampleActive) {
+        const hint = editor.querySelector(`[data-rf-field="${element.dataset.rfList}"]`)?.placeholder || '待填写';
+        const placeholder = document.createElement(mode === 'inline' || mode === 'tags' ? 'span' : 'li');
+        placeholder.className = 'rd-placeholder-hint'; placeholder.textContent = hint;
+        element.appendChild(placeholder);
+      }
     });
     scope.querySelectorAll('[data-rf-if]').forEach(element => {
-      element.hidden = !hasContent(element.dataset.rfIf);
+      element.hidden = sampleActive && !hasContent(element.dataset.rfIf);
     });
     scope.querySelectorAll('[data-rf-entry]').forEach(element => {
-      element.hidden = !hasContent(element.dataset.rfEntry);
+      element.hidden = sampleActive && !hasContent(element.dataset.rfEntry);
     });
     scope.querySelectorAll('[data-rf-section]').forEach(element => {
       const hidden = sampleActive ? [] : JSON.parse(editor.dataset.hiddenSections || '[]');
-      element.hidden = !hasContent(element.dataset.rfSection) || hidden.includes(element.dataset.rfSection);
+      element.hidden = (sampleActive && !hasContent(element.dataset.rfSection)) || hidden.includes(element.dataset.rfSection);
+      let badge = element.querySelector(':scope > [data-empty-section]');
+      if (!badge && !sampleActive) {
+        badge = document.createElement('span'); badge.dataset.emptySection = '';
+        badge.className = 'rd-empty-section'; badge.textContent = '此板块为空 · 请补充真实信息';
+        element.append(badge);
+      }
+      if (badge) badge.hidden = sampleActive || hasContent(element.dataset.rfSection);
     });
     scope.querySelectorAll('[data-rf-initial]').forEach(element => {
       const initial = String(getPath(previewData, element.dataset.rfInitial) || '').trim().slice(0, 1);
@@ -263,7 +280,7 @@ document.querySelectorAll('[data-theme-choice]').forEach(button => {
     });
     if (emptyHint) {
       const core = ['name', 'role', 'summary'].some(key => (previewData[key] || '').trim());
-      emptyHint.hidden = core || hasContent('experiences') || hasContent('projects') || hasContent('education') || hasContent('skills');
+      emptyHint.hidden = core || hasContent('experiences') || hasContent('projects') || hasContent('education') || hasContent('skills') || !sampleActive;
     }
   };
   const update = () => {

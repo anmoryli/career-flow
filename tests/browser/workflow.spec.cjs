@@ -239,6 +239,18 @@ test('resume sections can be dragged to a new position', async ({ page }) => {
   expect(stored.slice(0, 3)).toEqual(['experiences', 'summary', 'projects']);
 });
 
+test('draft preview keeps guidance visible while editing but excludes it from print', async ({ page }) => {
+  await create(page);
+  if (test.info().project.name === 'mobile') await page.locator('[data-editor-tab="preview"]').click();
+  const panel = page.locator('[data-resume-panel="classic"]');
+  await expect(panel.locator('[data-rf-section="projects"]')).toBeVisible();
+  await expect(panel.locator('[data-rf-section="projects"] [data-empty-section]')).toBeVisible();
+  await expect(panel.locator('[data-rf="summary"]')).toHaveAttribute('data-placeholder-hint', /简要介绍/);
+  await page.emulateMedia({ media: 'print' });
+  await expect(panel.locator('[data-rf-section="projects"] [data-empty-section]')).toBeHidden();
+  await expect(panel.locator('[data-rf-section="projects"] .rd-placeholder-only').first()).toBeHidden();
+});
+
 for (const theme of ['light', 'dark', 'system']) {
   test(`page navigation and layout in ${theme} theme`, async ({ page }) => {
     await page.goto('/workspace');
