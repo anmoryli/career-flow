@@ -14,6 +14,7 @@ from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
 
 from app.admin_schemas import (
+    CommerceSettings,
     DiagnosisPromptSettings,
     MailSettings,
     ModelRouteSettings,
@@ -28,6 +29,7 @@ SCHEMAS = {
     "model": ModelSettings,
     "prompt_diagnosis": DiagnosisPromptSettings,
     "model_routes": ModelRouteSettings,
+    "commerce": CommerceSettings,
 }
 
 
@@ -111,9 +113,9 @@ def create_draft(actor_id, category, data):
     if category not in SCHEMAS:
         raise BusinessError("未知配置类别。", 404)
     _lock_administration()
-    settings = SCHEMAS[category].model_validate(data.settings).model_dump()
+    settings = SCHEMAS[category].model_validate(data.settings).model_dump(mode="json")
     previous = active_revision(category)
-    if category in {"prompt_diagnosis", "model_routes"} and data.secret:
+    if category in {"prompt_diagnosis", "model_routes", "commerce"} and data.secret:
         raise BusinessError("此配置不接受密钥。", 422)
     if previous and not data.secret and category in {"mail", "model"}:
         identity_fields = ("host", "username") if category == "mail" else ("provider", "base_url")
@@ -295,6 +297,13 @@ def runtime_model_route(purpose: str, default_model_id: str):
             "revision_id": item.id,
         }
     return {"model_id": default_model_id, "revision_id": None}
+
+
+def runtime_commerce():
+    item = active_revision("commerce")
+    if item and item.settings["enabled"]:
+        return CommerceSettings.model_validate(item.settings), item.id
+    return None, None
 
 
 def available_models():

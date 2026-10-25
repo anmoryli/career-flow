@@ -77,7 +77,7 @@ def revoke_user_sessions(user_id):
 def settings():
     configurations = {
         category: admin_config.history(category)
-        for category in ("mail", "model", "model_routes", "prompt_diagnosis")
+        for category in ("mail", "model", "model_routes", "prompt_diagnosis", "commerce")
     }
     return render_template("admin/settings.html", configurations=configurations)
 

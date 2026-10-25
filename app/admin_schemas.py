@@ -1,4 +1,5 @@
 import ipaddress
+from decimal import Decimal
 from typing import Literal
 from urllib.parse import urlsplit
 
@@ -105,6 +106,25 @@ class ModelRouteSettings(BaseModel):
         if any(not model_id or len(model_id) > 120 for model_id in value.values()):
             raise ValueError("Model IDs must be 1 to 120 characters")
         return value
+
+
+class CommerceOffer(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    price_yuan: Decimal = Field(gt=0, max_digits=10, decimal_places=2)
+    credits: int = Field(ge=1, le=1_000_000)
+
+
+class CommerceSettings(BaseModel):
+    """Published prices and credits; periods are fixed by the V1 product rule."""
+
+    model_config = ConfigDict(extra="forbid")
+    membership_30: CommerceOffer
+    membership_90: CommerceOffer
+    membership_365: CommerceOffer
+    credit_pack_1: CommerceOffer
+    credit_pack_2: CommerceOffer
+    credit_pack_3: CommerceOffer
+    enabled: bool = False
 
 
 class ConfigDraftInput(BaseModel):

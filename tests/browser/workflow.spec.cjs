@@ -246,3 +246,21 @@ test('administrator can publish task routing and diagnosis prompt', async ({ pag
   await expect(promptSection).toContainText('当前：第 1 版 · 证据优先');
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBeTruthy();
 });
+
+test('administrator can publish membership and credit offers', async ({ page }) => {
+  const promoted = await page.request.post('/__test/promote', {
+    data: { user_id: uid }, headers: { 'X-CSRFToken': await csrf(page) },
+  });
+  expect(promoted.status()).toBe(200);
+  await page.goto('/admin/settings');
+  const form = page.locator('[data-admin-config-form="commerce"]');
+  await expect(form.locator('[name="offer_membership_30_price_yuan"]')).toHaveValue('19.90');
+  await form.locator('[name="label"]').fill('测试套餐');
+  await form.locator('[name="enabled"]').check();
+  await form.locator('[type="submit"]').click();
+  const section = page.locator('[data-admin-section="commerce"]');
+  await expect(section).toContainText('第 1 版 · 测试套餐');
+  page.once('dialog', dialog => dialog.accept());
+  await section.locator('[data-admin-publish]').click();
+  await expect(section).toContainText('当前：第 1 版 · 测试套餐');
+});

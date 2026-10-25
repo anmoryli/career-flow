@@ -1,4 +1,5 @@
 import re
+from decimal import Decimal
 from uuid import uuid4
 
 import pytest
@@ -50,6 +51,56 @@ def model_settings(model_id="test-model", **changes):
         "tokens_per_credit": 1000,
         "enabled": True,
     } | changes
+
+
+def commerce_settings():
+    return {
+        "membership_30": {"price_yuan": "19.90", "credits": 30},
+        "membership_90": {"price_yuan": "49.90", "credits": 30},
+        "membership_365": {"price_yuan": "169.90", "credits": 30},
+        "credit_pack_1": {"price_yuan": "9.90", "credits": 100},
+        "credit_pack_2": {"price_yuan": "24.90", "credits": 300},
+        "credit_pack_3": {"price_yuan": "69.90", "credits": 1000},
+        "enabled": True,
+    }
+
+
+def test_commerce_configuration_publishes_exact_prices(mysql_app, admin_client):
+    client, _ = admin_client
+    csrf_token = token(client)
+    assert "会员与积分套餐" in client.get("/admin/settings").text
+    settings = commerce_settings()
+    bad = post(
+        client,
+        "/admin/api/config/commerce/draft",
+        {
+            "label": "无效套餐",
+            "settings": settings | {"membership_30": {"price_yuan": -1, "credits": 30}},
+        },
+        csrf_token,
+    )
+    assert bad.status_code == 422
+    draft = post(
+        client,
+        "/admin/api/config/commerce/draft",
+        {"label": "套餐", "settings": settings},
+        csrf_token,
+    )
+    assert draft.status_code == 201
+    assert draft.json["settings"]["membership_30"]["price_yuan"] == "19.90"
+    assert (
+        post(
+            client,
+            f"/admin/api/config/commerce/{draft.json['id']}/publish",
+            {"confirm": True},
+            csrf_token,
+        ).status_code
+        == 200
+    )
+    with mysql_app.app_context():
+        active, revision = admin_config.runtime_commerce()
+        assert revision == draft.json["id"]
+        assert active.membership_30.price_yuan == Decimal("19.90")
 
 
 def test_admin_access_and_model_secret_lifecycle(mysql_app, user_factory, admin_client):

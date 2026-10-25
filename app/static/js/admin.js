@@ -36,6 +36,15 @@
         settings.port = Number(settings.port);
       } else if (category === 'model') { settings.tokens_per_credit = Number(settings.tokens_per_credit); }
       else if (category === 'prompt_diagnosis') { settings.variables = settings.variables.split(',').map(value => value.trim()); }
+      else if (category === 'commerce') {
+        Object.entries(settings).forEach(([key, value]) => {
+          const match = /^offer_(.+)_(price_yuan|credits)$/.exec(key);
+          if (!match) return;
+          settings[match[1]] ||= {};
+          settings[match[1]][match[2]] = match[2] === 'credits' ? Number(value) : value;
+          delete settings[key];
+        });
+      }
       else {
         settings.routes = Object.fromEntries(Object.entries(settings)
           .filter(([key, value]) => key.startsWith('route_') && value.trim())
