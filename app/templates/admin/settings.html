@@ -48,5 +48,5 @@
 <div class="admin-version-list">{% for item in history.revisions %}<article class="recent-row"><div class="recent-record-copy"><strong>第 {{ item.version }} 版 · {{ item.label }}</strong><small>{{ '当前生效' if item.id == history.active_id else ('草稿' if item.state == 'draft' else '历史版本') }}{% if category in ['mail','model'] %} · {{ '密钥已配置' if item.secret_configured else '未配置密钥' }}{% endif %}</small></div>{% if item.state == 'draft' %}<button class="button secondary" type="button" data-admin-publish="{{ category }}:{{ item.id }}">确认发布</button>{% elif item.id != history.active_id %}<button type="button" data-admin-rollback="{{ category }}:{{ item.id }}">回滚到此版本</button>{% endif %}</article>{% else %}<p>还没有管理员配置版本。</p>{% endfor %}</div>
 </section>
 {% endfor %}
-<p id="admin-config-feedback" role="status" aria-live="polite"></p>
+<p id="admin-config-feedback" class="form-feedback" role="status" aria-live="polite"></p>
 {% endblock %}

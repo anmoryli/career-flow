@@ -2,7 +2,7 @@
   const form = document.querySelector('[data-ui-form="auth"]');
   if (!form) return;
   const feedback = document.querySelector('#auth-feedback');
-  const show = message => { feedback.hidden = false; feedback.textContent = message; };
+  const show = (message, tone = 'error') => { feedback.hidden = false; feedback.dataset.tone = tone; feedback.textContent = message; };
   document.querySelector('[data-password-toggle]')?.addEventListener('click', event => {
     const input = document.querySelector('#password');
     input.type = input.type === 'password' ? 'text' : 'password';
@@ -15,7 +15,7 @@
     const button = event.target; button.disabled = true;
     try {
       const result = await window.cfApi('/auth/code', { email: email.value });
-      show(result.message);
+      show(result.message, 'info');
       let remaining = result.retry_after;
       button.textContent = `${remaining} 秒后重发`;
       const timer = setInterval(() => {

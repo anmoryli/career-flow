@@ -6,7 +6,7 @@
   <div class="auth-form">
     <h2>{{ '创建你的工作空间' if mode == 'register' else '欢迎回来' }}</h2>
     <p class="muted">{{ '使用邮箱验证码，开启一段新的职业记录。' if mode == 'register' else '登录后继续整理你的职业经历。' }}</p>
-    <form method="post" class="stack" data-ui-form="auth"><p id="auth-feedback" role="alert" hidden></p>
+    <form method="post" class="stack" data-ui-form="auth"><p id="auth-feedback" class="form-feedback" role="alert" hidden></p>
       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
       {% if mode == 'register' %}<label for="display-name">称呼</label><input id="display-name" name="display_name" required maxlength="80" autocomplete="nickname" placeholder="希望我们如何称呼你">{% endif %}
       <label for="email">邮箱</label><input id="email" type="email" name="email" required maxlength="254" autocomplete="email" placeholder="you@example.com">

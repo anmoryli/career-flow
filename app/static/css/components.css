@@ -19,6 +19,10 @@ input[type="checkbox"] { width:1rem; accent-color:var(--brand); flex-shrink:0; }
 .eyebrow { font:500 .6875rem/1.5 var(--font-mono); letter-spacing:.16em; color:var(--brand); margin-bottom:1.5rem; display:flex; gap:.65rem; align-items:center; }
 .status-dot { display:inline-block; width:6px; height:6px; flex-shrink:0; border-radius:50%; background:var(--brand); }
 .notice { padding:1rem; border:1px solid var(--border); border-radius:var(--radius); background:var(--brand-soft); margin-top:1rem!important; }
+.form-feedback:empty { display:none; }
+.form-feedback { padding:.75rem 1rem; border:1px solid var(--border); border-left:3px solid var(--warning); border-radius:var(--radius); background:var(--surface-secondary); margin-bottom:.75rem; font-size:.875rem; }
+.form-feedback[data-tone="error"] { border-left-color:var(--danger); color:var(--danger); }
+.form-feedback[data-tone="info"] { border-left-color:var(--brand); }
 .toast { position:fixed; right:1rem; bottom:1rem; padding:.8rem 1.2rem; background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); box-shadow:var(--shadow); z-index:5; }
 details { border-top:1px solid var(--border); padding:1rem 0; }
 summary { cursor:pointer; font-size:.875rem; }

@@ -3,5 +3,5 @@
 <div data-import-id="{{ item.id }}" data-import-state="{{ item.state }}">
 {% if item.state in ['queued','running'] %}<p role="status">正在提取文字，离开后可通过本页地址恢复。</p>{% elif item.error %}<p role="alert">{{ item.error }}</p><a href="{{ url_for('web.workspace', view='resume-import') }}">重新导入</a>{% else %}
 <div class="job-layout"><section><h2>原始文字</h2><pre class="import-extracted">{{ item.text }}</pre></section><form data-import-confirm data-ui-form="import"><h2>确认字段</h2><label>简历名称<input name="title" maxlength="120" required value="导入的简历"></label><label>姓名<input name="name" maxlength="80"></label><label>目标岗位<input name="role" maxlength="120"></label><label>邮箱<input type="email" name="email" maxlength="120" value="{{ item.document.email }}"></label><label>手机<input name="phone" maxlength="40" value="{{ item.document.phone }}"></label><label>真实经历概述<textarea name="summary" maxlength="600" rows="8"></textarea></label><label><input name="confirmed" type="checkbox" required>已对照原文核实以上字段</label><button type="submit" class="button">确认并保存，继续编辑完整经历</button></form></div>
-{% endif %}<p id="import-feedback" role="status"></p></div>
+{% endif %}<p id="import-feedback" class="form-feedback" role="status"></p></div>
 {% endblock %}
