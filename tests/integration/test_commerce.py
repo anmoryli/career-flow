@@ -22,6 +22,7 @@ pytestmark = pytest.mark.integration
 def checkout(mysql_app, user_factory, monkeypatch):
     uid, _ = user_factory()
     mysql_app.config["MOCK_PAYMENT_ENABLED"] = True
+
     def published():
         return CommerceSettings.model_validate(commerce_settings()), None
 
@@ -50,11 +51,14 @@ def test_credit_order_snapshot_failure_retry_and_idempotent_grant(mysql_app, che
         assert commerce.settle_mock(uid, paid.id, "success").state == "paid"
         assert commerce.settle_mock(uid, paid.id, "success").state == "paid"
         assert credits.category_balances(uid) == {"purchased": (100, 0)}
-        assert db.session.scalar(
-            select(func.count())
-            .select_from(CreditEntry)
-            .where(CreditEntry.source_order_id == paid.id)
-        ) == 1
+        assert (
+            db.session.scalar(
+                select(func.count())
+                .select_from(CreditEntry)
+                .where(CreditEntry.source_order_id == paid.id)
+            )
+            == 1
+        )
 
 
 def test_membership_cycles_renewal_and_scheduled_grant(mysql_app, checkout, monkeypatch):
@@ -129,11 +133,14 @@ def test_concurrent_checkout_and_payment_issue_once(mysql_app, checkout):
         assert list(pool.map(lambda _: pay(), range(2))) == ["paid", "paid"]
     with mysql_app.app_context():
         assert credits.category_balances(uid) == {"purchased": (300, 0)}
-        assert db.session.scalar(
-            select(func.count())
-            .select_from(CreditEntry)
-            .where(CreditEntry.source_order_id == ids[0])
-        ) == 1
+        assert (
+            db.session.scalar(
+                select(func.count())
+                .select_from(CreditEntry)
+                .where(CreditEntry.source_order_id == ids[0])
+            )
+            == 1
+        )
 
 
 def test_billing_page_checkout_payment_and_csrf(mysql_app, checkout, user_factory):
@@ -141,35 +148,39 @@ def test_billing_page_checkout_payment_and_csrf(mysql_app, checkout, user_factor
     client, _ = login_client(mysql_app, uid)
     page = client.get("/workspace?view=billing")
     assert page.status_code == 200
-    assert "30 天会员" in page.text and "¥19.90" in page.text
+    assert "会员套餐" in page.text and "¥19.90" in page.text
     csrf = re.search(r'name="csrf_token" value="([^"]+)"', page.text).group(1)
     key = str(uuid4())
     payload = {"csrf_token": csrf, "request_key": key, "plan_code": "credit_pack_1"}
     assert client.post("/commerce/orders", data=payload).status_code == 303
     assert client.post("/commerce/orders", data=payload).status_code == 303
     with mysql_app.app_context():
-        order = db.session.scalar(
-            select(CommerceOrder).where(CommerceOrder.user_id == uid)
-        )
+        order = db.session.scalar(select(CommerceOrder).where(CommerceOrder.user_id == uid))
         assert order.price_yuan == Decimal("9.90") and order.state == "pending"
         order_id = order.id
-    assert client.post(
-        f"/commerce/orders/{order_id}/mock-payment", data={"outcome": "success"}
-    ).status_code == 400
+    assert (
+        client.post(
+            f"/commerce/orders/{order_id}/mock-payment", data={"outcome": "success"}
+        ).status_code
+        == 400
+    )
     other_uid, _ = user_factory()
     other, _ = login_client(mysql_app, other_uid)
     other_csrf = re.search(
         r'name="csrf_token" value="([^"]+)"',
         other.get("/workspace?view=billing").text,
     ).group(1)
-    assert other.post(
-        f"/commerce/orders/{order_id}/mock-payment",
-        data={"csrf_token": other_csrf, "outcome": "success"},
-    ).status_code == 404
+    assert (
+        other.post(
+            f"/commerce/orders/{order_id}/mock-payment",
+            data={"csrf_token": other_csrf, "outcome": "success"},
+        ).status_code
+        == 404
+    )
     payment = {"csrf_token": csrf, "outcome": "success"}
     assert client.post(f"/commerce/orders/{order_id}/mock-payment", data=payment).status_code == 303
     assert client.post(f"/commerce/orders/{order_id}/mock-payment", data=payment).status_code == 303
-    assert "模拟成功" in client.get("/workspace?view=billing").text
+    assert "已开通" in client.get("/workspace?view=billing").text
     assert client.get("/admin/orders").status_code == 403
     with mysql_app.app_context():
         db.session.get(User, other_uid).is_admin = True

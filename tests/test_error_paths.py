@@ -63,6 +63,7 @@ def test_complete_production_configuration_passes_guards(config):
         config
         | {
             "APP_ENV": "production",
+            "MOCK_PAYMENT_ENABLED": False,
             "SESSION_COOKIE_SECURE": True,
             "MAIL_USE_TLS": True,
             "MAIL_USERNAME": "test-user",
