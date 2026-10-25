@@ -1,6 +1,8 @@
 # 测试方法
 
-2026-10-25 本地实测：`uv run python scripts/test-integration.py` 156 passed，覆盖报告 96%；`uv run python scripts/verify-db-lifecycle.py` 在隔离 MySQL 库完成升级、降级、备份与恢复；`npx playwright test` 最终显示 39 passed，涵盖桌面、平板和手机。Ruff 检查与格式检查、`npm run build` 通过。真实 QQ SMTP、付费 MiMo 调用、生产部署和全部路径 100% 覆盖尚未验证。
+2026-10-25 本地实测：`uv run python scripts/test-integration.py` 156 passed，覆盖报告 96%；`uv run python scripts/verify-db-lifecycle.py` 在隔离 MySQL 库完成升级、降级、备份与恢复；`npx playwright test` 最终显示 39 passed，涵盖桌面、平板和手机。Ruff 检查与格式检查、`npm run build` 通过。真实 QQ SMTP、MiMo 收费任务端到端、生产部署和全部路径 100% 覆盖尚未验证。
+
+同日随后使用已配置的 MiMo 接口和合成英文简历/JD，完成一次结构化诊断输出及服务端证据校验，实际使用 1822 token；另一次普通文本请求返回 49 token。两次复杂结构化尝试曾因输出未符合 Schema 失败；现有执行路径会按规则重试并释放失败任务的冻结积分。该联调未使用真实用户简历、未走积分确认/冻结任务，不能视为收费端到端验收。
 
 2026-10-24新增用户流程矩阵见 `UX_TEST_MATRIX.md`。`scripts/test-integration.py` 升级真实MySQL测试库、检查迁移差异并执行包含分支统计的完整pytest，输出XML/HTML/JSON覆盖报告。Playwright通过 `npx playwright test` 运行，测试服务器限定8011/测试数据库，使用明确标记的测试模型，不代表真实供应商验收。
 
