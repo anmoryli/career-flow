@@ -31,8 +31,7 @@ def test_pydantic_ai_adapter_contract_without_external_request(app, monkeypatch)
     def respond(request):
         data = json.loads(request.content)
         seen.append(data)
-        assert len(data["tools"]) == 1
-        tool_name = data["tools"][0]["function"]["name"]
+        assert "tools" not in data
         return httpx.Response(
             200,
             json={
@@ -45,21 +44,9 @@ def test_pydantic_ai_adapter_contract_without_external_request(app, monkeypatch)
                         "index": 0,
                         "message": {
                             "role": "assistant",
-                            "content": None,
-                            "tool_calls": [
-                                {
-                                    "id": "test-call",
-                                    "type": "function",
-                                    "function": {
-                                        "name": tool_name,
-                                        "arguments": json.dumps(
-                                            valid_output(snapshot()), ensure_ascii=False
-                                        ),
-                                    },
-                                }
-                            ],
+                            "content": json.dumps(valid_output(snapshot()), ensure_ascii=False),
                         },
-                        "finish_reason": "tool_calls",
+                        "finish_reason": "stop",
                     }
                 ],
                 "usage": {"prompt_tokens": 100, "completion_tokens": 200, "total_tokens": 300},
@@ -80,6 +67,7 @@ def test_pydantic_ai_adapter_contract_without_external_request(app, monkeypatch)
     assert tokens == 300 and result["summary"]
     assert len(seen) == 1
     assert "untrusted_user_data" in json.dumps(seen[0]["messages"])
+    assert "连续短语" in json.dumps(seen[0]["messages"], ensure_ascii=False)
     assert "补充审查重点" in json.dumps(seen[0]["messages"], ensure_ascii=False)
 
 
