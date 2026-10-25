@@ -4,6 +4,8 @@
 
 同日随后使用已配置的 MiMo 接口和合成英文简历/JD，完成一次结构化诊断输出及服务端证据校验，实际使用 1822 token；另一次普通文本请求返回 49 token。两次复杂结构化尝试曾因输出未符合 Schema 失败；现有执行路径会按规则重试并释放失败任务的冻结积分。该联调未使用真实用户简历、未走积分确认/冻结任务，不能视为收费端到端验收。
 
+OCR 增量验证：加入 Tesseract 后完整 MySQL/Redis 集成套件 158 passed；新增真实扫描 PDF 用例后定向运行 `tests/test_pdf_limits.py` 5 passed。另用独立合成中文扫描页实测识别到“产品”一词。完整套件的 158 项是在最后新增原生 OCR 用例前运行，不能将其算入该次完整回归。
+
 2026-10-24新增用户流程矩阵见 `UX_TEST_MATRIX.md`。`scripts/test-integration.py` 升级真实MySQL测试库、检查迁移差异并执行包含分支统计的完整pytest，输出XML/HTML/JSON覆盖报告。Playwright通过 `npx playwright test` 运行，测试服务器限定8011/测试数据库，使用明确标记的测试模型，不代表真实供应商验收。
 
 管理员配置新增权限、密钥脱敏、草稿发布/回滚、真实本地 Mailpit 发信、CLI 初始账号和三种屏幕尺寸浏览器用例。当前阶段的实际数字和限制见 `ADMIN_STATUS_2026-10-24.md`；旧的 `UX_ACCEPTANCE_2026-10-24.md` 是上一阶段快照。

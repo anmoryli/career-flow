@@ -4,7 +4,7 @@
 
 ## Linux 生产准备
 
-1. 安装 Python 3.12、MySQL 8.4 LTS、Redis、Node/npm/PM2、Nginx；不要把开发初始化脚本直接应用到已有生产服务器。
+1. 安装 Python 3.12、MySQL 8.4 LTS、Redis、Node/npm/PM2、Nginx、Tesseract OCR 及 `chi_sim`/`eng` 语言包；不要把开发初始化脚本直接应用到已有生产服务器。
 2. 使用最小权限应用账户、独立测试库、MySQL TLS、SMTP TLS、HTTPS 证书和受保护 `.env`。
 3. 设置 APP_ENV=production、COOKIE_SECURE=true、MOCK_PAYMENT_ENABLED=false，提供独立随机秘密；DATABASE_URL 添加正确 `ssl_ca` 参数。
 4. `uv sync --frozen --no-dev`、`npm ci`、`npm run build`。

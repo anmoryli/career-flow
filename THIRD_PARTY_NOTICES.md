@@ -19,7 +19,7 @@ No third-party resume/application repository was copied into this project. The i
 | cryptography 50.0.2 | Encrypt administrator-managed service credentials at rest | Apache-2.0 OR BSD-3-Clause |
 | pdfplumber 0.11.10 / pdfminer.six | Bounded text PDF extraction | MIT |
 | Pillow 13.0.0 | Image decoding and verification | MIT-CMU (HPND) |
-| pypdfium2 5.14.0 | pdfplumber transitive PDF renderer; not directly invoked | Apache-2.0 / BSD-3-Clause; bundled PDFium has separate notices |
+| pypdfium2 5.14.0 | pdfplumber transitive PDF renderer used for scanned-page rendering | Apache-2.0 / BSD-3-Clause; bundled PDFium has separate notices |
 
 Exact installed versions, upstream metadata and transitive runtime license declarations are recorded in `docs/DEPENDENCIES.json`; hashes and exact resolved artifacts are in `uv.lock` and `requirements.txt`. SPDX declarations and copyright text in the installed distribution remain authoritative; the inventory does not replace preserving complete upstream notices in a production package.
 
@@ -35,10 +35,11 @@ Exact installed versions, upstream metadata and transitive runtime license decla
 - MySQL Community **8.4 LTS** — GPL-2.0, separately installed Ubuntu system package. Tested native server 8.4.11.
 - Redis **8.0.5** — separately installed Ubuntu package. Redis 8 offers AGPLv3/RSALv2/SSPLv1 licensing choices; production distribution/service licensing needs explicit review before commercial release. The application does not vendor the server binary.
 - Mailpit **1.27.10**, https://github.com/axllent/mailpit — MIT, development mail capture only. Windows binary is downloaded into ignored local `instance/`, not committed or deployed. Download source/digest recorded under `output/native-downloads/`.
+- Tesseract OCR, https://github.com/tesseract-ocr/tesseract — Apache-2.0, separately installed native executable for image-only PDF pages. Its Leptonica dependency is BSD-2-Clause; `tessdata_fast` Simplified Chinese language data is Apache-2.0. No OCR binary or model weights are committed.
 
 ## Deferred dependencies
 
-OCR engines, Promptfoo, fonts and model weights have not been introduced. No blanket commercial-use claim is made for future dependencies or a complete production distribution. Preserve pypdfium2/PDFium bundled third-party notices when packaging the installed distribution.
+Promptfoo and external fonts have not been introduced. No blanket commercial-use claim is made for future dependencies or a complete production distribution. Preserve pypdfium2/PDFium and installed Tesseract/language-data notices when packaging the distribution.
 
 ## Added development checks
 
