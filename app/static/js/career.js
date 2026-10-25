@@ -226,12 +226,20 @@
     editor.querySelector('.resume-photo-editor').open = Boolean(saved.document.photo);
   }
   const chapters = Array.from(editor.querySelectorAll('.editor-section'));
-  chapters.slice(0, -1).forEach((chapter, index) => {
-    const next = chapters[index + 1]; const button = document.createElement('button');
-    button.type = 'button'; button.className = 'button secondary';
-    button.textContent = `下一步：${next.querySelector('h2').textContent}`;
-    button.addEventListener('click', () => { next.scrollIntoView({ block: 'start' }); next.querySelector('input,textarea,select')?.focus({ preventScroll: true }); });
-    chapter.append(button);
+  chapters.forEach(chapter => {
+    const heading = chapter.querySelector('.work-section-heading');
+    const toggle = document.createElement('button');
+    toggle.type = 'button'; toggle.className = 'editor-section-toggle';
+    toggle.setAttribute('aria-expanded', 'true');
+    toggle.setAttribute('aria-label', `折叠${heading.querySelector('h2').textContent}`);
+    toggle.textContent = '收起';
+    toggle.addEventListener('click', () => {
+      const collapsed = chapter.classList.toggle('is-collapsed');
+      toggle.setAttribute('aria-expanded', String(!collapsed));
+      toggle.setAttribute('aria-label', `${collapsed ? '展开' : '折叠'}${heading.querySelector('h2').textContent}`);
+      toggle.textContent = collapsed ? '展开' : '收起';
+    });
+    heading.append(toggle);
   });
   document.querySelector('[data-version-history]').addEventListener('click', async () => {
     const container = document.querySelector('#version-history');

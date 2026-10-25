@@ -152,3 +152,24 @@
   .report-outline li { border-right:0; border-bottom:1px solid var(--border); padding:17px; }
   .report-outline li:last-child { border-bottom:0; }
 }
+
+/* 简历编辑器板块使用统一的表面、边框和强调色。 */
+.resume-fields > .editor-section {
+  background:var(--surface); border:1px solid var(--border); border-radius:var(--radius);
+  padding:0 18px 18px; margin:0 0 14px; scroll-margin-top:80px;
+}
+.resume-fields > .editor-section > .work-section-heading {
+  min-height:58px; margin:0 0 18px; padding:12px 0; border-bottom:1px solid var(--border);
+  display:flex; align-items:center; gap:10px;
+}
+.resume-fields > .editor-section > .work-section-heading h2 { flex:1; font-size:14px; }
+.resume-fields > .editor-section > .work-section-heading > span { order:-1; color:var(--brand); font-size:10px; }
+.editor-section-toggle { border:0; background:transparent; color:var(--text-secondary); padding:7px 3px; font-size:11px; }
+.editor-section-toggle:hover { color:var(--brand); }
+.resume-fields > .editor-section.is-collapsed { padding-bottom:0; }
+.resume-fields > .editor-section.is-collapsed > :not(.work-section-heading) { display:none; }
+.resume-fields > .editor-section.is-collapsed > .work-section-heading { margin-bottom:0; border-bottom:0; }
+@media(max-width:760px) {
+  .resume-fields > .editor-section { padding:0 14px 15px; }
+  .resume-fields > .editor-section > .work-section-heading { min-height:52px; }
+}

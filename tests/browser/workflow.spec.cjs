@@ -191,6 +191,18 @@ test('oversized photo is compressed in the browser and shows at once', async ({ 
   await expect(page.locator('[data-resume-stage] [data-rf-photo]').first()).toBeVisible();
 });
 
+test('resume editor sections are cards that can collapse without clearing content', async ({ page }) => {
+  await create(page);
+  const section = page.locator('#resume-summary-section');
+  await section.locator('textarea').fill('真实的个人简介');
+  const toggle = section.getByRole('button', { name: '折叠个人简介' });
+  await toggle.click();
+  await expect(section).toHaveClass(/is-collapsed/);
+  await expect(section.locator('textarea')).toBeHidden();
+  await section.getByRole('button', { name: '展开个人简介' }).click();
+  await expect(section.locator('textarea')).toHaveValue('真实的个人简介');
+});
+
 for (const theme of ['light', 'dark', 'system']) {
   test(`page navigation and layout in ${theme} theme`, async ({ page }) => {
     await page.goto('/workspace');
