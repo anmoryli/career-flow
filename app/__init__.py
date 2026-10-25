@@ -12,10 +12,13 @@ from werkzeug.exceptions import HTTPException
 from app.config import load_config
 from app.extensions import csrf, db, migrate
 from app.services.errors import BusinessError
+from app.services.resume_markdown import inline_markdown, resume_markdown
 
 
 def create_app(overrides: dict | None = None) -> Flask:
     app = Flask(__name__)
+    app.jinja_env.filters["resume_markdown"] = resume_markdown
+    app.jinja_env.filters["resume_markdown_inline"] = inline_markdown
     app.config.update(load_config(overrides))
     db.init_app(app)
     migrate.init_app(app, db)

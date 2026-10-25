@@ -43,7 +43,7 @@
     </div>
     <div class="rd-entry-body">
       <div class="rd-entry-heading"><h3 data-rf="experiences.{{ loop.index0 }}.company">{{ item.company }}</h3><span class="rd-entry-role" data-rf="experiences.{{ loop.index0 }}.role">{{ item.role }}</span></div>
-      <ul class="rd-bullets" data-rf-list="experiences.{{ loop.index0 }}.bullets">{% for bullet in item.bullets %}<li>{{ bullet }}</li>{% endfor %}</ul>
+      <ul class="rd-bullets" data-rf-list="experiences.{{ loop.index0 }}.bullets">{% for bullet in item.bullets %}<li>{{ bullet|resume_markdown_inline }}</li>{% endfor %}</ul>
     </div>
   </div>
   {% endfor %}
@@ -59,7 +59,7 @@
     <div class="rd-entry-body">
       <div class="rd-entry-heading"><h3 data-rf="projects.{{ loop.index0 }}.name">{{ item.name }}</h3><span class="rd-entry-role" data-rf="projects.{{ loop.index0 }}.role">{{ item.role }}</span></div>
       <p class="rd-techline" data-rf="projects.{{ loop.index0 }}.tech">{{ item.tech }}</p>
-      <p class="rd-entry-text" data-rf="projects.{{ loop.index0 }}.description">{{ item.description }}</p>
+      <div class="rd-entry-text rd-markdown" data-rf="projects.{{ loop.index0 }}.description">{{ item.description|resume_markdown }}</div>
       <p class="rd-link" data-rf="projects.{{ loop.index0 }}.link" data-rf-if="projects.{{ loop.index0 }}.link"></p>
     </div>
   </div>
@@ -75,7 +75,7 @@
     <div class="rd-entry-side"><span class="rd-period" data-rf="education.{{ loop.index0 }}.period">{{ item.period }}</span></div>
     <div class="rd-entry-body">
       <div class="rd-entry-heading"><h3 data-rf="education.{{ loop.index0 }}.school">{{ item.school }}</h3><span class="rd-entry-role" data-rf="education.{{ loop.index0 }}.degree">{{ item.degree }}</span></div>
-      <p class="rd-entry-text" data-rf="education.{{ loop.index0 }}.detail">{{ item.detail }}</p>
+      <div class="rd-entry-text rd-markdown" data-rf="education.{{ loop.index0 }}.detail">{{ item.detail|resume_markdown }}</div>
     </div>
   </div>
   {% endfor %}
@@ -111,9 +111,9 @@
 {% for section in order %}
   {% if section not in data.hidden_sections|default([]) %}
   {% if section == 'summary' %}
-    {% if template == 'classic' %}<section class="rd-profile-intro" data-rf-section="summary"><span class="rd-intro-label">职业概述</span><p class="rd-summary" data-rf="summary">{{ data.summary }}</p></section>
-    {% elif template == 'technical' %}<section class="rd-profile-intro" data-rf-section="summary"><p class="rd-summary" data-rf="summary">{{ data.summary }}</p></section>
-    {% else %}<section class="rd-profile-intro" data-rf-section="summary"><h2 class="rd-section-title"><span>关于我</span></h2><p class="rd-lead" data-rf="summary">{{ data.summary }}</p></section>{% endif %}
+    {% if template == 'classic' %}<section class="rd-profile-intro" data-rf-section="summary"><span class="rd-intro-label">职业概述</span><div class="rd-summary rd-markdown" data-rf="summary">{{ data.summary|resume_markdown }}</div></section>
+    {% elif template == 'technical' %}<section class="rd-profile-intro" data-rf-section="summary"><div class="rd-summary rd-markdown" data-rf="summary">{{ data.summary|resume_markdown }}</div></section>
+    {% else %}<section class="rd-profile-intro" data-rf-section="summary"><h2 class="rd-section-title"><span>关于我</span></h2><div class="rd-lead rd-markdown" data-rf="summary">{{ data.summary|resume_markdown }}</div></section>{% endif %}
   {% elif section == 'experiences' %}{{ experience_list(data, template) }}
   {% elif section == 'projects' %}{{ project_list(data, template) }}
   {% elif section == 'education' %}{{ education_list(data, template) }}

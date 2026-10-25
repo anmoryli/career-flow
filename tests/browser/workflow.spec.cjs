@@ -251,6 +251,26 @@ test('draft preview keeps guidance visible while editing but excludes it from pr
   await expect(panel.locator('[data-rf-section="projects"] .rd-placeholder-only').first()).toBeHidden();
 });
 
+test('resume markdown renders safely in preview and print', async ({ page }) => {
+  await create(page);
+  await page.locator('#resume-summary').fill('**重点** 与 *补充*\n- 第一项\n- <script>alert(1)</script>');
+  await saved(page);
+  if (test.info().project.name === 'mobile') await page.locator('[data-editor-tab="preview"]').click();
+  const summary = page.locator('[data-resume-panel="classic"] [data-rf="summary"]');
+  await expect(summary.locator('strong')).toHaveText('重点');
+  await expect(summary.locator('em')).toHaveText('补充');
+  await expect(summary.locator('li')).toHaveCount(2);
+  await expect(summary.locator('script')).toHaveCount(0);
+  const rid = new URL(page.url()).searchParams.get('resume_id');
+  const print = await page.context().newPage();
+  await print.goto(`/resumes/${rid}/print`);
+  const printedSummary = print.locator('[data-rf="summary"]');
+  await expect(printedSummary.locator('strong')).toHaveText('重点');
+  await expect(printedSummary.locator('li')).toHaveCount(2);
+  await expect(printedSummary.locator('script')).toHaveCount(0);
+  await print.close();
+});
+
 for (const theme of ['light', 'dark', 'system']) {
   test(`page navigation and layout in ${theme} theme`, async ({ page }) => {
     await page.goto('/workspace');

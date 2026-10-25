@@ -102,6 +102,9 @@
 }
 
 .tpl-technical [data-rf-section="projects"] .rd-entry { position:relative; background:#f2f6f9; border:1px solid #d4e1eb; border-left:3px solid var(--rd-accent); border-radius:3px; padding:13px 15px; margin:10px 0; grid-template-columns:75px minmax(0,1fr); }
+.rd-markdown p + p { margin-top:.45em; }
+.rd-markdown ul { list-style:disc; padding-left:1.4em; margin:.5em 0; }
+.rd-markdown li { margin:.2em 0; }
 .resume-stage[data-preview-mode="draft"] .rd-placeholder-only,
 .resume-stage[data-preview-mode="draft"] .rd-placeholder-hint,
 .resume-stage[data-preview-mode="draft"] [data-placeholder-hint]:not(.rd-placeholder-only):after {

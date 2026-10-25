@@ -185,6 +185,34 @@ document.querySelectorAll('[data-theme-choice]').forEach(button => {
   const hasText = value => flatten(value).some(item => typeof item === 'string' && item.trim());
   const splitLines = value => value.split('\n').map(item => item.trim()).filter(Boolean);
   const splitItems = value => value.split(/[,，、]/).map(item => item.trim()).filter(Boolean);
+  // 只创建允许的 DOM 节点，Markdown 原文始终作为文本节点插入。
+  const renderInline = (element, value) => {
+    const pattern = /\*\*(.+?)\*\*|\*(.+?)\*/g;
+    let start = 0, match;
+    while ((match = pattern.exec(value))) {
+      element.append(document.createTextNode(value.slice(start, match.index)));
+      const node = document.createElement(match[1] === undefined ? 'em' : 'strong');
+      node.textContent = match[1] || match[2]; element.append(node);
+      start = pattern.lastIndex;
+    }
+    element.append(document.createTextNode(value.slice(start)));
+  };
+  const renderBlock = (element, value) => {
+    element.replaceChildren();
+    let list = null;
+    value.split('\n').forEach(line => {
+      const bullet = /^\s*[-*]\s+(.+)$/.exec(line);
+      if (bullet) {
+        if (!list) { list = document.createElement('ul'); element.append(list); }
+        const item = document.createElement('li'); renderInline(item, bullet[1]); list.append(item);
+      } else {
+        list = null;
+        const paragraph = document.createElement('p');
+        if (line) renderInline(paragraph, line); else paragraph.append(document.createElement('br'));
+        element.append(paragraph);
+      }
+    });
+  };
   const read = (input, path) => {
     const value = input.value.trim();
     if (path.endsWith('.bullets') || path === 'certificates' || path === 'languages') {
@@ -234,7 +262,9 @@ document.querySelectorAll('[data-theme-choice]').forEach(button => {
       const value = getPath(previewData, element.dataset.rf);
       const text = Array.isArray(value) ? value.join('、') : (value || '');
       const hint = editor.querySelector(`[data-rf-field="${element.dataset.rf}"]`)?.placeholder || '待填写';
-      element.textContent = text || (sampleActive ? '' : hint);
+      const shown = text || (sampleActive ? '' : hint);
+      if (element.classList.contains('rd-markdown') && text) renderBlock(element, shown);
+      else element.textContent = shown;
       element.classList.toggle('rd-placeholder-only', !sampleActive && !String(text).trim());
       element.dataset.placeholderHint = sampleActive ? '' : hint;
       element.hidden = sampleActive && !String(text).trim();
@@ -246,7 +276,7 @@ document.querySelectorAll('[data-theme-choice]').forEach(button => {
       element.replaceChildren();
       items.forEach(item => {
         const node = document.createElement(mode === 'inline' || mode === 'tags' ? 'span' : 'li');
-        node.textContent = item;
+        renderInline(node, String(item).replace(/^\s*[-*]\s+/, ''));
         element.appendChild(node);
       });
       if (!sampleActive) {
