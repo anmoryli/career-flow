@@ -1,4 +1,5 @@
 import re
+from concurrent.futures import ThreadPoolExecutor
 from datetime import timedelta
 from decimal import Decimal
 from uuid import uuid4
@@ -8,7 +9,7 @@ from sqlalchemy import func, select
 
 from app.admin_schemas import CommerceSettings
 from app.extensions import db
-from app.models import CommerceOrder, CreditEntry, Membership, MembershipCycle, utcnow
+from app.models import CommerceOrder, CreditEntry, Membership, MembershipCycle, User, utcnow
 from app.services import admin_config, commerce, credits
 from app.services.errors import BusinessError
 from tests.integration.test_admin import commerce_settings
@@ -108,6 +109,33 @@ def test_checkout_is_private_and_disabled_in_production(mysql_app, checkout, use
         assert error.value.status == 403
 
 
+def test_concurrent_checkout_and_payment_issue_once(mysql_app, checkout):
+    uid = checkout
+    key = uuid4()
+
+    def create():
+        with mysql_app.app_context():
+            return commerce.create_order(uid, key, "credit_pack_2").id
+
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        ids = list(pool.map(lambda _: create(), range(2)))
+    assert ids[0] == ids[1]
+
+    def pay():
+        with mysql_app.app_context():
+            return commerce.settle_mock(uid, ids[0], "success").state
+
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        assert list(pool.map(lambda _: pay(), range(2))) == ["paid", "paid"]
+    with mysql_app.app_context():
+        assert credits.category_balances(uid) == {"purchased": (300, 0)}
+        assert db.session.scalar(
+            select(func.count())
+            .select_from(CreditEntry)
+            .where(CreditEntry.source_order_id == ids[0])
+        ) == 1
+
+
 def test_billing_page_checkout_payment_and_csrf(mysql_app, checkout, user_factory):
     uid = checkout
     client, _ = login_client(mysql_app, uid)
@@ -142,3 +170,10 @@ def test_billing_page_checkout_payment_and_csrf(mysql_app, checkout, user_factor
     assert client.post(f"/commerce/orders/{order_id}/mock-payment", data=payment).status_code == 303
     assert client.post(f"/commerce/orders/{order_id}/mock-payment", data=payment).status_code == 303
     assert "模拟成功" in client.get("/workspace?view=billing").text
+    assert client.get("/admin/orders").status_code == 403
+    with mysql_app.app_context():
+        db.session.get(User, other_uid).is_admin = True
+        db.session.commit()
+    admin_orders = other.get("/admin/orders")
+    assert admin_orders.status_code == 200
+    assert f"#{order_id}" in admin_orders.text

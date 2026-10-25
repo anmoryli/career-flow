@@ -5,7 +5,7 @@ from sqlalchemy import func, select
 
 from app.admin_schemas import ConfigDraftInput, ConfigPublishInput, ConfigRollbackInput
 from app.extensions import db
-from app.models import AdminAudit, AIOperation, CreditEntry, User
+from app.models import AdminAudit, AIOperation, CommerceOrder, CreditEntry, Membership, User, utcnow
 from app.services import admin_config, auth
 from app.services.errors import BusinessError
 from app.web.routes import input_data
@@ -40,6 +40,10 @@ def dashboard():
             .select_from(CreditEntry)
             .where(CreditEntry.kind == "settle")
         ),
+        "orders": db.session.scalar(select(func.count()).select_from(CommerceOrder)),
+        "members": db.session.scalar(
+            select(func.count()).select_from(Membership).where(Membership.expires_at > utcnow())
+        ),
     }
     return render_template("admin/dashboard.html", counts=counts)
 
@@ -49,6 +53,18 @@ def dashboard():
 def users():
     items = db.session.scalars(select(User).order_by(User.created_at.desc()).limit(100)).all()
     return render_template("admin/users.html", users=items)
+
+
+@admin_web.get("/orders")
+@admin_required
+def orders():
+    items = db.session.execute(
+        select(CommerceOrder, User.email)
+        .join(User, CommerceOrder.user_id == User.id)
+        .order_by(CommerceOrder.id.desc())
+        .limit(100)
+    ).all()
+    return render_template("admin/orders.html", orders=items)
 
 
 @admin_web.post("/users/<int:user_id>/revoke-sessions")

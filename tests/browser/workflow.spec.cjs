@@ -273,4 +273,7 @@ test('administrator can publish membership and credit offers', async ({ page }) 
   await expect(page.locator('.account-section').first()).toContainText('购买 100');
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBeTruthy();
   await page.screenshot({ path: `output/billing-${test.info().project.name}.png`, fullPage: true });
+  await page.goto('/admin/orders');
+  await expect(page.locator('.admin-list')).toContainText('credit_pack_1');
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBeTruthy();
 });
