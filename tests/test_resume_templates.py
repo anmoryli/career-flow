@@ -47,7 +47,7 @@ def test_three_templates_have_distinct_visual_structures(app):
 
 def test_sample_and_account_photo_behavior_are_explicit(app):
     html = render_editor(app)
-    assert "模板示例" in html
+    assert "模板预览提供虚构示例" in html
     assert "照片随简历保存到账号" in html
     assert "data-save-resume" in html
     assert "data-clear-sample" in html

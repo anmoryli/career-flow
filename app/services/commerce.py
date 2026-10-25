@@ -16,9 +16,9 @@ PACKS = {"credit_pack_1", "credit_pack_2", "credit_pack_3"}
 
 
 def mock_enabled():
-    return (
-        current_app.config["APP_ENV"] != "production" and current_app.config["MOCK_PAYMENT_ENABLED"]
-    )
+    return current_app.config["APP_ENV"] != "production" and current_app.config[
+        "MOCK_PAYMENT_ENABLED"
+    ]
 
 
 def create_order(user_id, request_key, plan_code):

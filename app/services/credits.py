@@ -84,9 +84,8 @@ def freeze(user_id, operation_id, amount):
 
 def _reservations(operation_id):
     entries = db.session.scalars(
-        select(CreditEntry).where(
-            CreditEntry.operation_id == operation_id, CreditEntry.kind == "freeze"
-        )
+        select(CreditEntry)
+        .where(CreditEntry.operation_id == operation_id, CreditEntry.kind == "freeze")
     ).all()
     return sorted(entries, key=lambda entry: SPEND_ORDER.index(entry.category))
 

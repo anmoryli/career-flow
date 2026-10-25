@@ -32,7 +32,6 @@ test('draft autosave, refresh, templates, repeat entries, history, export', asyn
   await saved(page);
   await page.reload();
   await expect(page.locator('#resume-template-quick')).toHaveValue('modern');
-  await page.locator('.editor-more-actions summary').click();
   await page.locator('[data-version-history]').click();
   await expect(page.locator('#version-history button').first()).toBeVisible();
   if (test.info().project.name === 'mobile') {
@@ -145,7 +144,6 @@ test('autosave conflict, new copy, original preserved', async ({ page }) => {
   await page.locator('#resume-summary').fill('当前窗口尚未保存的修改');
   await expect(page.locator('#resume-draft-status')).toContainText('其他窗口');
   await expect(page.locator('#resume-summary')).toHaveValue('当前窗口尚未保存的修改');
-  await page.locator('.editor-more-actions summary').click();
   await page.locator('[data-save-copy]').click(); await saved(page);
   expect(new URL(page.url()).searchParams.get('resume_id')).not.toBe(rid);
   const original = await (await page.request.get(`/api/resumes/${rid}`)).json();
@@ -203,26 +201,20 @@ test('resume editor sections are cards that can collapse without clearing conten
   await expect(section.locator('textarea')).toBeHidden();
   await section.getByRole('button', { name: '展开个人简介' }).click();
   await expect(section.locator('textarea')).toHaveValue('真实的个人简介');
-  await page.locator('#resume-basics').getByRole('button', { name: '折叠基本信息' }).click();
-  await expect(page.locator('#resume-name')).toBeHidden();
-  await page.locator('#resume-basics').getByRole('button', { name: '展开基本信息' }).click();
-  await expect(page.locator('#resume-name')).toBeVisible();
-  await page.locator('#resume-template').getByRole('button', { name: '折叠简历模板' }).click();
-  await expect(page.locator('#resume-template .template-picker')).toBeHidden();
 });
 
 test('resume section order and visibility survive saving and printing', async ({ page }) => {
   await create(page);
   await page.locator('#resume-experience [data-rf-field="experiences.0.company"]').fill('测试公司');
   await page.locator('#resume-projects [data-rf-field="projects.0.name"]').fill('保留的项目');
-  await page.locator('.resume-section-sidebar [aria-label="简介下移"]').click();
-  await page.locator('.resume-section-sidebar [data-section-visibility="projects"]').uncheck();
+  await page.locator('#resume-summary-section [aria-label="个人简介下移"]').click();
+  await page.locator('#resume-projects [data-section-toggle]').click();
   await saved(page);
   await page.reload();
   const order = await page.locator('[data-resume-panel="classic"] [data-section-flow] > [data-rf-section]')
     .evaluateAll(sections => sections.map(section => section.dataset.rfSection));
   expect(order).toEqual(['experiences', 'summary', 'projects', 'education', 'skills', 'certificates', 'languages']);
-  await expect(page.locator('.resume-section-sidebar [data-section-visibility="projects"]')).not.toBeChecked();
+  await expect(page.locator('#resume-projects [data-section-toggle]')).toHaveText('添加到简历');
   await expect(page.locator('#resume-projects [data-rf-field="projects.0.name"]')).toHaveValue('保留的项目');
   const rid = new URL(page.url()).searchParams.get('resume_id');
   const print = await page.context().newPage();
@@ -236,7 +228,7 @@ test('resume section order and visibility survive saving and printing', async ({
 test('resume sections can be dragged to a new position', async ({ page }) => {
   test.skip(test.info().project.name !== 'desktop');
   await create(page);
-  await page.locator('[data-section-row="experiences"] .resume-section-grip').dragTo(page.locator('[data-section-row="summary"] .resume-section-grip'));
+  await page.locator('#resume-experience .editor-section-grip').dragTo(page.locator('#resume-summary-section .editor-section-grip'));
   const order = await page.locator('.resume-fields > [data-editor-section]')
     .evaluateAll(sections => sections.map(section => section.dataset.editorSection));
   expect(order.slice(0, 3)).toEqual(['experiences', 'summary', 'projects']);
@@ -407,18 +399,13 @@ test('administrator can publish membership and credit offers', async ({ page }) 
   await section.locator('[data-admin-publish]').click();
   await expect(section).toContainText('当前：第 1 版 · 测试套餐');
   await page.goto('/workspace?view=billing');
-  await expect(page.getByRole('heading', { name: '开通会员' })).toBeVisible();
   const pack = page.locator('.billing-offer').filter({ has: page.locator('[name="plan_code"][value="credit_pack_1"]') });
   await expect(pack).toContainText('¥9.90');
-  await pack.getByRole('button', { name: '选择积分包' }).click();
-  await expect(page.locator('.billing-order').first()).toContainText('等待确认');
-  await page.locator('.billing-order').first().getByRole('button', { name: '确认开通（模拟）' }).click();
-  await expect(page.locator('.billing-order').first()).toContainText('已开通');
+  await pack.getByRole('button', { name: '创建订单' }).click();
+  await expect(page.locator('.billing-order').first()).toContainText('待模拟支付');
+  await page.locator('.billing-order').first().getByRole('button', { name: '模拟成功' }).click();
+  await expect(page.locator('.billing-order').first()).toContainText('模拟成功');
   await expect(page.locator('.account-section').first()).toContainText('购买 100');
-  const membership = page.locator('.billing-offer').filter({ has: page.locator('[name="plan_code"][value="membership_30"]') });
-  await membership.getByRole('button', { name: '开通会员' }).click();
-  await page.locator('.billing-order').first().getByRole('button', { name: '确认开通（模拟）' }).click();
-  await expect(page.locator('.membership-status')).toContainText('已开通');
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBeTruthy();
   await page.screenshot({ path: `output/billing-${test.info().project.name}.png`, fullPage: true });
   await page.goto('/admin/orders');

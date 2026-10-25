@@ -97,7 +97,7 @@
 @media print {
  @page { size:A4; margin:0; }
  html,body { background:#fff!important; width:auto!important; height:auto!important; overflow:visible!important; }
- .workbench-sidebar,.workbench-topbar,.sidebar-backdrop,.site-header,.site-footer,.skip-link,#theme-feedback,.notice,.business-page-heading,.capability-note,.resume-fields,.resume-section-sidebar,.editor-command-bar,.preview-toolbar,.preview-footnote,.editor-mobile-tabs,.resume-stage-empty,.workspace-tip,.sample-banner { display:none!important; }
+ .workbench-sidebar,.workbench-topbar,.sidebar-backdrop,.site-header,.site-footer,.skip-link,#theme-feedback,.notice,.business-page-heading,.capability-note,.resume-fields,.preview-toolbar,.preview-footnote,.editor-mobile-tabs,.resume-stage-empty,.workspace-tip,.sample-banner { display:none!important; }
  .workbench-main { margin-left:0!important; }.workbench-content { max-width:none!important; margin:0!important; padding:0!important; }.resume-editor { display:block!important; }.resume-preview-panel,.resume-preview-panel.is-expanded { position:static!important; width:auto!important; max-width:none!important; border:0!important; background:#fff!important; padding:0!important; border-radius:0!important; overflow:visible!important; display:block!important; }.resume-stage { overflow:visible!important; width:auto!important; max-width:none!important; }.resume-panel { zoom:1!important; width:auto!important; }.resume-doc { width:210mm!important; min-height:297mm!important; box-shadow:none!important; font-size:12px!important; }.rd-entry,.rd-skill-group,.rd-photo-frame { break-inside:avoid; page-break-inside:avoid; }.rd-section-title,.rd-entry-heading { break-after:avoid; page-break-after:avoid; }.rd-photo-placeholder small { display:none; }
 }
 

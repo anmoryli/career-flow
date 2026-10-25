@@ -2,12 +2,13 @@
 {% from 'resume/_document.html' import resume_document %}
 {% if view == 'resumes' %}
 <section class="business-page-heading"><div><h1>我的简历</h1><p>将你的经历整理成一份清晰、专业的简历。</p></div><div class="page-actions"><a class="button secondary" href="{{ url_for('web.workspace', view='resume-import') }}">{{ icon('upload') }} 导入 PDF</a><a class="button" href="{{ url_for('web.workspace', view='resume-new') }}">{{ icon('plus') }} 创建简历</a></div></section>
+<p class="small-text muted">草稿保存到账号，可复制岗位版本并查看历史。</p>
 <section class="list-surface"><div class="list-toolbar"><h2>全部简历</h2></div>
-{% for item in resumes %}<article class="recent-row resume-list-row"><div class="recent-record-copy"><strong>{{ item.title }}</strong><small>第 {{ item.revision }} 版 · {{ item.updated_at.strftime('%Y-%m-%d %H:%M') }}</small></div><div class="resume-list-actions"><a class="button secondary small" href="{{ url_for('web.workspace', view='resume-new', resume_id=item.id) }}">继续编辑</a><a class="subtle-link" href="{{ url_for('web.workspace', view='jobs', resume_id=item.id) }}">分析岗位</a><details class="resume-list-more"><summary aria-label="{{ item.title }}更多操作">···</summary><div><button type="button" data-copy-resume="{{ item.id }}">复制简历</button><button type="button" data-delete-resume="{{ item.id }}">删除简历</button></div></details></div></article>{% else %}<div class="workspace-empty"><h3>创建第一份可以持续修改的简历</h3><a class="button" href="{{ url_for('web.workspace', view='resume-new') }}">创建简历</a></div>{% endfor %}<p data-list-feedback role="status"></p></section>
+{% for item in resumes %}<article class="recent-row"><div class="recent-record-copy"><strong>{{ item.title }}</strong><small>第 {{ item.revision }} 版 · {{ item.updated_at.strftime('%Y-%m-%d %H:%M') }} UTC</small></div><a class="button secondary" href="{{ url_for('web.workspace', view='resume-new', resume_id=item.id) }}">继续编辑</a><a class="subtle-link" href="{{ url_for('web.workspace', view='jobs', resume_id=item.id) }}">分析岗位</a><button type="button" data-copy-resume="{{ item.id }}">复制版本</button><button type="button" data-delete-resume="{{ item.id }}">删除</button></article>{% else %}<div class="workspace-empty"><h3>创建第一份可以持续修改的简历</h3><a class="button" href="{{ url_for('web.workspace', view='resume-new') }}">创建简历</a></div>{% endfor %}<p data-list-feedback role="status"></p></section>
 
 {% elif view == 'resume-import' %}
 <section class="business-page-heading"><div><h1>导入简历</h1><p>选择已有的 PDF，准备整理为可编辑的结构化简历。</p></div><a class="subtle-link" href="{{ url_for('web.workspace', view='resumes') }}">返回我的简历</a></section>
-<p class="small-text muted">支持不超过 4 MB、20 页的 PDF。导入后请核对内容。</p>
+<p class="small-text muted">支持不超过 4 MB、20 页的文字 PDF。提取后先核对再保存；原始文件处理后删除。扫描件 OCR 和照片提取尚未开放。</p>
 <section class="import-panel"><label class="file-drop" for="resume-file">{{ icon('upload') }}<strong>选择一份 PDF 简历</strong><span>选择文件后，点击上传解析</span><input id="resume-file" type="file" accept="application/pdf,.pdf"><span class="button secondary">选择 PDF 文件</span></label><div class="file-selection" id="file-selection" role="status" hidden></div><button class="button" type="button" data-upload-pdf>上传并解析文字</button></section>
 
 {% elif view == 'optimize' %}
@@ -57,18 +58,16 @@
   'certificates':['PMP 项目管理专业人士','数据分析专项课程结业'],
   'languages':['中文（母语）','英语（工作沟通）']
 } %}
-<section class="business-page-heading editor-heading"><div><h1>创建简历</h1><p id="resume-draft-status">空白草稿 · 尚未保存</p></div></section>
-<div class="editor-command-bar"><label class="editor-title-label">简历名称<input id="resume-title" maxlength="120" value="未命名简历"></label><div class="editor-command-actions"><button class="button secondary" type="button" data-editor-preview>{{ icon('eye') }} 查看预览</button><button class="button secondary" type="button" data-print-resume>{{ icon('download') }} 导出 PDF</button><button class="button" type="button" data-save-resume>保存简历</button><details class="editor-more-actions"><summary>更多操作</summary><div><button type="button" data-save-copy>另存新简历</button><button type="button" data-download-backup>下载本地备份</button><button type="button" data-version-history>版本历史</button></div></details></div></div>
-<div id="version-history" hidden></div>
+<section class="business-page-heading editor-heading"><div><h1>创建简历</h1><p><span id="resume-draft-status">空白草稿 · 尚未保存</span> · 编辑结构化字段，选择模板并实时预览</p></div><div class="page-actions"><button class="button secondary" type="button" data-editor-preview>{{ icon('eye') }} 查看预览</button><button class="button secondary" type="button" data-print-resume>{{ icon('download') }} 打印 / 导出 PDF</button><button class="button" type="button" data-save-resume aria-describedby="editor-availability">保存简历</button></div></section>
+<div id="editor-availability"><p class="small-text muted">填写后自动保存到账号。保存失败时请保留页面并重试；打印使用浏览器 A4 打印。</p><label>简历名称<input id="resume-title" maxlength="120" value="未命名简历"></label><button type="button" data-version-history>版本历史</button><div id="version-history" hidden></div></div>
 <div class="sample-banner" role="note">
   <span class="sample-banner-icon">{{ icon('spark') }}</span>
-  <p><strong>模板示例</strong>只用于查看排版，不会写入你的简历。</p>
+  <p><strong>模板预览提供虚构示例</strong>，仅用于参考排版与写法。左侧字段保持空白，提示文字不会写入简历；开始填写后自动预览你的内容，也可随时切回示例。</p>
   <button class="button secondary small" type="button" data-clear-sample>清空我的填写</button>
 </div>
 
 <div class="resume-editor" data-resume-editor data-editor-view="edit" data-saved='{{ (current_resume or none)|tojson }}'>
   <div class="editor-mobile-tabs" role="group" aria-label="简历视图"><button type="button" class="is-active" data-editor-tab="edit" aria-pressed="true">编辑</button><button type="button" data-editor-tab="preview" aria-pressed="false">预览</button></div>
-  <aside class="resume-section-sidebar" aria-label="简历模块"><h2>简历模块</h2><p>拖动或点击箭头调整顺序</p><fieldset data-section-controls><legend class="sr-only">简历模块显示与顺序</legend></fieldset></aside>
   <section class="resume-fields" aria-label="简历字段编辑">
     <details class="resume-photo-editor" aria-labelledby="photo-editor-heading"><summary>个人照片（选填）</summary>
       <div class="photo-editor-heading"><div><h2 id="photo-editor-heading">个人照片</h2><p>三套模板均有专属照片位，选择后立即同步。</p></div><span class="photo-local-tag">随简历保存</span></div>

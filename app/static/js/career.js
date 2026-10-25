@@ -61,52 +61,28 @@
   const setHidden = (key, isHidden) => {
     if (isHidden) hidden.add(key); else hidden.delete(key);
     editor.dataset.hiddenSections = JSON.stringify([...hidden]);
-    visibility.querySelectorAll('[data-section-visibility]').forEach(input => {
+    visibility.querySelectorAll('input').forEach(input => {
       input.checked = !hidden.has(input.dataset.sectionVisibility);
     });
     editor.querySelectorAll('[data-editor-section]').forEach(section => {
-      section.classList.toggle('is-removed', hidden.has(section.dataset.editorSection));
+      const removed = hidden.has(section.dataset.editorSection);
+      section.classList.toggle('is-removed', removed);
+      const button = section.querySelector('[data-section-toggle]');
+      if (button) button.textContent = removed ? '添加到简历' : '从简历移除';
     });
-    visibility.querySelectorAll('[data-section-row]').forEach(row =>
-      row.classList.toggle('is-removed', hidden.has(row.dataset.sectionRow)));
     editor.dispatchEvent(new Event('cf:refresh'));
   };
-  const visibility = editor.querySelector('[data-section-controls]');
-  const sectionRows = new Map();
+  const visibility = document.createElement('fieldset');
+  const legend = document.createElement('legend'); legend.textContent = '显示的模块（取消勾选保留内容）'; visibility.append(legend);
   for (const [key, text] of Object.entries({ summary:'简介', experiences:'工作经历', projects:'项目', education:'教育', skills:'技能', certificates:'证书', languages:'语言' })) {
-    const row = document.createElement('div'); row.className = 'resume-section-row'; row.dataset.sectionRow = key;
-    row.classList.toggle('is-removed', hidden.has(key));
-    const label = document.createElement('label'); label.title = `在简历中显示${text}`;
-    const input = document.createElement('input');
+    const label = document.createElement('label'); const input = document.createElement('input');
     input.type = 'checkbox'; input.checked = !hidden.has(key); input.dataset.sectionVisibility = key;
-    input.addEventListener('change', () => setHidden(key, !input.checked));
-    label.append(input);
-    const link = document.createElement('a');
-    link.href = `#${{summary:'resume-summary-section',experiences:'resume-experience',projects:'resume-projects',education:'resume-education',skills:'resume-skills',certificates:'resume-certificates',languages:'resume-languages'}[key]}`;
-    link.textContent = text;
-    link.addEventListener('click', () => {
-      const section = editor.querySelector(`[data-editor-section="${key}"]`);
-      section?.classList.remove('is-collapsed');
-      section?.querySelector('.editor-section-toggle')?.setAttribute('aria-expanded', 'true');
+    input.addEventListener('change', () => {
+      setHidden(key, !input.checked);
     });
-    const grip = document.createElement('span'); grip.className = 'resume-section-grip';
-    grip.textContent = '⠿'; grip.title = '拖动调整顺序'; grip.draggable = true;
-    grip.setAttribute('role', 'img'); grip.setAttribute('aria-label', `拖动${text}排序`);
-    row.append(grip, label, link);
-    for (const [direction, symbol] of [[-1, '↑'], [1, '↓']]) {
-      const button = document.createElement('button'); button.type = 'button';
-      button.className = 'resume-section-order'; button.textContent = symbol;
-      button.setAttribute('aria-label', `${text}${direction < 0 ? '上移' : '下移'}`);
-      button.addEventListener('click', () => {
-        const index = sectionOrder.indexOf(key), target = index + direction;
-        if (target < 0 || target >= sectionOrder.length) return;
-        [sectionOrder[index], sectionOrder[target]] = [sectionOrder[target], sectionOrder[index]];
-        applySectionOrder(); editor.dispatchEvent(new Event('cf:refresh'));
-      });
-      row.append(button);
-    }
-    sectionRows.set(key, row); visibility.append(row);
+    label.append(input, document.createTextNode(text)); visibility.append(label);
   }
+  editor.querySelector('#resume-template').before(visibility);
   let id = saved?.id, revision = saved?.revision || 0;
   editor.dataset.resumeId = id || '';
   editor.dataset.resumeRevision = String(revision);
@@ -238,17 +214,18 @@
   function loadLayout(documentData) {
     hidden.clear(); (documentData.hidden_sections || []).forEach(key => hidden.add(key));
     editor.dataset.hiddenSections = JSON.stringify([...hidden]);
-    visibility.querySelectorAll('[data-section-visibility]').forEach(input => { input.checked = !hidden.has(input.dataset.sectionVisibility); });
+    visibility.querySelectorAll('input').forEach(input => { input.checked = !hidden.has(input.dataset.sectionVisibility); });
     sectionOrder = [...defaultOrder].sort((a, b) => {
       const order = documentData.section_order || defaultOrder;
       return order.indexOf(a) - order.indexOf(b);
     });
     applySectionOrder();
     editor.querySelectorAll('[data-editor-section]').forEach(section => {
-      section.classList.toggle('is-removed', hidden.has(section.dataset.editorSection));
+      const removed = hidden.has(section.dataset.editorSection);
+      section.classList.toggle('is-removed', removed);
+      const button = section.querySelector('[data-section-toggle]');
+      if (button) button.textContent = removed ? '添加到简历' : '从简历移除';
     });
-    visibility.querySelectorAll('[data-section-row]').forEach(row =>
-      row.classList.toggle('is-removed', hidden.has(row.dataset.sectionRow)));
     stage.dataset.size = documentData.size || 'standard';
     stage.dataset.accent = documentData.accent || 'default';
     stage.dataset.photoPosition = documentData.photo_position || 'center';
@@ -261,19 +238,22 @@
   document.querySelectorAll('#resume-size,#resume-photo-position').forEach(input => input.addEventListener('change', changed));
   document.querySelectorAll('[data-accent-choice]').forEach(input => input.addEventListener('click', changed));
   saveButton.addEventListener('click', () => { dirty = true; save(); });
-  const saveCopy = document.querySelector('[data-save-copy]');
+  const saveCopy = document.createElement('button'); saveCopy.type = 'button';
+  saveCopy.textContent = '另存新简历'; saveCopy.dataset.saveCopy = '';
   saveCopy.addEventListener('click', () => {
     if (saving) return;
     id = null; revision = 0; pending = null; conflict = false;
     editor.dataset.resumeId = ''; editor.dataset.resumeRevision = '0'; editor.dataset.dirty = 'true';
     title.value = `${title.value.slice(0, 110)} · 副本`; dirty = true; generation++; save();
   });
-  const backup = document.querySelector('[data-download-backup]');
+  const backup = document.createElement('button'); backup.type = 'button';
+  backup.textContent = '下载本地备份';
   backup.addEventListener('click', () => {
     const url = URL.createObjectURL(new Blob([JSON.stringify({ title: title.value, document: documentData() }, null, 2)], { type: 'application/json' }));
     const anchor = document.createElement('a'); anchor.href = url; anchor.download = 'careerflow-draft.json';
     anchor.click(); setTimeout(() => URL.revokeObjectURL(url), 1000);
   });
+  saveButton.after(saveCopy, backup);
   window.addEventListener('beforeunload', event => { if (dirty) { event.preventDefault(); event.returnValue = ''; } });
   if (saved) {
     title.value = saved.title;
@@ -287,48 +267,62 @@
   function applySectionOrder() {
     const fields = editor.querySelector('.resume-fields');
     const template = editor.querySelector('#resume-template');
-    sectionOrder.forEach(key => {
-      fields.insertBefore(editor.querySelector(`[data-editor-section="${key}"]`), template);
-      visibility.append(sectionRows.get(key));
-    });
-    visibility.querySelectorAll('[data-section-row]').forEach((row, index) => {
-      const buttons = row.querySelectorAll('.resume-section-order');
-      buttons[0].disabled = index === 0;
-      buttons[1].disabled = index === sectionOrder.length - 1;
-    });
+    sectionOrder.forEach(key => fields.insertBefore(editor.querySelector(`[data-editor-section="${key}"]`), visibility));
     editor.dataset.sectionOrder = JSON.stringify(sectionOrder);
+    template.before(visibility);
   }
   applySectionOrder();
-  sectionRows.forEach((row, key) => {
-    const grip = row.querySelector('.resume-section-grip');
-    grip.addEventListener('dragstart', event => {
-      draggedSection = key;
-      event.dataTransfer.setData('text/plain', key); event.dataTransfer.effectAllowed = 'move';
-    });
-    grip.addEventListener('dragend', () => { draggedSection = null; });
-    row.addEventListener('dragover', event => { event.preventDefault(); event.dataTransfer.dropEffect = 'move'; });
-    row.addEventListener('drop', event => {
+  chapters.forEach(chapter => {
+    const heading = chapter.querySelector('.work-section-heading');
+    const key = chapter.dataset.editorSection;
+    if (key) {
+      chapter.classList.toggle('is-removed', hidden.has(key));
+      const grip = document.createElement('span'); grip.className = 'editor-section-grip';
+      grip.textContent = '⠿'; grip.title = '拖动调整板块顺序';
+      grip.draggable = true; grip.setAttribute('role', 'img'); grip.setAttribute('aria-label', '拖动排序');
+      grip.addEventListener('dragstart', event => {
+        draggedSection = key;
+        event.dataTransfer.setData('text/plain', key); event.dataTransfer.effectAllowed = 'move';
+      });
+      grip.addEventListener('dragend', () => { draggedSection = null; });
+      chapter.addEventListener('dragover', event => { event.preventDefault(); event.dataTransfer.dropEffect = 'move'; });
+      chapter.addEventListener('drop', event => {
         event.preventDefault(); const source = draggedSection || event.dataTransfer.getData('text/plain');
         if (!sectionOrder.includes(source) || source === key) return;
         sectionOrder.splice(sectionOrder.indexOf(source), 1);
         sectionOrder.splice(sectionOrder.indexOf(key), 0, source);
         applySectionOrder(); editor.dispatchEvent(new Event('cf:refresh'));
-    });
-  });
-  chapters.forEach(chapter => {
-    const heading = chapter.querySelector('.work-section-heading');
+      });
+      heading.prepend(grip);
+      for (const [label, offset] of [['上移', -1], ['下移', 1]]) {
+        const button = document.createElement('button'); button.type = 'button';
+        button.className = 'editor-section-move'; button.textContent = label;
+        button.setAttribute('aria-label', `${heading.querySelector('h2').textContent}${label}`);
+        button.addEventListener('click', () => {
+          const index = sectionOrder.indexOf(key), target = index + offset;
+          if (target < 0 || target >= sectionOrder.length) return;
+          [sectionOrder[index], sectionOrder[target]] = [sectionOrder[target], sectionOrder[index]];
+          applySectionOrder(); editor.dispatchEvent(new Event('cf:refresh'));
+        }); heading.append(button);
+      }
+      const remove = document.createElement('button'); remove.type = 'button';
+      remove.className = 'editor-section-visibility'; remove.dataset.sectionToggle = key;
+      remove.textContent = hidden.has(key) ? '添加到简历' : '从简历移除';
+      remove.addEventListener('click', () => setHidden(key, !hidden.has(key)));
+      heading.append(remove);
+    }
     const toggle = document.createElement('button');
     toggle.type = 'button'; toggle.className = 'editor-section-toggle';
     toggle.setAttribute('aria-expanded', 'true');
     toggle.setAttribute('aria-label', `折叠${heading.querySelector('h2').textContent}`);
-    toggle.textContent = '▸';
+    toggle.textContent = '收起';
     toggle.addEventListener('click', () => {
       const collapsed = chapter.classList.toggle('is-collapsed');
       toggle.setAttribute('aria-expanded', String(!collapsed));
       toggle.setAttribute('aria-label', `${collapsed ? '展开' : '折叠'}${heading.querySelector('h2').textContent}`);
-      toggle.textContent = '▸';
+      toggle.textContent = collapsed ? '展开' : '收起';
     });
-    heading.prepend(toggle);
+    heading.append(toggle);
   });
   document.querySelector('[data-version-history]').addEventListener('click', async () => {
     const container = document.querySelector('#version-history');
