@@ -95,13 +95,13 @@
 
     </section>
 
-    <section id="resume-summary-section" class="editor-section">
+    <section id="resume-summary-section" class="editor-section" data-editor-section="summary">
       <div class="work-section-heading"><h2>个人简介</h2><span>02</span></div>
       <label class="editor-field">一句话介绍你的经验与方向<textarea id="resume-summary" rows="4" maxlength="600" data-rf-field="summary" placeholder="简要介绍真实的经验、擅长领域与求职方向"></textarea></label>
       <button type="button" class="inline-assistance" disabled title="AI 优化服务尚未接入">{{ icon('spark') }} 优化这段简介</button>
     </section>
 
-    <section id="resume-experience" class="editor-section">
+    <section id="resume-experience" class="editor-section" data-editor-section="experiences">
       <div class="work-section-heading"><h2>工作经历</h2><span>03</span></div>
       {% for item in draft.experiences %}
       {% set i = loop.index0 %}
@@ -118,7 +118,7 @@
       {% endfor %}
     </section>
 
-    <section id="resume-projects" class="editor-section">
+    <section id="resume-projects" class="editor-section" data-editor-section="projects">
       <div class="work-section-heading"><h2>项目经历</h2><span>04</span></div>
       {% for item in draft.projects %}
       {% set i = loop.index0 %}
@@ -136,7 +136,7 @@
       {% endfor %}
     </section>
 
-    <section id="resume-education" class="editor-section">
+    <section id="resume-education" class="editor-section" data-editor-section="education">
       <div class="work-section-heading"><h2>教育经历</h2><span>05</span></div>
       {% for e in draft.education %}<fieldset class="repeat-block"><legend>教育经历 {{ loop.index }}</legend>
       <div class="field-grid">
@@ -148,8 +148,8 @@
       </fieldset>{% endfor %}
     </section>
 
-    <section id="resume-skills" class="editor-section">
-      <div class="work-section-heading"><h2>技能、证书与语言</h2><span>06</span></div>
+    <section id="resume-skills" class="editor-section" data-editor-section="skills">
+      <div class="work-section-heading"><h2>专业技能</h2><span>06</span></div>
       {% for group in draft.skills %}
       {% set i = loop.index0 %}
       <div class="skill-input-row">
@@ -157,14 +157,20 @@
         <label>技能内容 <small>用逗号分隔</small><input maxlength="300" data-rf-field="skills.{{ i }}.items" placeholder="用逗号分隔的技能"></label>
       </div>
       {% endfor %}
-      <div class="field-grid editor-field">
-        <label>证书与资格 <small>每行一条</small><textarea rows="3" maxlength="1000" data-rf-field="certificates" placeholder="证书名称"></textarea></label>
-        <label>语言能力 <small>每行一条</small><textarea rows="3" maxlength="600" data-rf-field="languages" placeholder="中文（母语）"></textarea></label>
-      </div>
+    </section>
+
+    <section id="resume-certificates" class="editor-section" data-editor-section="certificates">
+      <div class="work-section-heading"><h2>证书与资格</h2><span>07</span></div>
+      <label class="editor-field">证书名称 <small>每行一条</small><textarea rows="3" maxlength="1000" data-rf-field="certificates" placeholder="证书名称"></textarea></label>
+    </section>
+
+    <section id="resume-languages" class="editor-section" data-editor-section="languages">
+      <div class="work-section-heading"><h2>语言能力</h2><span>08</span></div>
+      <label class="editor-field">语言与熟练程度 <small>每行一条</small><textarea rows="3" maxlength="600" data-rf-field="languages" placeholder="中文（母语）"></textarea></label>
     </section>
 
     <section id="resume-template" class="editor-section">
-      <div class="work-section-heading"><h2>简历模板</h2><span>07</span></div>
+      <div class="work-section-heading"><h2>简历模板</h2><span>09</span></div>
       <fieldset class="template-picker">
         <legend class="sr-only">选择简历模板</legend>
         <label class="template-choice" data-template-card="classic">

@@ -213,6 +213,13 @@ document.querySelectorAll('[data-theme-choice]').forEach(button => {
     stage.dataset.previewMode = sampleActive ? 'sample' : 'draft';
     if (previewMode) previewMode.value = stage.dataset.previewMode;
     const scope = stage || document;
+    const order = JSON.parse(editor.dataset.sectionOrder || '[]');
+    scope.querySelectorAll('[data-section-flow]').forEach(flow => {
+      order.forEach(key => {
+        const section = flow.querySelector(`[data-rf-section="${key}"]`);
+        if (section) flow.append(section);
+      });
+    });
     scope.querySelectorAll('[data-rf-photo]').forEach(image => {
       const source = previewData.photo || '';
       if (source) image.src = source;

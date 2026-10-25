@@ -3,7 +3,11 @@ from datetime import datetime
 from html.parser import HTMLParser
 from types import SimpleNamespace
 
+import pytest
 from flask import g, render_template
+from pydantic import ValidationError
+
+from app.career_schemas import ResumeDocument
 
 
 def render_editor(app):
@@ -57,6 +61,13 @@ def test_summary_section_and_input_have_unique_ids(app):
     html = render_editor(app)
     assert html.count('id="resume-summary"') == 1
     assert html.count('id="resume-summary-section"') == 1
+
+
+def test_section_order_requires_each_resume_section_once():
+    document = ResumeDocument()
+    assert len(document.section_order) == 7
+    with pytest.raises(ValidationError):
+        ResumeDocument(section_order=["summary"] * 7)
 
 
 class EditorParser(HTMLParser):

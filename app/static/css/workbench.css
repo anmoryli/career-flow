@@ -169,7 +169,15 @@
 .resume-fields > .editor-section.is-collapsed { padding-bottom:0; }
 .resume-fields > .editor-section.is-collapsed > :not(.work-section-heading) { display:none; }
 .resume-fields > .editor-section.is-collapsed > .work-section-heading { margin-bottom:0; border-bottom:0; }
+.resume-fields > .editor-section.is-removed { border-style:dashed; }
+.resume-fields > .editor-section.is-removed > .work-section-heading h2 { color:var(--text-secondary); }
+.editor-section-grip { color:var(--text-secondary); cursor:grab; font-size:18px; line-height:1; padding:8px 3px; }
+.editor-section-grip:active { cursor:grabbing; }
+.editor-section-move,.editor-section-visibility { border:0; background:transparent; color:var(--text-secondary); padding:7px 3px; font-size:10px; }
+.editor-section-visibility { color:var(--brand); }
+.editor-section-move:hover,.editor-section-visibility:hover { text-decoration:underline; }
 @media(max-width:760px) {
   .resume-fields > .editor-section { padding:0 14px 15px; }
-  .resume-fields > .editor-section > .work-section-heading { min-height:52px; }
+  .resume-fields > .editor-section > .work-section-heading { min-height:52px; flex-wrap:wrap; }
+  .resume-fields > .editor-section > .work-section-heading h2 { min-width:calc(100% - 70px); }
 }

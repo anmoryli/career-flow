@@ -203,6 +203,42 @@ test('resume editor sections are cards that can collapse without clearing conten
   await expect(section.locator('textarea')).toHaveValue('真实的个人简介');
 });
 
+test('resume section order and visibility survive saving and printing', async ({ page }) => {
+  await create(page);
+  await page.locator('#resume-experience [data-rf-field="experiences.0.company"]').fill('测试公司');
+  await page.locator('#resume-projects [data-rf-field="projects.0.name"]').fill('保留的项目');
+  await page.locator('#resume-summary-section [aria-label="个人简介下移"]').click();
+  await page.locator('#resume-projects [data-section-toggle]').click();
+  await saved(page);
+  await page.reload();
+  const order = await page.locator('[data-resume-panel="classic"] [data-section-flow] > [data-rf-section]')
+    .evaluateAll(sections => sections.map(section => section.dataset.rfSection));
+  expect(order).toEqual(['experiences', 'summary', 'projects', 'education', 'skills', 'certificates', 'languages']);
+  await expect(page.locator('#resume-projects [data-section-toggle]')).toHaveText('添加到简历');
+  await expect(page.locator('#resume-projects [data-rf-field="projects.0.name"]')).toHaveValue('保留的项目');
+  const rid = new URL(page.url()).searchParams.get('resume_id');
+  const print = await page.context().newPage();
+  await print.goto(`/resumes/${rid}/print`);
+  const printedOrder = await print.locator('[data-section-flow] > [data-rf-section]')
+    .evaluateAll(sections => sections.map(section => section.dataset.rfSection));
+  expect(printedOrder).toEqual(['experiences', 'summary', 'education', 'skills', 'certificates', 'languages']);
+  await print.close();
+});
+
+test('resume sections can be dragged to a new position', async ({ page }) => {
+  test.skip(test.info().project.name !== 'desktop');
+  await create(page);
+  await page.locator('#resume-experience .editor-section-grip').dragTo(page.locator('#resume-summary-section .editor-section-grip'));
+  const order = await page.locator('.resume-fields > [data-editor-section]')
+    .evaluateAll(sections => sections.map(section => section.dataset.editorSection));
+  expect(order.slice(0, 3)).toEqual(['experiences', 'summary', 'projects']);
+  await saved(page);
+  await page.reload();
+  const stored = await page.locator('.resume-fields > [data-editor-section]')
+    .evaluateAll(sections => sections.map(section => section.dataset.editorSection));
+  expect(stored.slice(0, 3)).toEqual(['experiences', 'summary', 'projects']);
+});
+
 for (const theme of ['light', 'dark', 'system']) {
   test(`page navigation and layout in ${theme} theme`, async ({ page }) => {
     await page.goto('/workspace');

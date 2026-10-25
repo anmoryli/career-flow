@@ -3,7 +3,7 @@
 from typing import Literal
 from uuid import UUID
 
-from pydantic import Field
+from pydantic import Field, field_validator
 
 from app.schemas import Input
 
@@ -59,9 +59,33 @@ class ResumeDocument(Input):
             "summary", "experiences", "projects", "education", "skills", "certificates", "languages"
         ]
     ] = Field(default_factory=list, max_length=7)
+    section_order: list[
+        Literal[
+            "summary", "experiences", "projects", "education", "skills", "certificates", "languages"
+        ]
+    ] = Field(
+        default_factory=lambda: [
+            "summary",
+            "experiences",
+            "projects",
+            "education",
+            "skills",
+            "certificates",
+            "languages",
+        ],
+        min_length=7,
+        max_length=7,
+    )
     size: Literal["compact", "standard", "large"] = "standard"
     accent: Literal["default", "green", "navy", "graphite"] = "default"
     photo_position: Literal["center", "top", "bottom"] = "center"
+
+    @field_validator("section_order")
+    @classmethod
+    def unique_sections(cls, value: list[str]) -> list[str]:
+        if len(set(value)) != 7:
+            raise ValueError("板块顺序必须包含全部七个不同板块")
+        return value
 
 
 class ResumeSave(Input):

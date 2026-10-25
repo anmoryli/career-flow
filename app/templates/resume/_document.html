@@ -106,6 +106,28 @@
 </figure>
 {%- endmacro %}
 
+{% macro ordered_sections(template, data) -%}
+{% set order = data.section_order|default(['summary','experiences','projects','education','skills','certificates','languages']) %}
+{% for section in order %}
+  {% if section not in data.hidden_sections|default([]) %}
+  {% if section == 'summary' %}
+    {% if template == 'classic' %}<section class="rd-profile-intro" data-rf-section="summary"><span class="rd-intro-label">职业概述</span><p class="rd-summary" data-rf="summary">{{ data.summary }}</p></section>
+    {% elif template == 'technical' %}<section class="rd-profile-intro" data-rf-section="summary"><p class="rd-summary" data-rf="summary">{{ data.summary }}</p></section>
+    {% else %}<section class="rd-profile-intro" data-rf-section="summary"><h2 class="rd-section-title"><span>关于我</span></h2><p class="rd-lead" data-rf="summary">{{ data.summary }}</p></section>{% endif %}
+  {% elif section == 'experiences' %}{{ experience_list(data, template) }}
+  {% elif section == 'projects' %}{{ project_list(data, template) }}
+  {% elif section == 'education' %}{{ education_list(data, template) }}
+  {% elif section == 'skills' %}
+    {% if template == 'classic' %}<section class="rd-section" data-rf-section="skills"><h2 class="rd-section-title"><span class="rd-sec-icon">{{ rd_icon('spark') }}</span><span>专业技能</span></h2>{{ skill_groups(data, 'inline') }}</section>
+    {% elif template == 'technical' %}<section class="rd-section" data-rf-section="skills"><h2 class="rd-section-title"><span class="rd-sec-icon">{{ rd_icon('spark') }}</span><span>技能栈 / STACK</span></h2><div class="rd-skill-grid">{{ skill_groups(data, 'tags') }}</div></section>
+    {% else %}<section class="rd-section" data-rf-section="skills"><h2 class="rd-section-title"><span class="rd-sec-icon">{{ rd_icon('spark') }}</span><span>专业能力</span></h2>{{ skill_groups(data, 'stacked') }}</section>{% endif %}
+  {% elif section == 'certificates' %}{{ certificate_list(data) }}
+  {% elif section == 'languages' %}{{ language_list(data) }}
+  {% endif %}
+  {% endif %}
+{% endfor %}
+{%- endmacro %}
+
 {% macro resume_document(template, data, sample=false) -%}
 <article class="resume-doc tpl-{{ template }}" data-resume-doc="{{ template }}"{% if sample %} data-sample="true"{% endif %}>
   {% if template == 'classic' %}
@@ -120,16 +142,7 @@
     {{ photo(data) }}
   </header>
   <div class="rd-head-contact">{{ contact_items(data) }}</div>
-  <section class="rd-profile-intro" data-rf-section="summary"><span class="rd-intro-label">职业概述</span><p class="rd-summary" data-rf="summary">{{ data.summary }}</p></section>
-  <div class="rd-document-content">
-    {{ experience_list(data, 'classic') }}
-    {{ project_list(data, 'classic') }}
-    {{ education_list(data, 'classic') }}
-    <div class="rd-two-col">
-      <section class="rd-section" data-rf-section="skills"><h2 class="rd-section-title"><span class="rd-sec-icon">{{ rd_icon('spark') }}</span><span>专业技能</span></h2>{{ skill_groups(data, 'inline') }}</section>
-      <div class="rd-side-stack">{{ certificate_list(data) }}{{ language_list(data) }}</div>
-    </div>
-  </div>
+  <div class="rd-document-content" data-section-flow>{{ ordered_sections(template, data) }}</div>
 
   {% elif template == 'technical' %}
   <header class="rd-head">
@@ -142,14 +155,7 @@
     {{ photo(data) }}
   </header>
   <div class="rd-tech-contact">{{ contact_items(data) }}</div>
-  <div class="rd-document-content">
-    <section class="rd-profile-intro" data-rf-section="summary"><p class="rd-summary" data-rf="summary">{{ data.summary }}</p></section>
-    <section class="rd-section" data-rf-section="skills"><h2 class="rd-section-title"><span class="rd-sec-icon">{{ rd_icon('spark') }}</span><span>技能栈 / STACK</span></h2><div class="rd-skill-grid">{{ skill_groups(data, 'tags') }}</div></section>
-    <div class="rd-project-board">{{ project_list(data, 'technical') }}</div>
-    {{ experience_list(data, 'technical') }}
-    {{ education_list(data, 'technical') }}
-    <div class="rd-two-col">{{ certificate_list(data) }}{{ language_list(data) }}</div>
-  </div>
+  <div class="rd-document-content" data-section-flow>{{ ordered_sections(template, data) }}</div>
 
   {% else %}
   <div class="rd-modern-layout">
@@ -157,10 +163,6 @@
       <div class="rd-portrait-orbit">{{ photo(data) }}</div>
       <div class="rd-sidebar-identity"><span class="rd-side-kicker">PROFILE / 个人档案</span></div>
       <section class="rd-section" data-rf-section="contacts"><h2 class="rd-section-title"><span class="rd-sec-icon">{{ rd_icon('phone') }}</span><span>联系我</span></h2><div class="rd-sidebar-contact">{{ contact_items(data) }}</div></section>
-      <section class="rd-section" data-rf-section="skills"><h2 class="rd-section-title"><span class="rd-sec-icon">{{ rd_icon('spark') }}</span><span>专业能力</span></h2>{{ skill_groups(data, 'stacked') }}</section>
-      {{ education_list(data, 'modern') }}
-      {{ language_list(data) }}
-      {{ certificate_list(data) }}
       <div class="rd-sidebar-signature" aria-hidden="true"><span></span><i></i></div>
     </aside>
     <div class="rd-primary">
@@ -170,9 +172,7 @@
         <p class="rd-role" data-rf="role">{{ data.role }}</p>
         <span class="rd-heading-rule" aria-hidden="true"></span>
       </header>
-      <section class="rd-profile-intro" data-rf-section="summary"><h2 class="rd-section-title"><span>关于我</span></h2><p class="rd-lead" data-rf="summary">{{ data.summary }}</p></section>
-      {{ experience_list(data, 'modern') }}
-      {{ project_list(data, 'modern') }}
+      <div data-section-flow>{{ ordered_sections(template, data) }}</div>
     </div>
   </div>
   {% endif %}
