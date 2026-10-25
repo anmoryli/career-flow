@@ -361,18 +361,47 @@ document.querySelectorAll('[data-theme-choice]').forEach(button => {
       else delete photoStatus.dataset.photo;
     }
   };
+  // 照片先在浏览器内压缩到 1600px / 2.5 MB 以内，保证选完立即显示。
+  const PHOTO_LIMIT = 2.5 * 1024 * 1024;
+  const PHOTO_MAX_EDGE = 1600;
+  const shrinkPhoto = (source, image) => {
+    const data = source.split(',')[1] || '';
+    const bytes = Math.floor(data.length * 3 / 4);
+    const edge = Math.max(image.naturalWidth, image.naturalHeight);
+    if (bytes <= PHOTO_LIMIT && edge <= PHOTO_MAX_EDGE) {
+      return { source, width: image.naturalWidth, height: image.naturalHeight, compressed: false };
+    }
+    const scale = Math.min(1, PHOTO_MAX_EDGE / edge);
+    const canvas = document.createElement('canvas');
+    canvas.width = Math.round(image.naturalWidth * scale);
+    canvas.height = Math.round(image.naturalHeight * scale);
+    canvas.getContext('2d').drawImage(image, 0, 0, canvas.width, canvas.height);
+    for (const quality of [0.85, 0.7, 0.55]) {
+      const out = canvas.toDataURL('image/jpeg', quality);
+      const outBytes = Math.floor((out.split(',')[1] || '').length * 3 / 4);
+      if (outBytes <= PHOTO_LIMIT) {
+        return { source: out, width: canvas.width, height: canvas.height, compressed: true };
+      }
+    }
+    throw new Error('too-large');
+  };
+  const photoFeedback = (message, tone) => {
+    if (!photoStatus) return;
+    photoStatus.dataset.tone = tone;
+    photoStatus.textContent = message;
+  };
   if (photoInput) {
     photoInput.addEventListener('change', async () => {
       const generation = ++photoGeneration;
       const file = photoInput.files[0];
       if (!file) return;
       const types = new Set(['image/jpeg', 'image/png', 'image/webp']);
-      if (!types.has(file.type) || file.size > 2.5 * 1024 * 1024) {
-        photoStatus.textContent = '请选择 2.5 MB 以内的 JPG、PNG 或 WebP 图片，原有照片已保留。';
+      if (!types.has(file.type)) {
+        photoFeedback('\u8bf7\u9009\u62e9 JPG\u3001PNG \u6216 WebP \u56fe\u7247\uff1b\u539f\u6709\u7167\u7247\u5df2\u4fdd\u7559\u3002', 'error');
         photoInput.value = '';
         return;
       }
-      photoStatus.textContent = '正在读取照片…';
+      photoFeedback('\u6b63\u5728\u8bfb\u53d6\u7167\u7247\u2026', 'info');
       try {
         const source = await new Promise((resolve, reject) => {
           const reader = new FileReader();
@@ -385,14 +414,25 @@ document.querySelectorAll('[data-theme-choice]').forEach(button => {
         await decoded.decode();
         if (generation !== photoGeneration) return;
         if (decoded.naturalWidth < 96 || decoded.naturalHeight < 96
-            || decoded.naturalWidth > 4096 || decoded.naturalHeight > 4096) {
+            || Math.max(decoded.naturalWidth, decoded.naturalHeight) > 8000) {
           throw new Error('dimensions');
         }
-        applyPhoto(source);
-        photoStatus.textContent = `已载入 ${file.name} · ${decoded.naturalWidth} × ${decoded.naturalHeight}。保存简历时同步到账号。`;
+        const result = shrinkPhoto(source, decoded);
+        if (generation !== photoGeneration) return;
+        applyPhoto(result.source);
+        photoFeedback(
+          `\u5df2\u8f7d\u5165 ${file.name} \u00b7 ${result.width} \u00d7 ${result.height}`
+          + `${result.compressed ? '\uff08\u5df2\u538b\u7f29\uff09' : ''}\u3002\u4fdd\u5b58\u7b80\u5386\u65f6\u540c\u6b65\u5230\u8d26\u53f7\u3002`,
+          'info',
+        );
         update();
       } catch (_) {
-        if (generation === photoGeneration) photoStatus.textContent = '照片读取失败，请选择可解码且边长在 96–4096 像素之间的图片。原有照片已保留。';
+        if (generation === photoGeneration) {
+          photoFeedback(
+            '\u7167\u7247\u5904\u7406\u5931\u8d25\uff0c\u8bf7\u9009\u62e9\u53ef\u89e3\u7801\u3001\u8fb9\u957f\u4e0d\u5c0f\u4e8e 96 \u50cf\u7d20\u4e14\u8fb9\u957f\u4e0d\u8d85\u8fc7 8000 \u50cf\u7d20\u7684\u56fe\u7247\uff1b\u539f\u6709\u7167\u7247\u5df2\u4fdd\u7559\u3002',
+            'error',
+          );
+        }
       }
     });
   }
