@@ -1,6 +1,10 @@
 import hashlib
 import io
+import math
+import os
 import re
+import subprocess
+import time
 
 from sqlalchemy import select
 
@@ -14,6 +18,36 @@ from app.services.errors import BusinessError
 
 class PDFInputError(ValueError):
     pass
+
+
+def ocr_page(page, deadline):
+    """Render one textless page and recognize it without writing a user file to disk."""
+    if page.width <= 0 or page.height <= 0 or page.width * page.height > 5_000_000:
+        raise PDFInputError("扫描页尺寸过大，无法安全识别。")
+    resolution = min(180, int(72 * math.sqrt(5_000_000 / (page.width * page.height))))
+    image = page.to_image(resolution=resolution).original
+    with io.BytesIO() as stream:
+        image.save(stream, format="PNG")
+        image_bytes = stream.getvalue()
+    remaining = deadline - time.monotonic()
+    if remaining <= 0:
+        raise PDFInputError("扫描件识别超时，请减少页数或上传文字版 PDF。")
+    try:
+        result = subprocess.run(
+            ["tesseract", "stdin", "stdout", "-l", "chi_sim+eng", "--psm", "3"],
+            input=image_bytes,
+            capture_output=True,
+            timeout=min(20, remaining),
+            check=False,
+            env=os.environ | {"OMP_THREAD_LIMIT": "1"},
+        )
+    except FileNotFoundError:
+        raise PDFInputError("OCR 服务未安装，请联系管理员或上传文字版 PDF。") from None
+    except subprocess.TimeoutExpired:
+        raise PDFInputError("扫描件识别超时，请减少页数或上传文字版 PDF。") from None
+    if result.returncode:
+        raise PDFInputError("扫描件识别失败，请检查 OCR 中文语言包或上传文字版 PDF。")
+    return result.stdout.decode("utf-8", errors="replace").strip()
 
 
 def create_import(user_id, request_key, content):
@@ -47,17 +81,19 @@ def create_import(user_id, request_key, content):
 def parse_pdf(content):
     import pdfplumber
 
+    deadline = time.monotonic() + 90
     with pdfplumber.open(io.BytesIO(content)) as pdf:
         if len(pdf.pages) > 20:
             raise PDFInputError("PDF 页数不能超过 20 页")
         lines = []
         for page in pdf.pages:
-            lines.append((page.extract_text() or "")[:30000])
+            extracted = (page.extract_text() or "").strip()
+            lines.append((extracted or ocr_page(page, deadline))[:30000])
             if sum(map(len, lines)) > 100000:
                 raise PDFInputError("PDF 文字过多")
         text = "\n".join(lines).strip()
     if not text:
-        raise PDFInputError("未提取到文字，扫描件需要 OCR；请使用可复制文字的 PDF 或手动填写")
+        raise PDFInputError("未识别出文字，请使用清晰扫描件、文字版 PDF 或手动填写。")
     email = re.search(r"[\w.+-]+@[\w.-]+\.[a-zA-Z]{2,}", text)
     phone = re.search(r"(?<!\d)1[3-9]\d{9}(?!\d)", text)
     document = ResumeDocument(

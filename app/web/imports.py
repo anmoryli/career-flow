@@ -32,7 +32,7 @@ def upload():
             Queue("careerflow", connection=current_app.extensions["redis"]).enqueue(
                 "app.jobs.pdf_import_job",
                 item.id,
-                job_timeout=60,
+                job_timeout=120,
                 job_id=f"pdf-import-{item.id}",
             )
         except Exception:
