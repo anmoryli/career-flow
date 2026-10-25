@@ -110,6 +110,9 @@ def apply(item_id):
 @diagnosis_web.get("/api/credits")
 @login_required
 def credits():
+    from app.services.commerce import grant_due
+
+    grant_due(g.user.id)
     balance = diagnosis.account(g.user.id)
     entries = db.session.scalars(
         select(CreditEntry)

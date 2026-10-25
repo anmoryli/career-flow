@@ -36,6 +36,9 @@ def create_app(overrides: dict | None = None) -> Flask:
     from app.web.diagnosis import diagnosis_web
 
     app.register_blueprint(diagnosis_web)
+    from app.web.commerce import commerce_web
+
+    app.register_blueprint(commerce_web)
     from app.web.imports import imports_web
 
     app.register_blueprint(imports_web)

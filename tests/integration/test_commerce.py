@@ -1,3 +1,4 @@
+import re
 from datetime import timedelta
 from decimal import Decimal
 from uuid import uuid4
@@ -7,10 +8,11 @@ from sqlalchemy import func, select
 
 from app.admin_schemas import CommerceSettings
 from app.extensions import db
-from app.models import CreditEntry, Membership, MembershipCycle, utcnow
-from app.services import commerce, credits
+from app.models import CommerceOrder, CreditEntry, Membership, MembershipCycle, utcnow
+from app.services import admin_config, commerce, credits
 from app.services.errors import BusinessError
 from tests.integration.test_admin import commerce_settings
+from tests.integration.test_mysql import login_client
 
 pytestmark = pytest.mark.integration
 
@@ -19,11 +21,11 @@ pytestmark = pytest.mark.integration
 def checkout(mysql_app, user_factory, monkeypatch):
     uid, _ = user_factory()
     mysql_app.config["MOCK_PAYMENT_ENABLED"] = True
-    monkeypatch.setattr(
-        commerce,
-        "runtime_commerce",
-        lambda: (CommerceSettings.model_validate(commerce_settings()), None),
-    )
+    def published():
+        return CommerceSettings.model_validate(commerce_settings()), None
+
+    monkeypatch.setattr(commerce, "runtime_commerce", published)
+    monkeypatch.setattr(admin_config, "runtime_commerce", published)
     yield uid
 
 
@@ -104,3 +106,39 @@ def test_checkout_is_private_and_disabled_in_production(mysql_app, checkout, use
         with pytest.raises(BusinessError) as error:
             commerce.settle_mock(uid, order.id, "success")
         assert error.value.status == 403
+
+
+def test_billing_page_checkout_payment_and_csrf(mysql_app, checkout, user_factory):
+    uid = checkout
+    client, _ = login_client(mysql_app, uid)
+    page = client.get("/workspace?view=billing")
+    assert page.status_code == 200
+    assert "30 天会员" in page.text and "¥19.90" in page.text
+    csrf = re.search(r'name="csrf_token" value="([^"]+)"', page.text).group(1)
+    key = str(uuid4())
+    payload = {"csrf_token": csrf, "request_key": key, "plan_code": "credit_pack_1"}
+    assert client.post("/commerce/orders", data=payload).status_code == 303
+    assert client.post("/commerce/orders", data=payload).status_code == 303
+    with mysql_app.app_context():
+        order = db.session.scalar(
+            select(CommerceOrder).where(CommerceOrder.user_id == uid)
+        )
+        assert order.price_yuan == Decimal("9.90") and order.state == "pending"
+        order_id = order.id
+    assert client.post(
+        f"/commerce/orders/{order_id}/mock-payment", data={"outcome": "success"}
+    ).status_code == 400
+    other_uid, _ = user_factory()
+    other, _ = login_client(mysql_app, other_uid)
+    other_csrf = re.search(
+        r'name="csrf_token" value="([^"]+)"',
+        other.get("/workspace?view=billing").text,
+    ).group(1)
+    assert other.post(
+        f"/commerce/orders/{order_id}/mock-payment",
+        data={"csrf_token": other_csrf, "outcome": "success"},
+    ).status_code == 404
+    payment = {"csrf_token": csrf, "outcome": "success"}
+    assert client.post(f"/commerce/orders/{order_id}/mock-payment", data=payment).status_code == 303
+    assert client.post(f"/commerce/orders/{order_id}/mock-payment", data=payment).status_code == 303
+    assert "模拟成功" in client.get("/workspace?view=billing").text

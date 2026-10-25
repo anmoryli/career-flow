@@ -5,7 +5,7 @@ from flask import Blueprint, flash, g, redirect, render_template, request, sessi
 from sqlalchemy import delete, func, select
 
 from app.extensions import db
-from app.models import Conversation, ConversationMemory, ConversationMessage
+from app.models import Conversation, ConversationMemory, ConversationMessage, utcnow
 from app.schemas import (
     AccountDeleteInput,
     ChangePasswordInput,
@@ -155,8 +155,24 @@ def logout():
 @web.get("/workspace")
 @login_required
 def workspace():
-    from app.models import AIOperation, CreditAccount, CreditEntry, Diagnostic, JobTarget, Resume
+    from app.models import (
+        AIOperation,
+        CommerceOrder,
+        CreditAccount,
+        CreditEntry,
+        Diagnostic,
+        JobTarget,
+        Membership,
+        Resume,
+    )
+    from app.services import commerce, credits
+    from app.services.admin_config import runtime_commerce
     from app.services.career import owned, serialize_resume
+
+    billing = request.args.get("view") == "billing"
+    if billing:
+        commerce.grant_due(g.user.id)
+        db.session.commit()
 
     resumes = db.session.scalars(
         select(Resume)
@@ -190,6 +206,19 @@ def workspace():
         .order_by(CreditEntry.id.desc())
         .limit(100)
     ).all()
+    membership = db.session.get(Membership, g.user.id) if billing else None
+    orders = (
+        db.session.scalars(
+            select(CommerceOrder)
+            .where(CommerceOrder.user_id == g.user.id)
+            .order_by(CommerceOrder.id.desc())
+            .limit(50)
+        ).all()
+        if billing
+        else []
+    )
+    offers, _ = runtime_commerce() if billing and commerce.mock_enabled() else (None, None)
+    category_balances = credits.category_balances(g.user.id) if billing else {}
     conversations = db.session.scalars(
         select(Conversation)
         .where(
@@ -215,6 +244,13 @@ def workspace():
         reports=reports,
         balance=balance,
         entries=entries,
+        membership=membership,
+        orders=orders,
+        offers=offers,
+        mock_payment_enabled=commerce.mock_enabled(),
+        category_balances=category_balances,
+        new_request_key=uuid4,
+        now=utcnow(),
     )
 
 

@@ -182,6 +182,9 @@ def confirm(user_id, operation_id):
         or item.input_snapshot.get("prompt_revision_id") != prompt["revision_id"]
     ):
         raise BusinessError("模型配置不可用或已改变，请重新预估。", 503)
+    from app.services.commerce import grant_due
+
+    grant_due(user_id)
     credits.freeze(user_id, item.id, item.ceiling)
     item.state = "queued"
     db.session.commit()

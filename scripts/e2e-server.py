@@ -14,7 +14,7 @@ from sqlalchemy.engine import make_url
 
 from app import create_app
 from app.extensions import db
-from app.models import ActiveConfig, AdminAudit, ConfigRevision, CreditEntry, User
+from app.models import ActiveConfig, AdminAudit, CommerceOrder, ConfigRevision, CreditEntry, User
 from app.services import auth, diagnosis
 
 root = Path(__file__).resolve().parents[1]
@@ -30,6 +30,7 @@ app = create_app(
         "SQLALCHEMY_DATABASE_URI": url.render_as_string(hide_password=False),
         "REDIS_URL": "redis://127.0.0.1:6390/15",
         "ADMIN_CONFIG_KEY": "browser-only-admin-key-" + "c" * 48,
+        "MOCK_PAYMENT_ENABLED": True,
     }
 )
 created = set()
@@ -113,6 +114,7 @@ def cleanup():
     revisions = db.session.scalars(
         select(ConfigRevision.id).where(ConfigRevision.author_id == user_id)
     ).all()
+    db.session.execute(delete(CommerceOrder).where(CommerceOrder.user_id == user_id))
     if revisions:
         db.session.execute(delete(ActiveConfig).where(ActiveConfig.revision_id.in_(revisions)))
     db.session.execute(delete(AdminAudit).where(AdminAudit.actor_id == user_id))

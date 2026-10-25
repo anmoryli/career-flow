@@ -263,4 +263,14 @@ test('administrator can publish membership and credit offers', async ({ page }) 
   page.once('dialog', dialog => dialog.accept());
   await section.locator('[data-admin-publish]').click();
   await expect(section).toContainText('当前：第 1 版 · 测试套餐');
+  await page.goto('/workspace?view=billing');
+  const pack = page.locator('.billing-offer').filter({ has: page.locator('[name="plan_code"][value="credit_pack_1"]') });
+  await expect(pack).toContainText('¥9.90');
+  await pack.getByRole('button', { name: '创建订单' }).click();
+  await expect(page.locator('.billing-order').first()).toContainText('待模拟支付');
+  await page.locator('.billing-order').first().getByRole('button', { name: '模拟成功' }).click();
+  await expect(page.locator('.billing-order').first()).toContainText('模拟成功');
+  await expect(page.locator('.account-section').first()).toContainText('购买 100');
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBeTruthy();
+  await page.screenshot({ path: `output/billing-${test.info().project.name}.png`, fullPage: true });
 });
