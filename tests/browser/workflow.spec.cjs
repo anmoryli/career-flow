@@ -271,6 +271,46 @@ test('resume markdown renders safely in preview and print', async ({ page }) => 
   await print.close();
 });
 
+test('paid resume suggestion shows comparison and applies only after acceptance', async ({ page }) => {
+  await create(page);
+  const summary = page.locator('#resume-summary-section');
+  await summary.locator('.resume-ai-panel summary').click();
+  const optimize = summary.locator('[data-resume-ai-mode="optimize"]');
+  await expect(optimize).toBeEnabled();
+  await expect(optimize).toContainText('预估');
+  await optimize.click();
+  const dialog = page.locator('[data-resume-ai-dialog]');
+  await expect(dialog).toBeVisible();
+  await expect(dialog.locator('[data-resume-ai-proposed]')).toContainText('表达更清晰', { timeout: 20000 });
+  await page.screenshot({ path: `output/resume-ai-${test.info().project.name}.png` });
+  await expect(summary.locator('textarea')).toHaveValue('真实产品经验');
+  await dialog.locator('[data-resume-ai-reject]').click();
+  await expect(summary.locator('textarea')).toHaveValue('真实产品经验');
+  await optimize.click();
+  await expect(dialog.locator('[data-resume-ai-accept]')).toBeVisible({ timeout: 20000 });
+  await dialog.locator('[data-resume-ai-accept]').click();
+  await saved(page);
+  await page.reload();
+  await expect(page.locator('#resume-summary')).toHaveValue(/表达更清晰/);
+});
+
+test('AI suggestion targets one experience bullet', async ({ page }) => {
+  await create(page);
+  const experience = page.locator('#resume-experience');
+  const bullets = experience.locator('[data-rf-field="experiences.0.bullets"]');
+  await bullets.fill('整理需求\n协调研发');
+  await saved(page);
+  await experience.locator('.resume-ai-panel summary').first().click();
+  await experience.getByRole('button', { name: '第 2 条' }).click();
+  const optimize = experience.locator('.resume-ai-panel [data-resume-ai-mode="optimize"]').first();
+  await expect(optimize).toBeEnabled();
+  await optimize.click();
+  const dialog = page.locator('[data-resume-ai-dialog]');
+  await expect(dialog.locator('[data-resume-ai-original]')).toHaveText('协调研发', { timeout: 20000 });
+  await dialog.locator('[data-resume-ai-accept]').click();
+  await expect(bullets).toHaveValue('整理需求\n协调研发，表达更清晰');
+});
+
 for (const theme of ['light', 'dark', 'system']) {
   test(`page navigation and layout in ${theme} theme`, async ({ page }) => {
     await page.goto('/workspace');

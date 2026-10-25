@@ -63,6 +63,10 @@ def fixture_provider(snapshot):
 
 
 app.extensions["diagnosis_provider"] = fixture_provider
+app.extensions["resume_provider"] = lambda snapshot: (
+    {"proposed": (snapshot["original"] or "已提供的背景") + "，表达更清晰", "reason": "仅整理原文"},
+    1000,
+)
 
 
 class TestQueue:
@@ -76,17 +80,23 @@ class TestQueue:
                     from app.services.pdf_import import run_import
 
                     run_import(operation_id)
+                elif function == "app.jobs.resume_ai_job":
+                    from app.services.resume_ai import run_operation
+
+                    run_operation(operation_id)
                 else:
                     diagnosis.run_operation(operation_id)
 
         threading.Thread(target=run, daemon=True).start()
 
 
+import app.web.career as career_routes  # noqa: E402
 import app.web.diagnosis as diagnosis_routes  # noqa: E402
 import app.web.imports as imports_routes  # noqa: E402
 
 diagnosis_routes.Queue = TestQueue
 imports_routes.Queue = TestQueue
+career_routes.Queue = TestQueue
 
 
 @app.post("/__test/session")

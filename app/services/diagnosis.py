@@ -57,7 +57,11 @@ def is_configured():
 
     model = runtime_model()
     return bool(model["model_id"] and model["secret"] and model["enabled"]) or (
-        current_app.testing and "diagnosis_provider" in current_app.extensions
+        current_app.testing
+        and (
+            "diagnosis_provider" in current_app.extensions
+            or "resume_provider" in current_app.extensions
+        )
     )
 
 
@@ -154,6 +158,8 @@ def quote(user_id, diagnostic_id, data):
 def confirm(user_id, operation_id):
     owner_lock(user_id)
     item = owned(AIOperation, user_id, operation_id, True)
+    if item.diagnostic_id is None:
+        raise BusinessError("任务类型不匹配。", 404)
     if item.state != "quoted":
         db.session.commit()
         return item
@@ -317,7 +323,7 @@ def validate_output(raw, snapshot):
 def run_operation(operation_id):
     """RQ entry body; no transaction is held during provider requests."""
     record = db.session.get(AIOperation, operation_id)
-    if not record:
+    if not record or record.diagnostic_id is None:
         return
     user_id = record.user_id
     owner_lock(user_id)
@@ -392,6 +398,8 @@ def run_operation(operation_id):
 
 def apply_suggestions(user_id, operation_id, data):
     item = owned(AIOperation, user_id, operation_id)
+    if item.diagnostic_id is None:
+        raise BusinessError("任务类型不匹配。", 404)
     if item.state != "succeeded":
         raise BusinessError("任务尚未完成。", 409)
     diagnostic = owned(Diagnostic, user_id, item.diagnostic_id)

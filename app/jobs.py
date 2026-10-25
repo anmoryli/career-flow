@@ -21,6 +21,15 @@ def diagnosis_job(operation_id):
         run_operation(operation_id)
 
 
+def resume_ai_job(operation_id):
+    from app import create_app
+    from app.services.resume_ai import run_operation
+
+    load_dotenv()
+    with create_app().app_context():
+        run_operation(operation_id)
+
+
 def pdf_import_job(item_id):
     from app import create_app
     from app.services.pdf_import import run_import

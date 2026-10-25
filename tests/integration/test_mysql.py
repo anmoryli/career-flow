@@ -49,7 +49,7 @@ def new_conversation(app, user_id):
 def test_mysql_version_schema_engine_charset(mysql_app):
     with mysql_app.app_context():
         assert db.session.scalar(text("SELECT VERSION()")).startswith("8.4.")
-        assert db.session.scalar(text("SELECT version_num FROM alembic_version")) == "8d2c71ab4e90"
+        assert db.session.scalar(text("SELECT version_num FROM alembic_version")) == "e6a291a24b51"
         rows = db.session.execute(
             text(
                 "SELECT ENGINE,TABLE_COLLATION FROM information_schema.TABLES "

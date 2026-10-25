@@ -309,7 +309,7 @@ def delete_account(user_id: int, data: AccountDeleteInput) -> None:
         select(AIOperation.id)
         .where(
             AIOperation.user_id == user_id,
-            AIOperation.state.in_(("quoted", "queued", "running")),
+            AIOperation.state.in_(("queued", "running")),
         )
         .limit(1)
     ):

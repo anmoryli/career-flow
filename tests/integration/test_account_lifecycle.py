@@ -152,9 +152,11 @@ def test_account_delete_refuses_inflight_ai_work(mysql_app, context):
     with mysql_app.app_context():
         operation = make_operation(uid, did)
         assert operation.state == "quoted"
+        operation_id = operation.id
+        diagnosis.confirm(uid, operation_id)
     assert client.post("/settings/delete", json=payload, headers=headers).status_code == 409
     with mysql_app.app_context():
-        diagnosis.cancel(uid, operation.id)
+        diagnosis.cancel(uid, operation_id)
     assert client.post("/settings/delete", json=payload, headers=headers).status_code == 303
     with mysql_app.app_context():
         assert db.session.get(User, uid) is None

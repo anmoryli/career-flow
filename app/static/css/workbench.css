@@ -181,3 +181,21 @@
   .resume-fields > .editor-section > .work-section-heading { min-height:52px; flex-wrap:wrap; }
   .resume-fields > .editor-section > .work-section-heading h2 { min-width:calc(100% - 70px); }
 }
+.resume-ai-panel { margin:12px 0 18px; border:1px solid var(--border); border-radius:var(--radius); padding:10px 12px; }
+.resume-ai-panel > summary { padding:2px 0; color:var(--brand); font-size:11px; }
+.resume-ai-actions,.resume-ai-tabs { display:flex; flex-wrap:wrap; gap:7px; margin:10px 0; }
+.resume-ai-actions .button { min-height:34px; padding:5px 9px; font-size:10px; }
+.resume-ai-tabs button { border:1px solid var(--border); background:var(--surface); color:var(--text-secondary); border-radius:var(--radius); padding:4px 8px; font-size:10px; }
+.resume-ai-tabs button[aria-pressed="true"] { border-color:var(--brand); color:var(--brand); background:var(--brand-soft); }
+.resume-ai-dialog { position:fixed; inset:0; margin:auto; width:min(680px,calc(100% - 24px)); max-height:calc(100vh - 48px); border:1px solid var(--border); border-radius:var(--radius); background:var(--surface); color:var(--text-primary); padding:0; overflow:auto; }
+.resume-ai-dialog::backdrop { background:#0008; }
+.resume-ai-dialog-body { padding:24px; }
+.resume-ai-dialog-body h2 { font-size:17px; margin-bottom:10px; }
+.resume-ai-dialog-body [data-resume-ai-status] { color:var(--text-secondary); font-size:12px; }
+[data-resume-ai-comparison] { display:grid; grid-template-columns:1fr 1fr; gap:14px; margin:18px 0; }
+[data-resume-ai-comparison] > div { border:1px solid var(--border); border-radius:var(--radius); padding:13px; min-width:0; }
+[data-resume-ai-comparison] strong { font-size:11px; }
+[data-resume-ai-comparison] p { white-space:pre-wrap; overflow-wrap:anywhere; font-size:12px; margin-top:6px; }
+[data-resume-ai-reason] { grid-column:1/-1; color:var(--text-secondary); }
+.resume-ai-dialog-actions { display:flex; justify-content:flex-end; flex-wrap:wrap; gap:10px; }
+@media(max-width:760px) { [data-resume-ai-comparison] { grid-template-columns:1fr; } }

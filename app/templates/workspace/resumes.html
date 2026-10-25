@@ -98,7 +98,6 @@
     <section id="resume-summary-section" class="editor-section" data-editor-section="summary">
       <div class="work-section-heading"><h2>个人简介</h2><span>02</span></div>
       <label class="editor-field">一句话介绍你的经验与方向<textarea id="resume-summary" rows="4" maxlength="600" data-rf-field="summary" placeholder="简要介绍真实的经验、擅长领域与求职方向"></textarea></label>
-      <button type="button" class="inline-assistance" disabled title="AI 优化服务尚未接入">{{ icon('spark') }} 优化这段简介</button>
     </section>
 
     <section id="resume-experience" class="editor-section" data-editor-section="experiences">
@@ -210,4 +209,19 @@
     <p class="preview-footnote">预览与打印使用同一套模板；打印时请选择 A4 纸张并关闭页眉页脚。</p>
   </section>
 </div>
+<dialog class="resume-ai-dialog" data-resume-ai-dialog aria-labelledby="resume-ai-title">
+  <div class="resume-ai-dialog-body">
+    <h2 id="resume-ai-title">AI 改写建议</h2>
+    <p data-resume-ai-status role="status"></p>
+    <div data-resume-ai-comparison hidden>
+      <div><strong>原文</strong><p data-resume-ai-original></p></div>
+      <div><strong>建议</strong><p data-resume-ai-proposed></p></div>
+      <p data-resume-ai-reason></p>
+    </div>
+    <div class="resume-ai-dialog-actions">
+      <button type="button" class="button secondary" data-resume-ai-reject>保留原文</button>
+      <button type="button" class="button" data-resume-ai-accept hidden>替换原文</button>
+    </div>
+  </div>
+</dialog>
 {% endif %}

@@ -26,4 +26,6 @@ MySQL 是唯一业务数据源。Redis 承担限流和队列，不作为消息/�
 
 个人记录上下文只包含所属用户当前对话、确认记忆和近期历史，按预算裁剪并封装为 `untrusted_user_data`。诊断独立保存JD/简历版本/真实回答的快照，经PydanticAI适配器输出并校验；没有自动摘要/长期偏好或任意AI工具。服务边界、账务和真实性限制见 `UX_IMPLEMENTATION_2026-10-24.md`。
 
+简历逐条 AI 建议使用 `app/services/resume_ai.py`：操作关联用户简历与保存修订号，引用同一积分冻结/结算/释放流水；RQ Worker 只处理已入队操作，调用模型期间不持有 MySQL 事务。输出经 Pydantic 校验后作为待确认建议存储，用户在弹窗中确认才触发普通简历版本保存。简历板块顺序、显隐和 Markdown 原文都保存在版本 JSON 文档中。
+
 应用工厂和 MySQL 表选项实现分别参考 [Flask 官方说明](https://flask.palletsprojects.com/en/stable/patterns/appfactories/) 与 [SQLAlchemy MySQL 方言说明](https://docs.sqlalchemy.org/en/20/dialects/mysql.html)。

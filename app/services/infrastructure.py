@@ -37,7 +37,7 @@ def readiness() -> dict[str, bool]:
             version = connection.scalar(text("SELECT VERSION()"))
             checks["mysql"] = version.startswith("8.4.")
             checks["schema"] = (
-                connection.scalar(text("SELECT version_num FROM alembic_version")) == "8d2c71ab4e90"
+                connection.scalar(text("SELECT version_num FROM alembic_version")) == "e6a291a24b51"
             )
     except SQLAlchemyError:
         pass

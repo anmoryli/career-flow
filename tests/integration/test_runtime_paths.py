@@ -169,6 +169,8 @@ def test_all_write_endpoints_require_csrf_and_auth(mysql_app):
         "career.delete_resume",
         "career.create_job",
         "career.delete_job",
+        "career.quote_resume_ai",
+        "career.confirm_resume_ai",
         "diagnosis.quote",
         "diagnosis.confirm",
         "diagnosis.cancel",

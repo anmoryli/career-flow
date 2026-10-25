@@ -1,5 +1,7 @@
 # 测试方法
 
+2026-10-25 简历编辑交接任务回归：`uv run python scripts/test-integration.py` 在原生 MySQL/Redis 上为 173 passed、1 skipped，覆盖率 93%；随后新增的跨用户 AI 任务状态校验、队列不可用退款与未确认报价允许删简历用例，定向运行 `uv run python scripts/test-focus.py tests/integration/test_resume_ai.py -q` 为 7 passed。`npx.cmd playwright test` 为 64 passed、2 skipped；弹窗居中调整后定向运行 6 passed，覆盖桌面、平板、手机的逐条建议及接受/保留原文。`npm.cmd run build`、`uv run ruff check app tests scripts/e2e-server.py scripts/verify-db-lifecycle.py` 和 `git diff --check` 通过。`uv run python scripts/verify-db-lifecycle.py` 在隔离恢复库完成新迁移升降级和备份恢复，开发库升级后 `flask db check` 无差异。简历改写只使用明确标记的测试模型，未调用真实模型、未进行生产部署。
+
 2026-10-25 本地实测：`uv run python scripts/test-integration.py` 156 passed，覆盖报告 96%；`uv run python scripts/verify-db-lifecycle.py` 在隔离 MySQL 库完成升级、降级、备份与恢复；`npx playwright test` 最终显示 39 passed，涵盖桌面、平板和手机。Ruff 检查与格式检查、`npm run build` 通过。真实 QQ SMTP、MiMo 收费任务端到端、生产部署和全部路径 100% 覆盖尚未验证。
 
 同日随后使用已配置的 MiMo 接口和合成英文简历/JD，完成一次结构化诊断输出及服务端证据校验，实际使用 1822 token；另一次普通文本请求返回 49 token。两次复杂结构化尝试曾因输出未符合 Schema 失败；现有执行路径会按规则重试并释放失败任务的冻结积分。该联调未使用真实用户简历、未走积分确认/冻结任务，不能视为收费端到端验收。

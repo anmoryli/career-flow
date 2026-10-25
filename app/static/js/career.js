@@ -84,6 +84,9 @@
   }
   editor.querySelector('#resume-template').before(visibility);
   let id = saved?.id, revision = saved?.revision || 0;
+  editor.dataset.resumeId = id || '';
+  editor.dataset.resumeRevision = String(revision);
+  editor.dataset.dirty = 'false';
   let dirty = false, saving = false, timer, pending = null, generation = 0, pendingGeneration = 0;
   let conflict = false;
   const limits = { experiences: 20, projects: 20, education: 10 };
@@ -141,6 +144,7 @@
     const section = editor.querySelector(sections[group]);
     if (section.querySelectorAll('.repeat-block').length >= limits[group]) return;
     const block = section.querySelector('.repeat-block').cloneNode(true);
+    block.querySelectorAll('.resume-ai-panel').forEach(panel => panel.remove());
     block.querySelectorAll('input,textarea').forEach(input => { input.value = ''; input.removeAttribute('id'); });
     section.querySelector('[data-add-entry]').before(block);
     controls(block, group); reindex(group);
@@ -186,7 +190,11 @@
     try {
       const result = await api(id ? `/api/resumes/${id}` : '/api/resumes', pending);
       id = result.id; revision = result.revision; pending = null;
+      editor.dataset.resumeId = String(id);
+      editor.dataset.resumeRevision = String(revision);
       dirty = pendingGeneration !== generation;
+      editor.dataset.dirty = String(dirty);
+      editor.dispatchEvent(new Event('cf:saved'));
       history.replaceState(null, '', `/workspace?view=resume-new&resume_id=${id}`);
       status.textContent = dirty ? '正在保存后续修改…' : `已保存到账号 · 第 ${revision} 版`;
     } catch (error) {
@@ -199,6 +207,8 @@
   }
   function changed() {
     dirty = true; generation++; clearTimeout(timer); timer = setTimeout(save, 900);
+    editor.dataset.dirty = 'true';
+    editor.dispatchEvent(new Event('cf:dirty'));
     status.textContent = '有修改尚未保存';
   }
   function loadLayout(documentData) {
@@ -233,6 +243,7 @@
   saveCopy.addEventListener('click', () => {
     if (saving) return;
     id = null; revision = 0; pending = null; conflict = false;
+    editor.dataset.resumeId = ''; editor.dataset.resumeRevision = '0'; editor.dataset.dirty = 'true';
     title.value = `${title.value.slice(0, 110)} · 副本`; dirty = true; generation++; save();
   });
   const backup = document.createElement('button'); backup.type = 'button';

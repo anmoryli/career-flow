@@ -1,10 +1,12 @@
-from flask import Blueprint, g, render_template, request
+from flask import Blueprint, current_app, g, render_template, request
+from rq import Queue
 from sqlalchemy import delete, select
 
 from app.career_schemas import ConfirmDelete, CopyResume, JobSave, ResumeSave
 from app.extensions import db
-from app.models import JobTarget, Resume, ResumeVersion
-from app.services import career
+from app.models import AIOperation, JobTarget, Resume, ResumeVersion
+from app.resume_ai_schemas import ResumeAIQuote
+from app.services import career, resume_ai
 from app.services.errors import BusinessError
 from app.web.routes import input_data, login_required
 
@@ -65,6 +67,12 @@ def delete_resume(item_id):
     )
     if linked:
         raise BusinessError("这份简历已关联岗位，请先删除对应岗位再删除简历。", 409)
+    if db.session.scalar(
+        select(AIOperation.id)
+        .where(AIOperation.resume_id == item.id, AIOperation.state != "quoted")
+        .limit(1)
+    ):
+        raise BusinessError("这份简历含有积分消费记录，不能单独删除。", 409)
     db.session.execute(delete(Resume).where(Resume.id == item.id))
     db.session.commit()
     return {"deleted": True}
@@ -98,3 +106,51 @@ def print_resume(item_id):
     item = career.owned(Resume, g.user.id, item_id)
     version = career.version_of(item, request.args.get("revision", type=int))
     return render_template("resume/print.html", resume=item, version=version)
+
+
+def resume_operation_json(item):
+    return {
+        "id": item.id,
+        "state": item.state,
+        "ceiling": item.ceiling,
+        "charged": item.charged,
+        "result": item.result,
+        "error": item.error,
+        "expires_at": item.expires_at.isoformat() + "Z",
+    }
+
+
+@career_web.post("/api/resumes/<int:item_id>/ai/quote")
+@login_required
+def quote_resume_ai(item_id):
+    item = resume_ai.quote(g.user.id, item_id, ResumeAIQuote.model_validate(input_data()))
+    return resume_operation_json(item)
+
+
+@career_web.post("/api/resume-ai/<int:item_id>/confirm")
+@login_required
+def confirm_resume_ai(item_id):
+    item = resume_ai.confirm(g.user.id, item_id)
+    if item.state == "queued":
+        try:
+            Queue("careerflow", connection=current_app.extensions["redis"]).enqueue(
+                "app.jobs.resume_ai_job",
+                item.id,
+                job_timeout=120,
+                job_id=f"resume-ai-{item.id}",
+            )
+        except Exception:
+            from app.services.diagnosis import cancel
+
+            cancel(g.user.id, item.id)
+            return {"error": "任务队列暂不可用，冻结积分已释放。"}, 503
+    return resume_operation_json(item)
+
+
+@career_web.get("/api/resume-ai/<int:item_id>")
+@login_required
+def resume_ai_status(item_id):
+    item = career.owned(AIOperation, g.user.id, item_id)
+    if item.resume_id is None:
+        raise BusinessError("任务类型不匹配。", 404)
+    return resume_operation_json(item)

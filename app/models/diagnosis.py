@@ -57,11 +57,20 @@ class DiagnosticAnswer(db.Model):
 
 class AIOperation(db.Model):
     __tablename__ = "ai_operations"
-    __table_args__ = (UniqueConstraint("user_id", "request_key"), TABLE_OPTIONS)
+    __table_args__ = (
+        UniqueConstraint("user_id", "request_key"),
+        CheckConstraint(
+            "(diagnostic_id IS NULL) <> (resume_id IS NULL)", name="ai_operation_one_owner"
+        ),
+        TABLE_OPTIONS,
+    )
     id: Mapped[int] = mapped_column(primary_key=True)
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
-    diagnostic_id: Mapped[int] = mapped_column(
+    diagnostic_id: Mapped[int | None] = mapped_column(
         ForeignKey("diagnostics.id", ondelete="CASCADE"), index=True
+    )
+    resume_id: Mapped[int | None] = mapped_column(
+        ForeignKey("resumes.id", ondelete="CASCADE"), index=True
     )
     request_key: Mapped[str] = mapped_column(String(36))
     kind: Mapped[str] = mapped_column(String(16))
