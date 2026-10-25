@@ -81,13 +81,29 @@ class AIOperation(db.Model):
 
 class CreditEntry(db.Model):
     __tablename__ = "credit_entries"
-    __table_args__ = (UniqueConstraint("operation_id", "kind"), TABLE_OPTIONS)
+    __table_args__ = (
+        UniqueConstraint(
+            "operation_id", "kind", "category", name="uq_credit_operation_kind_category"
+        ),
+        UniqueConstraint("source_order_id", name="uq_credit_entries_source_order_id"),
+        UniqueConstraint("source_cycle_id", name="uq_credit_entries_source_cycle_id"),
+        TABLE_OPTIONS,
+    )
     id: Mapped[int] = mapped_column(primary_key=True)
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
     operation_id: Mapped[int | None] = mapped_column(
         ForeignKey("ai_operations.id", ondelete="CASCADE"), index=True
     )
+    source_order_id: Mapped[int | None] = mapped_column(
+        ForeignKey("commerce_orders.id", ondelete="CASCADE")
+    )
+    source_cycle_id: Mapped[int | None] = mapped_column(
+        ForeignKey("membership_cycles.id", ondelete="CASCADE")
+    )
     kind: Mapped[str] = mapped_column(String(16))
+    category: Mapped[str] = mapped_column(
+        String(16), default="experience", server_default="experience"
+    )
     available_delta: Mapped[int]
     frozen_delta: Mapped[int]
     created_at: Mapped[datetime] = mapped_column(default=utcnow)

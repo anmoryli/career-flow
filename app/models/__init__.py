@@ -105,6 +105,7 @@ class ConversationMemory(db.Model):
 
 from app.models.admin import ActiveConfig, AdminAudit, ConfigRevision  # noqa: E402, F401
 from app.models.career import JobTarget, Resume, ResumeVersion  # noqa: E402, F401
+from app.models.commerce import CommerceOrder, Membership, MembershipCycle  # noqa: E402, F401
 from app.models.diagnosis import (  # noqa: E402, F401
     AIOperation,
     CreditAccount,

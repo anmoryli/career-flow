@@ -32,7 +32,7 @@ def migrate(target):
 
 
 migrate("upgrade")
-assert len(inspect(engine).get_table_names()) == 22
+assert len(inspect(engine).get_table_names()) == 25
 subprocess.run(
     [sys.executable, "-m", "flask", "--app", "wsgi", "db", "downgrade", "base"],
     cwd=root,
@@ -96,9 +96,9 @@ subprocess.run(
 )
 with engine.connect() as connection:
     assert connection.scalar(text("SELECT display_name FROM users")) == "中文恢复 🟢"
-    assert connection.scalar(text("SELECT version_num FROM alembic_version")) == "3e019acf2e31"
-assert len(inspect(engine).get_table_names()) == 22
-print("backup restore: 22 tables, revision and Chinese/emoji row verified")
+    assert connection.scalar(text("SELECT version_num FROM alembic_version")) == "8d2c71ab4e90"
+assert len(inspect(engine).get_table_names()) == 25
+print("backup restore: 25 tables, revision and Chinese/emoji row verified")
 subprocess.run(
     [sys.executable, "-m", "flask", "--app", "wsgi", "db", "downgrade", "base"],
     cwd=root,
