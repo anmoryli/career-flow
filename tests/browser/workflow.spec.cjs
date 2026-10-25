@@ -176,6 +176,18 @@ test('reorder, confirmed deletion, layout and photo survive refresh', async ({ p
   await expect(page.locator('[data-photo-control-image]')).toHaveAttribute('src', /^data:image\/png/);
 });
 
+test('oversized photo is compressed in the browser and shows at once', async ({ page }) => {
+  await create(page);
+  await page.locator('.resume-photo-editor summary').click();
+  // 3000x2000 PNG fixture exceeds the 1600px edge budget and must be re-encoded.
+  await page.locator('#resume-photo').setInputFiles('tests/browser/fixtures/large-photo.png');
+  await expect(page.locator('#resume-photo-status')).toContainText('已压缩');
+  await saved(page);
+  await expect(page.locator('[data-photo-control-image]')).toHaveAttribute('src', /^data:image\/jpeg/);
+  if (test.info().project.name === 'mobile') await page.locator('[data-editor-tab="preview"]').click();
+  await expect(page.locator('[data-resume-stage] [data-rf-photo]').first()).toBeVisible();
+});
+
 for (const theme of ['light', 'dark', 'system']) {
   test(`page navigation and layout in ${theme} theme`, async ({ page }) => {
     await page.goto('/workspace');
