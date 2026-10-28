@@ -13,11 +13,11 @@
 - Redis + RQ 原生 Worker；Windows 使用 SpawnWorker，Linux 使用 Worker。
 
 - 简历账号保存、版本/副本、动态经历、模板/照片/排版保存、浏览器 A4 打印；冲突恢复和本地备份。
-- 文字 PDF 上传、RQ 提取、人工核对后保存；JD 保存并关联具体简历版本。
+- 文本与扫描版 PDF 上传、RQ 提取；写入可识别的简历字段、人像与无协议前缀的网址，核对后保存；扫描件 OCR 需 Tesseract 语言包。浏览器 A4 导出按内容自适应压缩。
 - 诊断/报告持久化、十轮追问、建议核实与副本；费用预估/确认/冻结/结算/释放及失败恢复。
 - PydanticAI 的 OpenAI 兼容适配器已实现；默认关闭。真实模型质量、网络、费用仍需供应商配置和费用授权后验收，不把测试适配器当作真实 AI。
 
-**尚未交付或验收**：OCR/照片提取、完整经历自动结构化、服务器 PDF 引擎、自动摘要/长期偏好、完整会员支付、管理端其他模块及生产上线。已有个人记录不会伪造 AI 回复。
+**尚未交付或验收**：完整经历 AI 自动结构化、服务器 PDF 引擎、自动摘要/长期偏好、完整会员支付、管理端其他模块及生产上线。已有个人记录不会伪造 AI 回复。
 
 管理端目前包含独立权限、概览、用户只读列表、邮箱与模型配置草稿/发布/回滚及操作审计。首个管理员通过本地 `uv run flask --app wsgi bootstrap-admin <邮箱>` 创建，临时密码只写入忽略提交的 `instance/admin-first-login.txt`。服务密钥仅从本地环境或加密配置读取，真实模型默认关闭。
 
@@ -61,8 +61,9 @@ uv run flask --app wsgi check-services
 npx playwright test
 ```
 
-配置真实模型前保持 `AI_ENABLED=false`。需要启用时在服务端配置 `AI_MODEL`、`AI_API_KEY`、`AI_BASE_URL` 和积分换算；开发测试积分通过 `uv run flask --app wsgi grant-development-credits USER_ID AMOUNT` 显式发放。不得把真实密钥放在页面或提交到 Git。
 
 集成测试只使用 `careerflow_test`；备份恢复与降级测试只使用 `careerflow_restore_test`。两个数据库由原生初始化脚本创建，不会清空应用库。测试 XML、扫描结果与浏览器截图位于 `output/`，不提交用户数据或凭证。
 
 文档入口：[实际架构](docs/ARCHITECTURE.md) · [数据库](docs/DATABASE.md) · [安全](docs/SECURITY.md) · [测试](docs/TESTING.md) · [实施状态](docs/PROGRESS.md)
+
+ai 简历优化与岗位分析使用会员权益，不再按积分计费。月付¥39/30天，季付¥99/90天；免费用户有2份简历、5次简历AI优化总额度和0次岗位分析，可编辑保存但不能导出PDF。全部账号最多保存10份简历。

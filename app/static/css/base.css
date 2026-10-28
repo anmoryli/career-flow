@@ -1,6 +1,6 @@
 * { box-sizing:border-box; }
 html { background:var(--page-bg); color:var(--text-primary); }
-body { margin:0; font:var(--text-base)/1.75 var(--font-sans); -webkit-font-smoothing:antialiased; }
+body { margin:0; font:600 var(--text-base)/1.7 var(--font-sans); -webkit-font-smoothing:auto; }
 a { color:inherit; text-decoration:none; }
 button,input,select,textarea { font:inherit; }
 button,a,input,select,textarea,summary { -webkit-tap-highlight-color:transparent; }
@@ -12,8 +12,13 @@ h3 { font-size:1.0625rem; font-weight:600; }
 p { overflow-wrap:anywhere; }
 :focus-visible { outline:2px solid var(--brand); outline-offset:4px; }
 ::selection { background:var(--brand-soft); color:var(--text-primary); }
-.muted { color:var(--text-secondary); }
+.muted { color:var(--text-secondary); font-weight:500; }
 .sr-only { position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0; }
 .skip-link { position:absolute; top:-100px; left:1rem; padding:.5rem 1rem; background:var(--surface); z-index:10; }
 .skip-link:focus { top:1rem; }
 @media(prefers-reduced-motion:reduce) { *,*::before,*::after { animation:none!important; transition:none!important; scroll-behavior:auto!important; } }
+
+/* Keep interface text readable across public, user, and admin pages. */
+body:not(.resume-print-page) :is(p, small, time, label, dt, dd, li, summary, button, a, span, strong, em, b, i, h4, h5, h6, td, th, code, kbd, samp) {
+  font-size: max(12px, 1em) !important;
+}

@@ -1,7 +1,8 @@
 from functools import wraps
+from urllib.parse import urlsplit
 from uuid import uuid4
 
-from flask import Blueprint, flash, g, redirect, render_template, request, session, url_for
+from flask import Blueprint, flash, g, jsonify, redirect, render_template, request, session, url_for
 from sqlalchemy import delete, func, select
 
 from app.extensions import db
@@ -15,6 +16,7 @@ from app.schemas import (
     MemoryInput,
     MessageInput,
     PasswordResetInput,
+    ProfileInput,
     RegisterInput,
     ThemeInput,
 )
@@ -36,6 +38,8 @@ def login_required(view):
     @wraps(view)
     def wrapper(*args, **kwargs):
         if g.user is None:
+            if request.path.startswith("/api/"):
+                return {"error": "login_required", "login_required": True}, 401
             return redirect(url_for("web.login"), code=303)
         return view(*args, **kwargs)
 
@@ -47,7 +51,22 @@ def set_session(user):
         auth.revoke_session(request.cookies["cf_session"])
     token = auth.issue_session(user)
     session.clear()
-    response = redirect(url_for("web.workspace"), code=303)
+    target = request.args.get("next") or (request.get_json(silent=True) or {}).get("next")
+    parsed_target = urlsplit(target or "")
+    if (
+        not target
+        or not target.startswith("/")
+        or target.startswith("//")
+        or "\\" in target
+        or parsed_target.scheme
+        or parsed_target.netloc
+    ):
+        target = url_for("web.workspace")
+    response = (
+        jsonify({"authenticated": True, "next": target})
+        if request.is_json
+        else redirect(target, code=303)
+    )
     from flask import current_app
 
     response.set_cookie(
@@ -76,18 +95,21 @@ def ready():
 
 @web.get("/")
 def home():
-    if g.user:
-        return redirect(url_for("web.workspace"))
     return render_template("home.html")
 
 
 @web.route("/register", methods=["GET", "POST"])
 def register():
     if request.method == "GET":
-        return render_template("auth.html", mode="register")
+        if g.user:
+            return redirect(url_for("web.workspace"), code=303)
+        return redirect(
+            url_for("web.home", auth="register", next=request.args.get("next", "/workspace"))
+        )
     rate_limit("registration-ip", request.remote_addr or "unknown", 20, 600)
     data = RegisterInput.model_validate(input_data())
-    return set_session(auth.register(data))
+    user = auth.register(data)
+    return set_session(user)
 
 
 @web.post("/auth/code")
@@ -105,11 +127,16 @@ def send_code():
 @web.route("/login", methods=["GET", "POST"])
 def login():
     if request.method == "GET":
-        return render_template("auth.html", mode="login")
+        if not g.user:
+            return redirect(
+                url_for("web.home", auth="login", next=request.args.get("next", "/workspace"))
+            )
+        return redirect(url_for("web.workspace"), code=303)
     rate_limit("login-ip", request.remote_addr or "unknown", 30, 600)
     data = LoginInput.model_validate(input_data())
     rate_limit("login-email", data.email, 10, 600)
-    return set_session(auth.authenticate(data.email, data.password))
+    user = auth.authenticate(data.email, data.password)
+    return set_session(user)
 
 
 @web.get("/password/reset")
@@ -153,27 +180,37 @@ def logout():
 
 
 @web.get("/workspace")
-@login_required
 def workspace():
     from app.models import (
         AIOperation,
         CommerceOrder,
-        CreditAccount,
-        CreditEntry,
         Diagnostic,
         JobTarget,
         Membership,
         Resume,
     )
-    from app.services import commerce, credits
-    from app.services.admin_config import runtime_commerce
+    from app.services import commerce
     from app.services.career import owned, serialize_resume
 
-    billing = request.args.get("view") == "billing"
-    if billing:
-        commerce.grant_due(g.user.id)
-        db.session.commit()
+    view = request.args.get("view", "dashboard")
+    if g.user is None:
+        if view not in {"resume-new", "resume-template", "resume-import", "jobs"}:
+            return redirect(url_for("web.home", auth="login", next=request.full_path.rstrip("?")))
+        from types import SimpleNamespace
 
+        guest_entitlements = SimpleNamespace(
+            resume_count=0, resume_limit=10, free_resume_limit=2,
+            can_create_resume=True, can_export_resume=False,
+            is_member=False, plan_name="免费版", expires_at=None,
+            resume_ai_remaining=5,
+        )
+        return render_template(
+            "workspace.html", conversations=[], count=0, resumes=[], jobs=[], saved_jobs=[],
+            current_resume=None, reports=[], completed_reports=[], entitlements=guest_entitlements,
+            membership=None, orders=[], commerce_plans={}, mock_payment_enabled=False,
+            uuid4=uuid4, now=utcnow(),
+        )
+    billing = view == "billing"
     resumes = db.session.scalars(
         select(Resume)
         .where(Resume.user_id == g.user.id)
@@ -186,26 +223,22 @@ def workspace():
         .order_by(JobTarget.id.desc())
         .limit(100)
     ).all()
+    saved_jobs = [item for item in jobs if item.is_saved]
     resume_id = request.args.get("resume_id", type=int)
     current_resume = serialize_resume(owned(Resume, g.user.id, resume_id)) if resume_id else None
     reports = db.session.execute(
-        select(AIOperation, Diagnostic)
+        select(AIOperation, Diagnostic, JobTarget)
         .join(Diagnostic, AIOperation.diagnostic_id == Diagnostic.id)
+        .join(JobTarget, Diagnostic.job_id == JobTarget.id)
         .where(
             AIOperation.user_id == g.user.id,
             AIOperation.kind == "report",
-            AIOperation.state == "succeeded",
+            AIOperation.state.in_(["queued", "running", "succeeded", "failed", "cancelled"]),
         )
         .order_by(AIOperation.id.desc())
         .limit(100)
     ).all()
-    balance = db.session.get(CreditAccount, g.user.id)
-    entries = db.session.scalars(
-        select(CreditEntry)
-        .where(CreditEntry.user_id == g.user.id)
-        .order_by(CreditEntry.id.desc())
-        .limit(100)
-    ).all()
+    completed_reports = [row for row in reports if row[0].state == "succeeded"]
     membership = db.session.get(Membership, g.user.id) if billing else None
     orders = (
         db.session.scalars(
@@ -217,8 +250,8 @@ def workspace():
         if billing
         else []
     )
-    offers, _ = runtime_commerce() if billing and commerce.mock_enabled() else (None, None)
-    category_balances = credits.category_balances(g.user.id) if billing else {}
+    entitlements = commerce.entitlements(g.user.id)
+    mock_payment_enabled = commerce.mock_enabled()
     conversations = db.session.scalars(
         select(Conversation)
         .where(
@@ -240,16 +273,16 @@ def workspace():
         count=count,
         resumes=resumes,
         jobs=jobs,
+        saved_jobs=saved_jobs,
         current_resume=current_resume,
         reports=reports,
-        balance=balance,
-        entries=entries,
+        completed_reports=completed_reports,
+        entitlements=entitlements,
         membership=membership,
         orders=orders,
-        offers=offers,
-        mock_payment_enabled=commerce.mock_enabled(),
-        category_balances=category_balances,
-        new_request_key=uuid4,
+        commerce_plans=commerce.PLANS if billing else None,
+        mock_payment_enabled=mock_payment_enabled,
+        uuid4=uuid4,
         now=utcnow(),
     )
 
@@ -261,6 +294,16 @@ def theme():
     g.user.theme = data.theme
     db.session.commit()
     return {"theme": data.theme}
+
+
+@web.post("/settings/profile")
+@login_required
+def profile():
+    data = ProfileInput.model_validate(input_data())
+    g.user.display_name = data.display_name
+    db.session.commit()
+    flash("个人信息已更新。", "success")
+    return redirect(url_for("web.workspace", view="settings"), code=303)
 
 
 @web.post("/sessions/revoke")

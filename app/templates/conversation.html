@@ -7,7 +7,7 @@
 <div class="workspace-grid">
   <section aria-label="对话记录">
     <div class="section-heading"><h2>记录</h2><span class="count">{{ messages|length }} 条</span></div>
-    {% for item in messages %}<article class="message"><div class="message-meta">我 <time>{{ item.created_at.strftime('%Y-%m-%d %H:%M') }} UTC</time></div><p>{{ item.content }}</p></article>{% else %}<div class="empty-state compact"><h3>先写下你的第一个想法。</h3><p>内容会保存到当前记录，可随时继续。</p></div>{% endfor %}
+    {% for item in messages %}<article class="message"><div class="message-meta">我 <time>{{ item.created_at|datetime_cn }}</time></div><p>{{ item.content }}</p></article>{% else %}<div class="empty-state compact"><h3>先写下你的第一个想法。</h3><p>内容会保存到当前记录，可随时继续。</p></div>{% endfor %}
     {% if conversation.status == 'active' %}<form action="{{ url_for('web.message', conversation_id=conversation.id) }}" method="post" class="stack composer"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><input type="hidden" name="request_key" value="{{ request_key }}"><label for="content">添加记录</label><textarea id="content" name="content" required maxlength="10000" rows="5" placeholder="记录你的经历、问题或下一步计划…"></textarea><button class="button" type="submit">保存记录 {{ icon('arrow') }}</button></form>{% else %}<div class="notice">此记录已只读。</div>{% endif %}
   </section>
   <aside class="workspace-aside">

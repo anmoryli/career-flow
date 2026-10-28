@@ -1,7 +1,11 @@
-document.querySelector('#print-document')?.addEventListener('click', () => window.print());
+document.querySelector('#print-document')?.addEventListener('click', async () => {
+  await window.prepareResumePrint?.();
+  window.print();
+});
 document.querySelectorAll('[data-rf]').forEach(node => { node.hidden = !node.textContent.trim(); });
 document.querySelectorAll('[data-rf-if]').forEach(node => {
-  const value = node.querySelector('[data-rf]'); if (value) node.hidden = !value.textContent.trim();
+  const value = node.querySelector('[data-rf]');
+  if (value) node.hidden = !value.textContent.trim() || /^https?:\/\/$/i.test(value.textContent.trim());
 });
 document.querySelectorAll('[data-rf-entry]').forEach(node => {
   node.hidden = node.classList.contains('rd-skill-group')

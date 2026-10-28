@@ -17,11 +17,6 @@ class OrderInput(BaseModel):
     plan_code: str = Field(min_length=1, max_length=32)
 
 
-class PaymentInput(BaseModel):
-    model_config = ConfigDict(extra="forbid")
-    outcome: str = Field(pattern="^(success|failure)$")
-
-
 def billing_page():
     return redirect(url_for("web.workspace", view="billing"), code=303)
 
@@ -30,16 +25,10 @@ def billing_page():
 @login_required
 def order():
     data = OrderInput.model_validate(input_data())
-    commerce.create_order(g.user.id, data.request_key, data.plan_code)
-    flash("订单已创建，请确认模拟支付结果。", "success")
-    return billing_page()
-
-
-@commerce_web.post("/commerce/orders/<int:order_id>/mock-payment")
-@login_required
-def mock_payment(order_id):
-    data = PaymentInput.model_validate(input_data())
-    item = commerce.settle_mock(g.user.id, order_id, data.outcome)
-    message = "模拟支付成功，权益已到账。" if item.state == "paid" else "模拟支付失败，订单未扣款。"
-    flash(message, "success")
+    item = commerce.create_order(g.user.id, data.request_key, data.plan_code)
+    if commerce.mock_enabled():
+        commerce.settle_mock(g.user.id, item.id, "success")
+        flash("会员已开通。", "success")
+    else:
+        flash("当前支付方式暂不可用。", "error")
     return billing_page()

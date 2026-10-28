@@ -5,7 +5,7 @@ from sqlalchemy import func, select
 
 from app.admin_schemas import ConfigDraftInput, ConfigPublishInput, ConfigRollbackInput
 from app.extensions import db
-from app.models import AdminAudit, AIOperation, CommerceOrder, CreditEntry, Membership, User, utcnow
+from app.models import AdminAudit, AIOperation, CommerceOrder, Membership, User, utcnow
 from app.services import admin_config, auth
 from app.services.errors import BusinessError
 from app.web.routes import input_data
@@ -34,11 +34,6 @@ def dashboard():
         "ai_calls": db.session.scalar(select(func.count()).select_from(AIOperation)),
         "failed_ai": db.session.scalar(
             select(func.count()).select_from(AIOperation).where(AIOperation.state == "failed")
-        ),
-        "credits": db.session.scalar(
-            select(func.coalesce(func.sum(-CreditEntry.available_delta), 0))
-            .select_from(CreditEntry)
-            .where(CreditEntry.kind == "settle")
         ),
         "orders": db.session.scalar(select(func.count()).select_from(CommerceOrder)),
         "members": db.session.scalar(
@@ -93,7 +88,7 @@ def revoke_user_sessions(user_id):
 def settings():
     configurations = {
         category: admin_config.history(category)
-        for category in ("mail", "model", "model_routes", "prompt_diagnosis", "commerce")
+        for category in ("mail", "model", "model_routes", "prompt_diagnosis")
     }
     return render_template("admin/settings.html", configurations=configurations)
 

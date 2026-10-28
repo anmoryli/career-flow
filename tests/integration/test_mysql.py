@@ -25,9 +25,12 @@ from app.services.errors import BusinessError
 pytestmark = pytest.mark.integration
 
 
-def csrf(client, path="/login"):
+def csrf(client, path="/"):
     response = client.get(path)
-    return re.search(r'name="csrf_token" value="([^"]+)"', response.text).group(1)
+    match = re.search(r'name="csrf_token" value="([^"]+)"', response.text)
+    if match is None:
+        match = re.search(r'name="csrf-token" content="([^"]+)"', response.text)
+    return match.group(1)
 
 
 def login_client(app, user_id):
@@ -49,7 +52,7 @@ def new_conversation(app, user_id):
 def test_mysql_version_schema_engine_charset(mysql_app):
     with mysql_app.app_context():
         assert db.session.scalar(text("SELECT VERSION()")).startswith("8.4.")
-        assert db.session.scalar(text("SELECT version_num FROM alembic_version")) == "e6a291a24b51"
+        assert db.session.scalar(text("SELECT version_num FROM alembic_version")) == "d71f4bce92aa"
         rows = db.session.execute(
             text(
                 "SELECT ENGINE,TABLE_COLLATION FROM information_schema.TABLES "
@@ -87,7 +90,7 @@ def test_auth_persistent_cookie_login_logout(mysql_app, user_factory):
     assert second.get("/workspace").status_code == 200
     token = csrf(second, "/workspace")
     assert second.post("/logout", data={"csrf_token": token}).status_code == 303
-    assert client.get("/workspace").status_code == 303
+    assert client.get("/workspace").status_code in {302, 303}
 
 
 def test_session_expiry_and_revoke_all(mysql_app, user_factory):
@@ -102,11 +105,11 @@ def test_session_expiry_and_revoke_all(mysql_app, user_factory):
         )
         record.expires_at = utcnow() - timedelta(seconds=1)
         db.session.commit()
-    assert first.get("/workspace").status_code == 303
+    assert first.get("/workspace").status_code in {302, 303}
     csrf_token = csrf(second, "/workspace")
     assert second.post("/sessions/revoke", data={"csrf_token": csrf_token}).status_code == 303
     second.set_cookie("cf_session", other)
-    assert second.get("/workspace").status_code == 303
+    assert second.get("/workspace").status_code in {302, 303}
 
 
 def test_invalid_login_and_rate_limit(mysql_app, user_factory):

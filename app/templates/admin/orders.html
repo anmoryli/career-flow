@@ -2,8 +2,8 @@
 {% block title %}订单 · 职序管理{% endblock %}
 {% block breadcrumb %}订单{% endblock %}
 {% block content %}
-<section class="business-page-heading"><div><span class="page-kicker">管理后台</span><h1>订单</h1><p>最近 100 笔模拟订单。价格和权益以创建时的套餐快照为准。</p></div></section>
+<section class="business-page-heading"><div><span class="page-kicker">管理后台</span><h1>订单</h1><p>最近 100 笔会员订单。价格和会员周期以创建时的套餐快照为准。</p></div></section>
 <section class="dashboard-section admin-list">
-{% for order, email in orders %}<article class="recent-row"><div class="recent-record-copy"><strong>#{{ order.id }} · {{ email }}</strong><small>{{ order.plan_code }} · ¥{{ order.price_yuan }} · {{ order.credits }} 积分{{ ' / 30 天' if order.kind == 'membership' else '' }}</small></div><span>{{ {'pending':'待模拟支付','paid':'模拟成功','failed':'模拟失败'}[order.state] }}</span><small>{{ order.created_at.strftime('%Y-%m-%d %H:%M') }} UTC</small></article>{% else %}<p>暂无订单。</p>{% endfor %}
+{% for order, email in orders %}<article class="recent-row"><div class="recent-record-copy"><strong>#{{ order.id }} · {{ email }}</strong><small>{{ {'membership_monthly':'月付会员','membership_quarterly':'季度会员','membership_30':'旧月度会员','membership_90':'旧季度会员','membership_365':'历史年度会员'}.get(order.plan_code, '历史订单') }} · ¥{{ order.price_yuan }} · {{ order.period_days }} 天</small></div><span>{{ {'pending':'处理中','paid':'已开通','failed':'未完成'}.get(order.state, '已结束') }}</span><small>{{ order.created_at|datetime_cn }}</small></article>{% else %}<p>暂无订单。</p>{% endfor %}
 </section>
 {% endblock %}

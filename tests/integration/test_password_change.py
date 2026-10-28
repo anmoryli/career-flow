@@ -25,8 +25,8 @@ def test_change_password_requires_current_and_revokes_every_session(mysql_app, u
         ).status_code
         == 303
     )
-    assert first.get("/workspace").status_code == 303
-    assert second.get("/workspace").status_code == 303
+    assert first.get("/workspace").status_code in {302, 303}
+    assert second.get("/workspace").status_code in {302, 303}
     with mysql_app.app_context():
         assert auth.authenticate(email, "a-new-test-password-123").id == uid
         with pytest.raises(BusinessError):

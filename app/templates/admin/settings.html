@@ -3,7 +3,7 @@
 {% block breadcrumb %}服务配置{% endblock %}
 {% block content %}
 <section class="business-page-heading"><div><span class="page-kicker">管理后台</span><h1>服务配置</h1><p>先保存草稿并核对，再确认发布。新请求使用发布版本；密钥只保存在服务端。</p></div></section>
-{% for category, title in [('mail','邮件发送'),('model','大模型'),('model_routes','按任务选择模型'),('prompt_diagnosis','岗位诊断提示词'),('commerce','会员与积分套餐')] %}
+{% for category, title in [('mail','邮件发送'),('model','大模型'),('model_routes','按任务选择模型'),('prompt_diagnosis','岗位诊断提示词')] %}
 {% set history = configurations[category] %}
 {% set active = (history.revisions|selectattr('id','equalto',history.active_id)|list|first) if history.active_id else none %}
 <section class="dashboard-section admin-config-section" data-admin-section="{{ category }}"><h2>{{ title }}</h2><p class="muted">{{ '当前：第 ' ~ active.version ~ ' 版 · ' ~ active.label if active else '当前使用本地环境配置' }}</p>
@@ -19,21 +19,17 @@
   <label class="admin-check"><input name="use_ssl" type="checkbox" {% if active and active.settings.use_ssl %}checked{% endif %}>SSL（通常 465）</label>
   {% elif category == 'model' %}
   <label>服务商<input name="provider" required value="{{ active.settings.provider if active else '' }}" placeholder="OpenAI 兼容服务"></label>
-  <label>模型 ID<input name="model_id" required value="{{ active.settings.model_id if active else '' }}" placeholder="服务商提供的模型标识"></label>
+  <label>主模型 ID<input name="model_id" required value="{{ active.settings.model_id if active else '' }}" placeholder="首选模型标识"></label>
+  <label>备用模型 1<input name="fallback_model_1" maxlength="120" required value="{{ active.settings.get('fallback_model_ids', [])[0] if active and active.settings.get('fallback_model_ids', [])|length > 0 else '' }}" placeholder="主模型不可用时尝试"></label>
+  <label>备用模型 2<input name="fallback_model_2" maxlength="120" required value="{{ active.settings.get('fallback_model_ids', [])[1] if active and active.settings.get('fallback_model_ids', [])|length > 1 else '' }}" placeholder="前两个模型不可用时尝试"></label>
+  <p class="small-text muted admin-full-row">启用时需配置主模型和两个备用模型，按顺序调用；每个模型失败后重试一次，再切换到下一个。三个模型共用同一服务商、API 地址和密钥。</p>
   <div><button class="button secondary" type="button" data-admin-load-models>读取已发布服务的模型</button><select data-admin-model-list aria-label="可用模型" hidden><option value="">选择模型 ID</option></select><p class="small-text muted">若服务商不支持列表接口，可以直接填写模型 ID。</p></div>
   <label>API 地址<input name="base_url" type="url" required value="{{ active.settings.base_url if active else '' }}" placeholder="https://example.com/v1"></label>
-  <label>每积分 Token 数<input name="tokens_per_credit" type="number" min="1" max="1000000" required value="{{ active.settings.tokens_per_credit if active else 1000 }}"></label>
   <label>API Key<input name="secret" type="password" autocomplete="new-password" placeholder="{{ '留空沿用当前版本' if active and active.secret_configured else '输入服务端密钥' }}"></label>
   {% elif category == 'model_routes' %}
   <p class="small-text muted admin-full-row">留空的任务沿用当前大模型配置。仅在任务实际接入后生效；诊断和报告已接入。</p>
   {% for key, label in [('resume_optimize','简历优化'),('jd_parse','JD 解析'),('resume_extract','简历字段提取'),('analysis','岗位评分'),('followup','诊断追问'),('report','最终报告'),('conversation_summary','对话摘要'),('long_term_memory','长期记忆'),('structured_ui','结构化表单'),('ocr_correction','OCR 校正'),('prompt_test','提示词测试')] %}
   <label>{{ label }}<input name="route_{{ key }}" maxlength="120" value="{{ active.settings.routes.get(key, '') if active else '' }}" placeholder="沿用默认模型"></label>
-  {% endfor %}
-  {% elif category == 'commerce' %}
-  <p class="small-text muted admin-full-row">以下价格仅用于开发和测试环境的模拟订单；生产环境不开放模拟支付。会员积分每 30 天发放一次，购买积分永久有效。</p>
-  {% for key, title, price, credits in [('membership_30','30 天会员','19.90',30),('membership_90','90 天会员','49.90',30),('membership_365','365 天会员','169.90',30),('credit_pack_1','积分包一','9.90',100),('credit_pack_2','积分包二','24.90',300),('credit_pack_3','积分包三','69.90',1000)] %}
-  <label>{{ title }}价格（元）<input name="offer_{{ key }}_price_yuan" type="number" min="0.01" max="99999999.99" step="0.01" required value="{{ active.settings[key].price_yuan if active else price }}"></label>
-  <label>{{ title }}{{ '每周期' if key.startswith('membership') else '' }}积分<input name="offer_{{ key }}_credits" type="number" min="1" max="1000000" required value="{{ active.settings[key].credits if active else credits }}"></label>
   {% endfor %}
   {% else %}
   <label>输入变量<input name="variables" readonly value="document, jd, answers, kind, rounds"></label>

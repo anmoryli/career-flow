@@ -1,12 +1,13 @@
 {% extends 'base.html' %}
 {% from '_ui.html' import icon %}
 {% set view = request.args.get('view', 'dashboard') %}
-{% if view not in ['dashboard','resumes','resume-new','resume-import','optimize','jobs','reports','history','billing','settings'] %}{% set view = 'dashboard' %}{% endif %}
-{% set page_names = {'dashboard':'工作台','resumes':'我的简历','resume-new':'创建简历','resume-import':'导入 PDF','optimize':'简历优化','jobs':'岗位分析','reports':'诊断与报告','history':'历史记录','billing':'积分与会员','settings':'设置'} %}
+{% if view not in ['dashboard','resumes','resume-template','resume-new','resume-import','optimize','jobs','reports','history','billing','settings'] %}{% set view = 'dashboard' %}{% endif %}
+{% set page_names = {'dashboard':'工作台','resumes':'我的简历','resume-new':'创建简历','resume-template':'从模板创建','resume-import':'导入 PDF','optimize':'简历优化','jobs':'岗位分析','reports':'诊断与报告','history':'历史记录','billing':'会员方案','settings':'个人中心'} %}
 {% block title %}{{ page_names[view] }} · 职序{% endblock %}
-{% block breadcrumb %}{% if view in ['resume-new','resume-import','optimize'] %}<a href="{{ url_for('web.workspace', view='resumes') }}">我的简历</a><span class="crumb-separator">/</span>{% endif %}{{ page_names[view] }}{% endblock %}
+{% block breadcrumb %}{% if view in ['resume-template','resume-new','resume-import','optimize'] %}<a href="{{ url_for('web.workspace', view='resumes') }}">我的简历</a><span class="crumb-separator">/</span>{% endif %}{{ page_names[view] }}{% endblock %}
 {% block content %}
 {% if view == 'dashboard' %}{% include 'workspace/dashboard.html' %}
+{% elif view == 'resume-template' %}{% include 'workspace/resume_template.html' %}
 {% elif view in ['resumes','resume-new','resume-import','optimize'] %}{% include 'workspace/resumes.html' %}
 {% elif view == 'jobs' %}{% include 'workspace/jobs.html' %}
 {% elif view == 'reports' %}{% include 'workspace/reports.html' %}

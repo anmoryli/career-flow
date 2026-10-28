@@ -64,7 +64,7 @@ def user_factory(mysql_app):
     from werkzeug.security import generate_password_hash
 
     from app.extensions import db
-    from app.models import AuthIdentity, User
+    from app.models import AdminAudit, AuthIdentity, User
 
     created = []
 
@@ -85,5 +85,6 @@ def user_factory(mysql_app):
 
     yield create
     with mysql_app.app_context():
+        db.session.execute(delete(AdminAudit).where(AdminAudit.actor_id.in_(created)))
         db.session.execute(delete(User).where(User.id.in_(created)))
         db.session.commit()

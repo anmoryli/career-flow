@@ -1,2 +1,38 @@
-<section class="business-page-heading"><div><h1>诊断与报告</h1><p>查看要求、真实证据和可执行的修改建议。</p></div><a class="button" href="{{ url_for('web.workspace', view='jobs') }}">分析目标岗位</a></section>
-<section class="list-surface">{% for operation, diagnostic in reports %}<article class="recent-row"><div class="recent-record-copy"><strong>报告 #{{ operation.id }}</strong><small>{{ operation.created_at.strftime('%Y-%m-%d %H:%M') }} UTC · 已结算 {{ operation.charged }} 积分</small></div><a href="{{ url_for('diagnosis.detail', job_id=diagnostic.job_id) }}">查看证据与建议</a></article>{% else %}<div class="workspace-empty"><h2>完成诊断后生成第一份报告</h2><p>报告生成前会单独确认费用，生成后关联对话只读。</p><a href="{{ url_for('web.workspace', view='jobs') }}">添加目标岗位</a></div>{% endfor %}</section>
+<section class="business-page-heading">
+  <div><h1>诊断与报告</h1><p>处理中、已完成或需要重试的岗位诊断都可以从这里继续查看。</p></div>
+  <a class="button" href="{{ url_for('web.workspace', view='jobs') }}">分析目标岗位</a>
+</section>
+
+<section class="report-list" data-report-list aria-label="岗位诊断记录">
+  {% for operation, diagnostic, job in reports %}
+    {% set active = operation.state in ['queued', 'running'] %}
+    {% set state_label = {'queued':'排队中','running':'正在分析','succeeded':'已完成','failed':'需要重试','cancelled':'已取消'}.get(operation.state, '处理中') %}
+    <article class="report-card {{ 'is-running' if active else 'is-failed' if operation.state == 'failed' else '' }}"
+      data-report-operation="{{ operation.id }}" data-operation-state="{{ operation.state }}">
+      <div class="report-card-copy">
+        <div class="report-card-title">
+          <span class="report-status-dot {{ 'is-running' if active else 'is-failed' if operation.state == 'failed' else 'is-cancelled' if operation.state == 'cancelled' else '' }}" aria-hidden="true"></span>
+          <h2>{{ job.title or '目标岗位' }}</h2>
+          <span class="report-state {{ 'is-running' if active else 'is-failed' if operation.state in ['failed', 'cancelled'] else 'is-complete' }}">{{ state_label }}</span>
+        </div>
+        <p class="report-company">{{ job.company or '未填写公司' }}</p>
+        <div class="report-meta">
+          <time>{{ operation.created_at|datetime_cn }}</time>
+          {% if active %}<span>任务会继续运行，稍后回来可接着查看。</span>
+          {% elif operation.state == 'failed' and operation.error %}<span>{{ operation.error }}</span>{% endif %}
+        </div>
+      </div>
+      {% if operation.state == 'succeeded' and operation.result and operation.result.get('overall_score') is not none %}
+        <div class="report-score"><strong>{{ operation.result.get('overall_score') }}</strong><span>匹配度</span></div>
+      {% endif %}
+      <a class="button secondary report-open" href="{{ url_for('diagnosis.detail', job_id=diagnostic.job_id) }}">{{ '查看报告' if operation.state == 'succeeded' else '返回诊断' }}</a>
+    </article>
+  {% else %}
+    <div class="report-empty">
+      <span class="report-empty-mark" aria-hidden="true">✦</span>
+      <h2>还没有岗位诊断记录</h2>
+      <p>开始分析后，任务会保留在这里；完成后可随时回来查看报告。</p>
+      <a class="button" href="{{ url_for('web.workspace', view='jobs') }}">添加目标岗位</a>
+    </div>
+  {% endfor %}
+</section>

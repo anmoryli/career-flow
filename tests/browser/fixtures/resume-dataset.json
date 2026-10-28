@@ -1,0 +1,35 @@
+[
+  {
+    "title": "产品经理样例简历",
+    "name": "林沐",
+    "role": "产品经理",
+    "email": "lin.mu@example.test",
+    "city": "杭州",
+    "summary": "负责企业协作产品从需求调研到上线复盘，长期与设计、研发和客户成功团队协作。",
+    "company": "青禾软件",
+    "bullet": "梳理客户反馈并维护季度产品路线图。",
+    "template": "modern"
+  },
+  {
+    "title": "软件工程师样例简历",
+    "name": "周屿",
+    "role": "后端工程师",
+    "email": "zhou.yu@example.test",
+    "city": "成都",
+    "summary": "参与订单服务开发与维护，关注接口稳定性、代码可读性和团队协作。",
+    "company": "山海科技",
+    "bullet": "为订单服务补充接口校验和故障排查文档。",
+    "template": "technical"
+  },
+  {
+    "title": "应届生样例简历",
+    "name": "陈知夏",
+    "role": "数据分析实习生",
+    "email": "chen.zx@example.test",
+    "city": "南京",
+    "summary": "统计学专业应届毕业生，完成课程数据项目，能够使用 SQL 整理和核对数据。",
+    "company": "校园数据项目",
+    "bullet": "清理课程调研数据并记录字段定义与处理步骤。",
+    "template": "classic"
+  }
+]

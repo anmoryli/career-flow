@@ -1,5 +1,6 @@
 import logging
 import uuid
+from datetime import UTC, timedelta, timezone
 
 from flask import Flask, g, render_template, request
 from pydantic import ValidationError
@@ -19,6 +20,11 @@ def create_app(overrides: dict | None = None) -> Flask:
     app = Flask(__name__)
     app.jinja_env.filters["resume_markdown"] = resume_markdown
     app.jinja_env.filters["resume_markdown_inline"] = inline_markdown
+    app.jinja_env.filters["datetime_cn"] = lambda value: (
+        (value.replace(tzinfo=UTC) if value.tzinfo is None else value)
+        .astimezone(timezone(timedelta(hours=8)))
+        .strftime("%Y-%m-%d %H:%M UTC+8")
+    )
     app.config.update(load_config(overrides))
     db.init_app(app)
     migrate.init_app(app, db)

@@ -187,31 +187,57 @@ document.querySelectorAll('[data-theme-choice]').forEach(button => {
   const splitItems = value => value.split(/[,，、]/).map(item => item.trim()).filter(Boolean);
   // 只创建允许的 DOM 节点，Markdown 原文始终作为文本节点插入。
   const renderInline = (element, value) => {
-    const pattern = /\*\*(.+?)\*\*|\*(.+?)\*/g;
+    const pattern = /\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)|`([^`]+)`|\*\*(.+?)\*\*|__(.+?)__|\*(.+?)\*|_(.+?)_/g;
     let start = 0, match;
     while ((match = pattern.exec(value))) {
       element.append(document.createTextNode(value.slice(start, match.index)));
-      const node = document.createElement(match[1] === undefined ? 'em' : 'strong');
-      node.textContent = match[1] || match[2]; element.append(node);
+      const [, label, url, code, bold, boldAlt, italic, italicAlt] = match;
+      let node;
+      if (label && /^https?:\/\//i.test(url)) {
+        node = document.createElement('a'); node.href = url; node.target = '_blank'; node.rel = 'noopener noreferrer';
+        node.textContent = label;
+      } else {
+        node = document.createElement(code ? 'code' : (bold || boldAlt) ? 'strong' : 'em');
+        node.textContent = code || bold || boldAlt || italic || italicAlt;
+      }
+      element.append(node);
       start = pattern.lastIndex;
     }
     element.append(document.createTextNode(value.slice(start)));
   };
   const renderBlock = (element, value) => {
     element.replaceChildren();
-    let list = null;
-    value.split('\n').forEach(line => {
-      const bullet = /^\s*[-*]\s+(.+)$/.exec(line);
-      if (bullet) {
-        if (!list) { list = document.createElement('ul'); element.append(list); }
-        const item = document.createElement('li'); renderInline(item, bullet[1]); list.append(item);
+    let paragraph = [], list = null, listType = '';
+    const flushParagraph = () => {
+      if (!paragraph.length) return;
+      const node = document.createElement('p');
+      renderInline(node, paragraph.join(' '));
+      element.append(node);
+      paragraph = [];
+    };
+    const closeList = () => { list = null; listType = ''; };
+    value.replace(/\r\n?/g, '\n').split('\n').forEach(line => {
+      const heading = /^(#{1,3})\s+(.+)$/.exec(line.trim());
+      const unordered = /^\s*[-*+]\s+(.+)$/.exec(line);
+      const ordered = /^\s*\d+[.)]\s+(.+)$/.exec(line);
+      if (heading) {
+        flushParagraph(); closeList();
+        const node = document.createElement(`h${Math.min(heading[1].length + 2, 5)}`);
+        renderInline(node, heading[2]); element.append(node);
+      } else if (unordered || ordered) {
+        flushParagraph();
+        const nextType = unordered ? 'ul' : 'ol';
+        if (listType !== nextType) {
+          closeList(); listType = nextType; list = document.createElement(nextType); element.append(list);
+        }
+        const item = document.createElement('li'); renderInline(item, (unordered || ordered)[1]); list.append(item);
+      } else if (line.trim()) {
+        closeList(); paragraph.push(line.trim());
       } else {
-        list = null;
-        const paragraph = document.createElement('p');
-        if (line) renderInline(paragraph, line); else paragraph.append(document.createElement('br'));
-        element.append(paragraph);
+        flushParagraph(); closeList();
       }
     });
+    flushParagraph();
   };
   const read = (input, path) => {
     const value = input.value.trim();
@@ -219,6 +245,7 @@ document.querySelectorAll('[data-theme-choice]').forEach(button => {
       return splitLines(value);
     }
     if (path.endsWith('.items')) return splitItems(value);
+    if (path.endsWith('.link') && /^https?:\/\/$/i.test(value)) return '';
     return value;
   };
   const hasContent = path => {
@@ -227,7 +254,9 @@ document.querySelectorAll('[data-theme-choice]').forEach(button => {
       const groups = path === 'skills' ? (previewData.skills || []) : [getPath(previewData, path)];
       return groups.some(group => group && Array.isArray(group.items) && group.items.length);
     }
-    return hasText(getPath(previewData, path));
+    const value = getPath(previewData, path);
+    if (typeof value === 'string' && /^https?:\/\/$/i.test(value.trim())) return false;
+    return hasText(value);
   };
   const fill = () => {
     Object.keys(data).forEach(key => { delete data[key]; });
@@ -265,8 +294,10 @@ document.querySelectorAll('[data-theme-choice]').forEach(button => {
       const shown = text || (sampleActive ? '' : hint);
       if (element.classList.contains('rd-markdown') && text) renderBlock(element, shown);
       else element.textContent = shown;
-      element.classList.toggle('rd-placeholder-only', !sampleActive && !String(text).trim());
-      element.dataset.placeholderHint = sampleActive ? '' : hint;
+      const isEmpty = !String(text).trim();
+      element.classList.toggle('rd-placeholder-only', !sampleActive && isEmpty);
+      if (!sampleActive && isEmpty) element.dataset.placeholderHint = hint;
+      else delete element.dataset.placeholderHint;
       element.hidden = sampleActive && !String(text).trim();
     });
     scope.querySelectorAll('[data-rf-list]').forEach(element => {
@@ -287,7 +318,7 @@ document.querySelectorAll('[data-theme-choice]').forEach(button => {
       }
     });
     scope.querySelectorAll('[data-rf-if]').forEach(element => {
-      element.hidden = sampleActive && !hasContent(element.dataset.rfIf);
+      element.hidden = !hasContent(element.dataset.rfIf);
     });
     scope.querySelectorAll('[data-rf-entry]').forEach(element => {
       element.hidden = sampleActive && !hasContent(element.dataset.rfEntry);
@@ -333,7 +364,8 @@ document.querySelectorAll('[data-theme-choice]').forEach(button => {
     const documentData = event.detail.document;
     editor.querySelectorAll('[data-rf-field]').forEach(input => {
       const value = getPath(documentData, input.dataset.rfField);
-      input.value = Array.isArray(value) ? value.join(input.dataset.rfField.endsWith('.items') ? '?' : '\n') : (value || '');
+      const protocolOnly = input.dataset.rfField.endsWith('.link') && typeof value === 'string' && /^https?:\/\/$/i.test(value.trim());
+      input.value = protocolOnly ? '' : Array.isArray(value) ? value.join(input.dataset.rfField.endsWith('.items') ? '?' : '\n') : (value || '');
     });
     applyPhoto(documentData.photo || '');
     switchTemplate(event.detail.template);
@@ -566,10 +598,19 @@ document.querySelectorAll('[data-theme-choice]').forEach(button => {
   });
   const printButton = document.querySelector('[data-print-resume]');
   if (printButton) {
-    printButton.addEventListener('click', () => {
-      if (sampleActive && !window.confirm('当前预览为虚构模板示例，确认打印示例吗？打印自己的简历请切换到“我的填写”。')) return;
-      if (!sampleActive && (!data.name || (!data.phone && !data.email)) &&
+    printButton.addEventListener('click', async () => {
+      if (sampleActive) {
+        sampleActive = false;
+        fill();
+        paint();
+      }
+      if (!hasText(data)) {
+        if (draftStatus) draftStatus.textContent = '请先填写真实简历内容后再导出。';
+        return;
+      }
+      if ((!data.name || (!data.phone && !data.email)) &&
           !window.confirm('姓名或联系方式尚未填写完整，仍要打印当前内容吗？')) return;
+      await window.prepareResumePrint?.();
       window.print();
     });
   }

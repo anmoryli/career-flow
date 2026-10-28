@@ -2,7 +2,7 @@
 
 from datetime import datetime
 
-from sqlalchemy import JSON, ForeignKey, String, Text, UniqueConstraint
+from sqlalchemy import JSON, Boolean, ForeignKey, String, Text, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.extensions import db
@@ -51,4 +51,7 @@ class JobTarget(db.Model):
     company: Mapped[str] = mapped_column(String(160))
     description: Mapped[str] = mapped_column(Text)
     url: Mapped[str] = mapped_column(String(1000))
+    is_saved: Mapped[bool] = mapped_column(
+        Boolean, default=True, nullable=False, server_default="1"
+    )
     created_at: Mapped[datetime] = mapped_column(default=utcnow)

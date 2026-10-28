@@ -1,0 +1,15 @@
+{% extends 'base.html' %}
+{% block title %}简历修改建议 · {{ job.title or '岗位诊断' }} · 职序{% endblock %}
+{% block content %}
+<div class="diagnosis-workspace diagnosis-suggestions-page" data-diagnostic="{{ diagnostic.id }}" data-revision="{{ diagnostic.revision }}">
+  <nav class="diagnosis-breadcrumb" aria-label="面包屑"><a href="{{ url_for('diagnosis.detail', job_id=job.id) }}">返回岗位报告</a><span aria-hidden="true">/</span><span>简历修改建议</span></nav>
+  <header class="diagnosis-page-header"><div><span class="diagnosis-eyebrow">{{ job.title or '目标岗位' }} · {{ job.company or '岗位诊断' }}</span><h1>逐条核实简历修改建议</h1><p>对照简历原文检查建议，只选择符合真实经历的内容。</p></div><a class="button secondary" href="{{ url_for('diagnosis.detail', job_id=job.id) }}">返回诊断报告</a></header>
+  <section class="suggestion-context-strip"><div><strong>{{ resume.title if resume else '关联简历' }}</strong><span>第 {{ resume_version.revision if resume_version else '—' }} 版快照</span></div><span class="suggestion-count">{{ operation.result.suggestions|length }} 条建议</span></section>
+  <form class="suggestion-review-form" data-apply-suggestions="{{ operation.id }}" data-ui-form="suggestions">
+    <div class="suggestion-review-intro"><div><h2>选择要写入岗位简历的内容</h2><p>每条建议都可编辑。未选择的内容不会写入新简历。</p></div><span>分析结果 · {{ operation.created_at|datetime_cn }}</span></div>
+    <div class="suggestion-review-list">{% for suggestion in operation.result.suggestions %}<article class="suggestion-review-item"><label class="suggestion-review-select"><input type="checkbox" name="suggestion" value="{{ loop.index0 }}"><span><strong>第 {{ loop.index }} 条</strong><small>选择后加入新简历</small></span></label><div class="suggestion-review-body"><div class="suggestion-comparison"><section><span>简历原文</span><p>{{ suggestion.original }}</p></section><label><span>建议写法 · 可编辑</span><textarea name="edit-{{ loop.index0 }}" rows="4" maxlength="3000">{{ suggestion.proposed }}</textarea></label></div><p class="suggestion-review-reason">{{ suggestion.reason }}</p></div></article>{% endfor %}</div>
+    <footer class="suggestion-review-footer"><div class="suggestion-review-confirm"><label><input type="checkbox" name="confirmed" value="yes" required><span>我已核实勾选内容符合自己的真实经历</span></label><small>保存后会创建一份岗位简历，原简历保持不变。</small></div><label class="suggestion-resume-title">新简历名称<input name="title" maxlength="120" required value="{{ (job.title or '目标岗位')[:100] }} · 优化版"></label><button class="button" type="submit">保存所选建议</button></footer>
+  </form>
+  <p id="diagnosis-feedback" class="form-feedback diagnosis-feedback" role="status" aria-live="polite"></p>
+</div>
+{% endblock %}

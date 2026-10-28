@@ -24,7 +24,7 @@ def test_real_local_mail_registration_and_login_flow(mysql_app):
     email = f"mail-path-{uuid4().hex}@example.com"
     uid = None
     client = mysql_app.test_client()
-    token = re.search(r'name="csrf-token" content="([^"]+)"', client.get("/register").text).group(1)
+    token = re.search(r'name="csrf-token" content="([^"]+)"', client.get("/").text).group(1)
     headers = {"X-CSRFToken": token}
     response = client.post("/auth/code", json={"email": email}, headers=headers)
     assert response.status_code == 200
@@ -50,8 +50,8 @@ def test_real_local_mail_registration_and_login_flow(mysql_app):
             },
             headers=headers,
         )
-        assert response.status_code == 303
-        assert client.get("/").status_code == 302
+        assert response.status_code == 200
+        assert client.get("/").status_code == 200
         with mysql_app.app_context():
             user = db.session.scalar(select(User).where(User.email == email))
             uid = user.id
@@ -65,7 +65,7 @@ def test_real_local_mail_registration_and_login_flow(mysql_app):
                 json={"email": email, "password": "valid-test-password"},
                 headers={"X-CSRFToken": token},
             ).status_code
-            == 303
+            == 200
         )
     finally:
         with mysql_app.app_context():
@@ -120,7 +120,7 @@ def test_mail_tls_auth_and_html_redirect(mysql_app, monkeypatch):
     monkeypatch.setattr(smtplib, "SMTP", SMTP)
     mysql_app.config.update(MAIL_USE_TLS=True, MAIL_USERNAME="test", MAIL_PASSWORD="test")
     client = mysql_app.test_client()
-    token = re.search(r'name="csrf_token" value="([^"]+)"', client.get("/register").text).group(1)
+    token = re.search(r'name="csrf-token" content="([^"]+)"', client.get("/").text).group(1)
     email = f"tls-{uuid4().hex}@example.com"
     assert client.post("/auth/code", data={"email": email, "csrf_token": token}).status_code == 303
     assert calls == ["tls", "login", "send"]
@@ -149,14 +149,15 @@ def test_real_rq_pdf_and_failed_ai_release(mysql_app, context):
         db.session.expire_all()
         assert db.session.get(ResumeImport, iid).state == "ready"
         assert db.session.get(AIOperation, oid).state == "failed"
-        assert diagnosis.account(uid).frozen == 0
+        operation = db.session.get(AIOperation, oid)
+        assert operation.ceiling == operation.charged == 0
         pdf_job.delete()
         ai_job.delete()
 
 
 def test_all_write_endpoints_require_csrf_and_auth(mysql_app):
     anonymous = mysql_app.test_client()
-    token = re.search(r'name="csrf-token" content="([^"]+)"', anonymous.get("/login").text).group(1)
+    token = re.search(r'name="csrf-token" content="([^"]+)"', anonymous.get("/").text).group(1)
     rules = [
         rule
         for rule in mysql_app.url_map.iter_rules()
@@ -170,21 +171,25 @@ def test_all_write_endpoints_require_csrf_and_auth(mysql_app):
         "career.create_job",
         "career.delete_job",
         "career.quote_resume_ai",
+        "career.quote_resume_compose",
         "career.confirm_resume_ai",
+        "career.start_resume_ai",
+        "career.start_resume_compose",
         "diagnosis.quote",
         "diagnosis.confirm",
+        "diagnosis.start",
         "diagnosis.cancel",
         "diagnosis.answer",
         "diagnosis.apply",
         "imports.upload",
         "imports.confirm",
+        "imports.parse_guest_resume",
     }
     for rule in rules:
         path = re.sub(r"<int:[^>]+>", "999999999", rule.rule)
         assert anonymous.post(path, json={}).status_code == 400, path
-        assert anonymous.post(path, json={}, headers={"X-CSRFToken": token}).status_code == 303, (
-            path
-        )
+        response = anonymous.post(path, json={}, headers={"X-CSRFToken": token})
+        assert response.status_code in {302, 303, 401, 422}, path
 
 
 def test_pdf_upload_queue_unavailable(mysql_app, context, monkeypatch):

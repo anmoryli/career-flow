@@ -1,8 +1,8 @@
 :root[data-theme="dark"] {
   color-scheme:dark;
-  --brand:#91b49b; --brand-hover:#b1cbbb; --brand-soft:#26372c;
-  --page-bg:#191c19; --surface:#202420; --surface-secondary:#282e28;
-  --text-primary:#e7ebe5; --text-secondary:#a2ada0; --border:#353d34;
-  --success:#91b49b; --warning:#d5b078; --danger:#e89e96;
+  --brand:#a8c9b0; --brand-hover:#c0d8c6; --brand-soft:#26372c;
+  --page-bg:#19221d; --surface:#222d26; --surface-secondary:#2c3930;
+  --text-primary:#f0f3ee; --text-secondary:#d0d8d1; --border:#414b43;
+  --success:#a6d2b0; --warning:#e4c28e; --danger:#f0aaa2;
 }
 :root[data-theme="light"] { color-scheme:light; }

@@ -35,7 +35,7 @@ Exact installed versions, upstream metadata and transitive runtime license decla
 - MySQL Community **8.4 LTS** — GPL-2.0, separately installed Ubuntu system package. Tested native server 8.4.11.
 - Redis **8.0.5** — separately installed Ubuntu package. Redis 8 offers AGPLv3/RSALv2/SSPLv1 licensing choices; production distribution/service licensing needs explicit review before commercial release. The application does not vendor the server binary.
 - Mailpit **1.27.10**, https://github.com/axllent/mailpit — MIT, development mail capture only. Windows binary is downloaded into ignored local `instance/`, not committed or deployed. Download source/digest recorded under `output/native-downloads/`.
-- Tesseract OCR, https://github.com/tesseract-ocr/tesseract — Apache-2.0, separately installed native executable for image-only PDF pages. Its Leptonica dependency is BSD-2-Clause; `tessdata_fast` Simplified Chinese language data is Apache-2.0. No OCR binary or model weights are committed.
+- Tesseract OCR, https://github.com/tesseract-ocr/tesseract — Apache-2.0, native executable for image-only PDF pages. Windows development uses the ignored project-local `.tools/tesseract` runtime when present; deployment may provide a system runtime. Its Leptonica dependency is BSD-2-Clause; `tessdata_fast` Simplified Chinese language data is Apache-2.0. No OCR binary or model weights are committed.
 
 ## Deferred dependencies
 

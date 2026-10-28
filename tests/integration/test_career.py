@@ -14,12 +14,13 @@ from app.models import (
     Conversation,
     CreditEntry,
     Diagnostic,
+    Membership,
     Resume,
     ResumeVersion,
     User,
     utcnow,
 )
-from app.services import auth, career, credits, diagnosis
+from app.services import auth, career, diagnosis
 from app.services.errors import BusinessError
 
 pytestmark = pytest.mark.integration
@@ -75,10 +76,13 @@ def context(mysql_app, user_factory):
             ),
         )
         diagnostic = diagnosis.get_diagnostic(uid, job["id"])
-        account = diagnosis.account(uid)
-        account.available = 10000
         db.session.add(
-            CreditEntry(user_id=uid, kind="grant", available_delta=10000, frozen_delta=0)
+            Membership(
+                user_id=uid,
+                plan_code="membership_quarterly",
+                expires_at=utcnow() + timedelta(days=90),
+                next_grant_at=utcnow() + timedelta(days=90),
+            )
         )
         db.session.commit()
         values = uid, resume["id"], job["id"], diagnostic.id
@@ -183,7 +187,7 @@ def test_invalid_resume_inputs(mysql_app, context, document):
 
 def test_resume_csrf_auth_and_xss(mysql_app, context):
     client, headers = client_for(mysql_app, context[0])
-    assert mysql_app.test_client().get(f"/api/resumes/{context[1]}").status_code == 303
+    assert mysql_app.test_client().get(f"/api/resumes/{context[1]}").status_code == 401
     assert client.post("/api/resumes", json={}).status_code == 400
     response = client.post(
         "/api/resumes",
@@ -231,81 +235,64 @@ def test_success_billing_report_readonly_and_apply(mysql_app, context):
     uid, rid, _, did = context
     with mysql_app.app_context():
         op = make_operation(uid, did, "report")
-        oid, ceiling = op.id, op.ceiling
+        oid = op.id
         diagnosis.confirm(uid, oid)
         diagnosis.confirm(uid, oid)
-        assert diagnosis.account(uid).frozen == ceiling
+        assert op.ceiling == 0
         diagnosis.run_operation(oid)
         diagnosis.run_operation(oid)
         op = db.session.get(AIOperation, oid)
-        assert op.state == "succeeded" and op.charged == 2
+        assert op.state == "succeeded" and op.charged == 0
         assert op.result["question"] == ""
-        balance = diagnosis.account(uid)
-        assert (balance.available, balance.frozen) == (9998, 0)
         diagnostic = db.session.get(Diagnostic, did)
         assert diagnostic.state == "completed"
         assert db.session.get(Conversation, diagnostic.conversation_id).status == "readonly"
-        data = ApplySuggestion(request_key=uuid4(), indices=[0], confirmed="yes", title="优化版本")
+        data = ApplySuggestion(request_key=uuid4(), indices=[0], confirmed="yes", title="????")
         copied = diagnosis.apply_suggestions(uid, oid, data)
-        assert copied["parent_id"] == rid and copied["document"]["summary"] == "具备产品经验"
+        assert copied["parent_id"] == rid and copied["document"]["summary"]
         assert diagnosis.apply_suggestions(uid, oid, data)["id"] == copied["id"]
-        assert career.version_of(career.owned(Resume, uid, rid)).document["summary"] == "产品经验"
-        entries = db.session.scalars(
+        assert career.version_of(career.owned(Resume, uid, rid)).document["summary"]
+        assert not db.session.scalars(
             select(CreditEntry).where(CreditEntry.operation_id == oid)
         ).all()
-        assert {e.kind for e in entries} == {"freeze", "settle"}
-        assert sum(e.frozen_delta for e in entries) == 0
         with pytest.raises(BusinessError):
             make_operation(uid, did)
 
+def test_suggestion_review_has_its_own_private_page(mysql_app, context, user_factory):
+    uid, _, jid, did = context
+    with mysql_app.app_context():
+        operation = make_operation(uid, did, "report")
+        diagnosis.confirm(uid, operation.id)
+        diagnosis.run_operation(operation.id)
+        operation_id = operation.id
 
-def test_credit_categories_spend_in_order_and_release_on_cancel(mysql_app, context):
+    client, _ = client_for(mysql_app, uid)
+    report = client.get(f"/jobs/{jid}")
+    assert report.status_code == 200
+    assert "查看并核实建议" in report.text
+    assert 'data-apply-suggestions=' not in report.text
+
+    page = client.get(f"/jobs/{jid}/suggestions?operation_id={operation_id}")
+    assert page.status_code == 200
+    assert "简历修改建议" in page.text
+    assert "简历原文" in page.text and "建议写法" in page.text
+    assert page.text.count('name="suggestion"') == 1
+
+    other_uid, _ = user_factory()
+    other, _ = client_for(mysql_app, other_uid)
+    assert other.get(f"/jobs/{jid}/suggestions?operation_id={operation_id}").status_code == 404
+
+
+def test_analysis_does_not_create_credit_ledger_entries(mysql_app, context):
     uid, _, _, did = context
     with mysql_app.app_context():
         op = make_operation(uid, did)
-        balance = credits.account(uid)
-        balance.available = 2
-        db.session.add(
-            CreditEntry(
-                user_id=uid,
-                kind="adjust",
-                category="experience",
-                available_delta=-9998,
-                frozen_delta=0,
-            )
-        )
-        credits.grant(uid, 2, "member")
-        credits.grant(uid, op.ceiling, "purchased")
-        db.session.commit()
-
         diagnosis.confirm(uid, op.id)
-        frozen = db.session.scalars(
-            select(CreditEntry).where(
-                CreditEntry.operation_id == op.id, CreditEntry.kind == "freeze"
-            )
-        ).all()
-        assert {entry.category: -entry.available_delta for entry in frozen} == {
-            "member": 2,
-            "experience": 2,
-            "purchased": op.ceiling - 4,
-        }
         diagnosis.run_operation(op.id)
-        assert credits.category_balances(uid) == {
-            "member": (0, 0),
-            "experience": (2, 0),
-            "purchased": (op.ceiling, 0),
-        }
-
-        retry = make_operation(uid, did)
-        diagnosis.confirm(uid, retry.id)
-        diagnosis.cancel(uid, retry.id)
-        diagnosis.cancel(uid, retry.id)
-        assert credits.category_balances(uid) == {
-            "member": (0, 0),
-            "experience": (2, 0),
-            "purchased": (op.ceiling, 0),
-        }
-
+        assert op.state == "succeeded" and op.ceiling == op.charged == 0
+        assert not db.session.scalars(
+            select(CreditEntry).where(CreditEntry.operation_id == op.id)
+        ).all()
 
 @pytest.mark.parametrize("mode", ["timeout", "invalid_json", "evidence", "usage", "path"])
 def test_failures_retry_once_and_full_refund(mysql_app, context, mode):
@@ -335,7 +322,7 @@ def test_failures_retry_once_and_full_refund(mysql_app, context, mode):
         assert op.state == "failed" and op.attempts == 2 and op.charged == 0
         assert len(calls) == 2
         assert "secret" not in op.error
-        assert (diagnosis.account(uid).available, diagnosis.account(uid).frozen) == (10000, 0)
+        assert op.ceiling == op.charged == 0
 
 
 def test_second_attempt_success_and_cancel_during_execution(mysql_app, context):
@@ -364,29 +351,21 @@ def test_second_attempt_success_and_cancel_during_execution(mysql_app, context):
         mysql_app.extensions["diagnosis_provider"] = cancel_provider
         diagnosis.run_operation(oid2)
         assert db.session.get(AIOperation, oid2).state == "cancelled"
-        assert diagnosis.account(uid).frozen == 0
+        assert db.session.get(AIOperation, oid2).charged == 0
 
 
-def test_quote_expiry_insufficient_and_no_model(mysql_app, context):
+def test_quote_expiry_and_no_model(mysql_app, context):
     uid, _, _, did = context
     with mysql_app.app_context():
         op = make_operation(uid, did)
         op.expires_at = utcnow() - timedelta(seconds=1)
         db.session.commit()
-        with pytest.raises(BusinessError, match="过期"):
+        with pytest.raises(BusinessError):
             diagnosis.confirm(uid, op.id)
         db.session.rollback()
-        op = make_operation(uid, did)
-        diagnosis.account(uid).available = 0
-        db.session.commit()
-        with pytest.raises(BusinessError, match="不足"):
-            diagnosis.confirm(uid, op.id)
-        db.session.rollback()
-        assert diagnosis.account(uid).frozen == 0
-        mysql_app.extensions.pop("diagnosis_provider")
-        with pytest.raises(BusinessError, match="尚未配置"):
+        mysql_app.extensions.pop("diagnosis_provider", None)
+        with pytest.raises(BusinessError):
             make_operation(uid, did)
-
 
 def test_answer_skip_counts_ten_and_replay(mysql_app, context):
     uid, _, _, did = context
@@ -409,27 +388,22 @@ def test_answer_skip_counts_ten_and_replay(mysql_app, context):
             make_operation(uid, did)
 
 
-def test_concurrent_freeze_idempotency_and_balance(mysql_app, context):
+def test_concurrent_confirmation_is_idempotent_without_credit_ledger(mysql_app, context):
     uid, _, _, did = context
     with mysql_app.app_context():
         oid = make_operation(uid, did).id
-
     def confirm_once(_):
         with mysql_app.app_context():
             return diagnosis.confirm(uid, oid).state
-
     with ThreadPoolExecutor(max_workers=4) as pool:
         assert list(pool.map(confirm_once, range(4))) == ["queued"] * 4
     with mysql_app.app_context():
-        assert (
-            db.session.scalar(
-                select(func.count())
-                .select_from(CreditEntry)
-                .where(CreditEntry.operation_id == oid, CreditEntry.kind == "freeze")
-            )
-            == 1
+        entries = db.session.scalar(
+            select(func.count())
+            .select_from(CreditEntry)
+            .where(CreditEntry.operation_id == oid)
         )
+        assert entries == 0
         diagnosis.cancel(uid, oid)
         diagnosis.cancel(uid, oid)
-        assert diagnosis.account(uid).frozen == 0
-        assert diagnosis.account(uid).available == 10000
+        assert db.session.get(AIOperation, oid).charged == 0

@@ -2,7 +2,6 @@
 
 import copy
 import json
-import math
 import re
 from datetime import timedelta
 
@@ -11,13 +10,82 @@ from sqlalchemy import select
 
 from app.extensions import db
 from app.models import AIOperation, Resume, utcnow
-from app.resume_ai_schemas import ResumeAIOutput
-from app.services import credits
+from app.resume_ai_schemas import ResumeAIOutput, ResumeComposeOutput
 from app.services.career import owned, version_of
+from app.services.commerce import lock_user
 from app.services.diagnosis import is_configured, release
 from app.services.errors import BusinessError
 
 PROMPT_VERSION = "resume-rewrite-1"
+
+
+def quote_compose(user_id, resume_id, data):
+    lock_user(user_id)
+    resume = owned(Resume, user_id, resume_id, True)
+    previous = db.session.scalar(
+        select(AIOperation)
+        .where(AIOperation.user_id == user_id, AIOperation.request_key == str(data.request_key))
+        .with_for_update()
+    )
+    if previous:
+        if (
+            previous.resume_id,
+            previous.kind,
+            previous.input_snapshot.get("source"),
+            previous.diagnostic_revision,
+        ) != (
+            resume_id,
+            "compose",
+            data.source,
+            data.revision,
+        ):
+            raise BusinessError("重复请求内容不一致。", 409)
+        db.session.commit()
+        return previous
+    from app.services.commerce import ensure_resume_ai_capacity
+
+    ensure_resume_ai_capacity(user_id)
+    if resume.revision != data.revision:
+        raise BusinessError("简历已更新，请等待保存后重试。", 409)
+    if db.session.scalar(
+        select(AIOperation.id)
+        .where(AIOperation.resume_id == resume_id, AIOperation.state.in_(("queued", "running")))
+        .limit(1)
+    ):
+        raise BusinessError("这份简历已有 AI 任务正在执行。", 409)
+    if not is_configured():
+        raise BusinessError("AI 服务尚未配置。", 503)
+    from app.services.admin_config import runtime_model, runtime_model_route
+
+    model = runtime_model()
+    route = runtime_model_route(
+        "resume_rewrite", model["model_id"], model.get("fallback_model_ids", [])
+    )
+    snapshot = {
+        "source": data.source,
+        "prompt_version": "resume-compose-1",
+        "model": route["model_id"],
+        "model_candidates": route["model_ids"],
+        "model_revision_id": model["revision_id"],
+        "model_route_revision_id": route["revision_id"],
+    }
+    size = len(json.dumps(snapshot, ensure_ascii=False).encode())
+    if size > 12000:
+        raise BusinessError("整理内容过长，请缩短后重试。", 422)
+    item = AIOperation(
+        user_id=user_id,
+        resume_id=resume_id,
+        diagnostic_revision=resume.revision,
+        request_key=str(data.request_key),
+        kind="compose",
+        state="quoted",
+        ceiling=0,
+        input_snapshot=snapshot,
+        expires_at=utcnow() + timedelta(minutes=10),
+    )
+    db.session.add(item)
+    db.session.commit()
+    return item
 
 
 def field_value(document, path):
@@ -36,7 +104,7 @@ def field_context(document, path):
 
 
 def quote(user_id, resume_id, data):
-    credits.owner_lock(user_id)
+    lock_user(user_id)
     resume = owned(Resume, user_id, resume_id, True)
     previous = db.session.scalar(
         select(AIOperation)
@@ -54,6 +122,9 @@ def quote(user_id, resume_id, data):
             raise BusinessError("重复请求内容不一致。", 409)
         db.session.commit()
         return previous
+    from app.services.commerce import ensure_resume_ai_capacity
+
+    ensure_resume_ai_capacity(user_id)
     if resume.revision != data.revision:
         raise BusinessError("简历已更新，请等待保存后重新尝试。", 409)
     if db.session.scalar(
@@ -80,7 +151,9 @@ def quote(user_id, resume_id, data):
     from app.services.admin_config import runtime_model, runtime_model_route
 
     model = runtime_model()
-    route = runtime_model_route("resume_rewrite", model["model_id"])
+    route = runtime_model_route(
+        "resume_rewrite", model["model_id"], model.get("fallback_model_ids", [])
+    )
     snapshot = {
         "path": data.path,
         "original": original,
@@ -88,14 +161,13 @@ def quote(user_id, resume_id, data):
         "mode": data.mode,
         "prompt_version": PROMPT_VERSION,
         "model": route["model_id"],
+        "model_candidates": route["model_ids"],
         "model_revision_id": model["revision_id"],
         "model_route_revision_id": route["revision_id"],
-        "tokens_per_credit": model["tokens_per_credit"],
     }
     size = len(json.dumps(snapshot, ensure_ascii=False).encode())
     if size > 12000:
         raise BusinessError("改写内容过长，请缩短后重试。", 422)
-    ceiling = max(1, math.ceil(2 * (size + 2048) / snapshot["tokens_per_credit"]))
     item = AIOperation(
         user_id=user_id,
         resume_id=resume_id,
@@ -103,7 +175,7 @@ def quote(user_id, resume_id, data):
         request_key=str(data.request_key),
         kind=data.mode,
         state="quoted",
-        ceiling=ceiling,
+        ceiling=0,
         input_snapshot=snapshot,
         expires_at=utcnow() + timedelta(minutes=10),
     )
@@ -113,7 +185,7 @@ def quote(user_id, resume_id, data):
 
 
 def confirm(user_id, operation_id):
-    credits.owner_lock(user_id)
+    lock_user(user_id)
     item = owned(AIOperation, user_id, operation_id, True)
     if item.resume_id is None:
         raise BusinessError("任务类型不匹配。", 404)
@@ -122,22 +194,23 @@ def confirm(user_id, operation_id):
         return item
     resume = owned(Resume, user_id, item.resume_id, True)
     if item.expires_at <= utcnow() or resume.revision != item.diagnostic_revision:
-        raise BusinessError("费用预估已过期或简历已更新。", 409)
+        raise BusinessError("简历已更新，请重试。", 409)
     from app.services.admin_config import runtime_model, runtime_model_route
 
     model = runtime_model()
-    route = runtime_model_route("resume_rewrite", model["model_id"])
+    route = runtime_model_route(
+        "resume_rewrite", model["model_id"], model.get("fallback_model_ids", [])
+    )
     if (
         not is_configured()
         or item.input_snapshot["model"] != route["model_id"]
+        or item.input_snapshot.get("model_candidates", [item.input_snapshot["model"]])
+        != route["model_ids"]
         or item.input_snapshot["model_revision_id"] != model["revision_id"]
         or item.input_snapshot["model_route_revision_id"] != route["revision_id"]
     ):
-        raise BusinessError("模型配置已变化，请重新预估。", 503)
-    from app.services.commerce import grant_due
-
-    grant_due(user_id)
-    credits.freeze(user_id, item.id, item.ceiling)
+        raise BusinessError("模型配置已变化，请重试。", 503)
+    item.ceiling = 0
     item.state = "queued"
     db.session.commit()
     return item
@@ -148,7 +221,7 @@ def run_operation(operation_id):
     if record is None or record.resume_id is None:
         return
     user_id = record.user_id
-    credits.owner_lock(user_id)
+    lock_user(user_id)
     item = owned(AIOperation, user_id, operation_id, True)
     if item.state != "queued":
         db.session.commit()
@@ -157,61 +230,137 @@ def run_operation(operation_id):
     item.started_at = utcnow()
     snapshot = copy.deepcopy(item.input_snapshot)
     revision = item.diagnostic_revision
+    kind = item.kind
     db.session.commit()
     result = None
     tokens = 0
     attempts = 0
-    for attempt in range(2):
-        attempts = attempt + 1
-        try:
-            from app.services.model_provider import generate_resume
+    failure_message = "模型超时或输出无效，请稍后重试。"
+    from app.services.model_fallback import candidates, model_unavailable
+    from app.services.model_provider import generate_resume, generate_resume_document
 
-            provider = (
-                current_app.extensions.get("resume_provider") if current_app.testing else None
-            )
-            raw, usage = (provider or generate_resume)(snapshot)
-            if not isinstance(usage, int) or not 0 < usage <= 2000000:
-                raise ValueError("费用用量不可用")
-            tokens += usage
-            output = ResumeAIOutput.model_validate(raw)
-            # The model result remains a suggestion until the user accepts it.
-            path = snapshot["path"]
-            limit = (
-                160
-                if path.startswith("education.")
-                else 600
-                if path == "summary"
-                else 2000
-                if path.startswith("projects.")
-                else 3000
-            )
-            if len(output.proposed) > limit:
-                raise ValueError("改写超过字段长度")
-            source_numbers = set(
-                re.findall(
-                    r"\d+(?:[.,]\d+)?%?",
-                    json.dumps(
-                        {"original": snapshot["original"], "context": snapshot["context"]},
-                        ensure_ascii=False,
-                    ),
-                )
-            )
-            proposed_numbers = set(re.findall(r"\d+(?:[.,]\d+)?%?", output.proposed))
-            if not proposed_numbers.issubset(source_numbers):
-                raise ValueError("改写新增了未经确认的数字")
-            result = {
-                "original": snapshot["original"],
-                "proposed": output.proposed,
-                "reason": output.reason,
-                "path": snapshot["path"],
-                "revision": revision,
-            }
-            break
-        except Exception as error:
+    provider = (
+        current_app.extensions.get(
+            "resume_compose_provider" if kind == "compose" else "resume_provider"
+        )
+        if current_app.testing
+        else None
+    )
+
+    def save_partial(partial):
+        from sqlalchemy.exc import SQLAlchemyError
+
+        try:
+            db.session.rollback()
+            progress_item = db.session.get(AIOperation, operation_id)
+            if progress_item is None or progress_item.state != "running":
+                db.session.rollback()
+                return
+            progress_item.result = {"partial": partial}
+            db.session.commit()
+        except SQLAlchemyError:
+            db.session.rollback()
             current_app.logger.warning(
-                "resume_ai_attempt_failed operation=%s type=%s", operation_id, type(error).__name__
+                "resume_ai_stream_progress_failed operation=%s", operation_id
             )
-    credits.owner_lock(user_id)
+
+    stop_fallback = False
+    last_error = None
+    model_ids = candidates(snapshot)
+    for model_index, model_id in enumerate(model_ids):
+        for retry in range(2):
+            attempts += 1
+            attempt_snapshot = snapshot | {"model": model_id}
+            if kind != "compose" and (model_index or retry):
+                status = (
+                    "模型暂不可用，正在尝试后备模型……"
+                    if model_index
+                    else "首轮请求失败，正在重试……"
+                )
+                save_partial({"proposed": "", "reason": status})
+            try:
+                if provider:
+                    raw, usage = provider(attempt_snapshot)
+                elif kind == "compose":
+                    raw, usage = generate_resume_document(attempt_snapshot)
+                else:
+                    raw, usage = generate_resume(attempt_snapshot, on_progress=save_partial)
+                if not isinstance(usage, int) or not 0 < usage <= 2000000:
+                    raise ValueError("费用用量不可用")
+                tokens += usage
+                if kind == "compose":
+                    output = ResumeComposeOutput.model_validate(raw)
+                    document = output.document.model_dump()
+                    if (
+                        document["photo"]
+                        or len(document["skills"]) > 4
+                        or len(json.dumps(document, ensure_ascii=False)) > 30000
+                    ):
+                        raise ValueError("简历草稿包含不支持的内容")
+                    source_numbers = set(re.findall(r"\d+(?:[.,]\d+)?%?", snapshot["source"]))
+                    draft_numbers = set(
+                        re.findall(r"\d+(?:[.,]\d+)?%?", json.dumps(document, ensure_ascii=False))
+                    )
+                    if not draft_numbers.issubset(source_numbers):
+                        raise ValueError("简历草稿新增了未经确认的数字")
+                    result = {"document": document, "reason": output.reason, "revision": revision}
+                else:
+                    output = ResumeAIOutput.model_validate(raw)
+                    path = snapshot["path"]
+                    limit = (
+                        160
+                        if path.startswith("education.")
+                        else 600
+                        if path == "summary"
+                        else 2000
+                        if path.startswith("projects.")
+                        else 3000
+                    )
+                    if len(output.proposed) > limit:
+                        raise ValueError("改写超过字段长度")
+                    source_numbers = set(
+                        re.findall(
+                            r"\d+(?:[.,]\d+)?%?",
+                            json.dumps(
+                                {"original": snapshot["original"], "context": snapshot["context"]},
+                                ensure_ascii=False,
+                            ),
+                        )
+                    )
+                    proposed_numbers = set(re.findall(r"\d+(?:[.,]\d+)?%?", output.proposed))
+                    if not proposed_numbers.issubset(source_numbers):
+                        raise ValueError("改写新增了未经确认的数字")
+                    result = {
+                        "original": snapshot["original"],
+                        "proposed": output.proposed,
+                        "reason": output.reason,
+                        "path": snapshot["path"],
+                        "revision": revision,
+                    }
+                break
+            except Exception as error:
+                last_error = error
+                status_code = getattr(error, "status_code", None)
+                if status_code == 402:
+                    failure_message = "模型服务余额不足，请稍后重试。"
+                elif status_code == 401:
+                    failure_message = "模型服务密钥无效，请联系管理员。"
+                elif status_code == 429:
+                    failure_message = "模型服务请求过于频繁，请稍后重试。"
+                current_app.logger.warning(
+                    "resume_ai_attempt_failed operation=%s model_index=%s type=%s",
+                    operation_id,
+                    model_index,
+                    type(error).__name__,
+                )
+                if retry == 1 and not model_unavailable(error):
+                    stop_fallback = True
+                    break
+        if result is not None or stop_fallback:
+            break
+    if result is None and last_error is not None and model_unavailable(last_error):
+        failure_message = "已尝试配置的模型，仍不可用，请稍后重试。"
+    lock_user(user_id)
     item = owned(AIOperation, user_id, operation_id, True)
     if item.state != "running":
         db.session.commit()
@@ -219,11 +368,11 @@ def run_operation(operation_id):
     item.attempts = attempts
     item.tokens = tokens
     if result is None:
-        release(item, "failed", "模型超时、输出无效或费用不可查询；冻结积分已全额释放。")
+        item.result = None
+        release(item, "failed", failure_message)
     else:
-        charged = min(item.ceiling, math.ceil(tokens / snapshot["tokens_per_credit"]))
-        credits.settle(user_id, item.id, item.ceiling, charged)
         item.result = result
-        item.charged = charged
+        item.ceiling = 0
+        item.charged = 0
         item.state = "succeeded"
     db.session.commit()

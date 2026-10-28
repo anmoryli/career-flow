@@ -47,60 +47,25 @@ def model_settings(model_id="test-model", **changes):
     return {
         "provider": "test-provider",
         "model_id": model_id,
+        "fallback_model_ids": ["test-fallback-1", "test-fallback-2"],
         "base_url": "https://models.example.com/v1",
         "tokens_per_credit": 1000,
         "enabled": True,
     } | changes
 
 
-def commerce_settings():
-    return {
-        "membership_30": {"price_yuan": "19.90", "credits": 30},
-        "membership_90": {"price_yuan": "49.90", "credits": 30},
-        "membership_365": {"price_yuan": "169.90", "credits": 30},
-        "credit_pack_1": {"price_yuan": "9.90", "credits": 100},
-        "credit_pack_2": {"price_yuan": "24.90", "credits": 300},
-        "credit_pack_3": {"price_yuan": "69.90", "credits": 1000},
-        "enabled": True,
-    }
-
-
-def test_commerce_configuration_publishes_exact_prices(mysql_app, admin_client):
+def test_membership_prices_are_fixed_in_product_configuration(mysql_app, admin_client):
     client, _ = admin_client
-    csrf_token = token(client)
-    assert "会员与积分套餐" in client.get("/admin/settings").text
-    settings = commerce_settings()
-    bad = post(
-        client,
-        "/admin/api/config/commerce/draft",
-        {
-            "label": "无效套餐",
-            "settings": settings | {"membership_30": {"price_yuan": -1, "credits": 30}},
-        },
-        csrf_token,
-    )
-    assert bad.status_code == 422
-    draft = post(
-        client,
-        "/admin/api/config/commerce/draft",
-        {"label": "套餐", "settings": settings},
-        csrf_token,
-    )
-    assert draft.status_code == 201
-    assert draft.json["settings"]["membership_30"]["price_yuan"] == "19.90"
-    assert (
-        post(
-            client,
-            f"/admin/api/config/commerce/{draft.json['id']}/publish",
-            {"confirm": True},
-            csrf_token,
-        ).status_code
-        == 200
-    )
-    with mysql_app.app_context():
-        active, revision = admin_config.runtime_commerce()
-        assert revision == draft.json["id"]
-        assert active.membership_30.price_yuan == Decimal("19.90")
+    page = client.get("/admin/settings")
+    assert page.status_code == 200
+    assert "commerce" not in page.text
+    assert "积分" not in page.text
+    assert "积分包" not in page.text
+
+    from app.services.commerce import PLANS
+
+    assert PLANS["membership_monthly"]["price_yuan"] == Decimal("39.00")
+    assert PLANS["membership_quarterly"]["price_yuan"] == Decimal("99.00")
 
 
 def test_admin_access_and_model_secret_lifecycle(mysql_app, user_factory, admin_client):
@@ -233,15 +198,24 @@ def test_bootstrap_first_admin_generates_private_credentials(mysql_app, tmp_path
     mysql_app.instance_path = str(tmp_path)
     email = f"bootstrap-{uuid4().hex}@example.com"
     try:
-        result = mysql_app.test_cli_runner().invoke(args=["bootstrap-admin", email])
-        assert result.exit_code == 0, result.output
-        content = (tmp_path / "admin-first-login.txt").read_text(encoding="utf-8")
-        password = content.split("Temporary password: ", 1)[1].strip()
         with mysql_app.app_context():
-            user = auth.authenticate(email, password)
-            assert user.is_admin
-        again = mysql_app.test_cli_runner().invoke(args=["bootstrap-admin", email])
-        assert again.exit_code != 0
+            has_admin = (
+                db.session.scalar(select(User.id).where(User.is_admin.is_(True))) is not None
+            )
+        result = mysql_app.test_cli_runner().invoke(args=["bootstrap-admin", email])
+        if has_admin:
+            assert result.exit_code != 0
+            assert "already exists" in result.output
+            assert not (tmp_path / "admin-first-login.txt").exists()
+        else:
+            assert result.exit_code == 0, result.output
+            content = (tmp_path / "admin-first-login.txt").read_text(encoding="utf-8")
+            password = content.split("Temporary password: ", 1)[1].strip()
+            with mysql_app.app_context():
+                user = auth.authenticate(email, password)
+                assert user.is_admin
+            again = mysql_app.test_cli_runner().invoke(args=["bootstrap-admin", email])
+            assert again.exit_code != 0
     finally:
         with mysql_app.app_context():
             user = db.session.scalar(select(User).where(User.email == email))
@@ -319,7 +293,7 @@ def test_prompt_publish_rollback_and_quote_pinning(mysql_app, admin_client, cont
     with mysql_app.app_context():
         from app.services.errors import BusinessError
 
-        with pytest.raises(BusinessError, match="重新预估"):
+        with pytest.raises(BusinessError, match="配置已更新"):
             diagnosis.confirm(uid, operation.id)
         db.session.rollback()
     rolled = post(

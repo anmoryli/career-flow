@@ -9,25 +9,41 @@
   <meta name="description" content="职序 CareerFlow，你的求职工作空间。">
   <title>{% block title %}职序 CareerFlow{% endblock %}</title>
   <script src="{{ url_for('static', filename='js/theme.js') }}"></script>
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css', v='20261027-auth-modal-guest-analysis-v1') }}">
   <script src="{{ url_for('static', filename='vendor/htmx.min.js') }}" defer></script>
-  <script src="{{ url_for('static', filename='js/app.js') }}" defer></script>
-  <script src="{{ url_for('static', filename='js/career.js') }}" defer></script>
-  <script src="{{ url_for('static', filename='js/resume_ai.js') }}" defer></script>
+  <script src="{{ url_for('static', filename='js/app.js', v='20261027-saved-job-import') }}" defer></script>
+  <script src="{{ url_for('static', filename='js/resume_print.js') }}" defer></script>
+  <script src="{{ url_for('static', filename='js/career.js', v='20261027-saved-job-import') }}" defer></script>
+  <script src="{{ url_for('static', filename='js/resume_ai.js', v='20261026-model-fallback') }}" defer></script>
+  <script src="{{ url_for('static', filename='js/resume_compose.js') }}" defer></script>
   <script src="{{ url_for('static', filename='js/diagnosis.js') }}" defer></script>
   <script src="{{ url_for('static', filename='js/auth.js') }}" defer></script>
   <script src="{{ url_for('static', filename='js/imports.js') }}" defer></script>
-  <script src="{{ url_for('static', filename='js/admin.js') }}" defer></script>
+  <script src="{{ url_for('static', filename='js/admin.js', v='20261026-model-fallback') }}" defer></script>
+  <script src="{{ url_for('static', filename='js/landing_motion.js', v='20261027-editorial-motion') }}" defer></script>
   <script src="{{ url_for('static', filename='vendor/alpine.min.js') }}" defer></script>
 </head>
 {% from '_ui.html' import icon %}
-{% set current_view = request.args.get('view', 'dashboard') if request.endpoint == 'web.workspace' else 'history' %}
+{% set current_view = request.args.get('view', 'dashboard') if request.endpoint == 'web.workspace' else 'jobs' if request.blueprint == 'diagnosis' else 'history' %}
 {% set admin_mode = request.blueprint == 'admin' %}
-{% set navigation = [('dashboard','工作台','grid'),('resumes','我的简历','file'),('jobs','岗位分析','briefcase'),('reports','诊断与报告','report'),('history','历史记录','history'),('billing','积分与会员','wallet'),('settings','设置','settings')] %}
+{% set navigation = [('dashboard','工作台','grid'),('resumes','我的简历','file'),('jobs','岗位分析','briefcase'),('reports','诊断与报告','report'),('history','历史记录','history'),('billing','会员方案','wallet'),('settings','设置','settings')] %}
 {% set admin_navigation = [('dashboard','运营概览','grid'),('users','用户','file'),('orders','订单','wallet'),('settings','服务配置','settings'),('audit','操作记录','history')] %}
-<body class="{{ 'workbench-body' if g.user else 'public-body' }}" x-data="shell" data-authenticated="{{ 'yes' if g.user else 'no' }}">
+<body class="{{ 'workbench-body admin-body' if g.user and admin_mode else 'workspace-body' if g.user else 'guest-workspace-body' if request.endpoint == 'web.workspace' else 'public-body' }}" x-data="shell" data-authenticated="{{ 'yes' if g.user else 'no' }}">
   <a class="skip-link" href="#main">跳至主要内容</a>
-  {% if g.user %}
+  {% if g.user and not admin_mode %}
+  <header class="workspace-header">
+    <a class="workspace-brand" href="{{ url_for('web.workspace') }}" aria-label="职序工作空间首页"><span class="brand-mark">序</span><span><strong>职序</strong><small>CAREERFLOW</small></span></a>
+    <nav class="workspace-nav" aria-label="求职导航">
+      {% for key, label, symbol in navigation if key in ['dashboard','resumes','jobs','reports','history'] %}
+      <a class="workspace-nav-link {{ 'is-current' if current_view == key or (key == 'resumes' and current_view in ['resume-template','resume-new','resume-import','optimize']) else '' }}" href="{{ url_for('web.workspace', view=key) }}" {% if current_view == key %}aria-current="page"{% endif %}><span class="workspace-nav-long">{{ '总览' if key == 'dashboard' else '报告' if key == 'reports' else label }}</span><span class="workspace-nav-short">{{ '总览' if key == 'dashboard' else '简历' if key == 'resumes' else '岗位' if key == 'jobs' else '报告' if key == 'reports' else '历史' }}</span></a>
+      {% endfor %}
+    </nav>
+    <div class="workspace-header-tools">
+      <label class="workspace-theme-select"><span class="sr-only">外观主题</span><select id="theme-select" aria-label="外观主题" @change="changeTheme"><option value="system">跟随系统</option><option value="light">浅色</option><option value="dark">深色</option></select></label>
+      <details class="workspace-account-menu"><summary><span class="account-avatar">{{ g.user.display_name[:1] }}</span><span class="workspace-account-name">{{ g.user.display_name }}</span>{{ icon('chevron') }}</summary><div class="workspace-account-popover"><span>{{ g.user.email }}</span><a href="{{ url_for('web.workspace', view='settings') }}">个人中心</a><a href="{{ url_for('web.workspace', view='billing') }}">会员方案</a>{% if g.user.is_admin %}<a href="{{ url_for('admin.dashboard') }}">管理后台</a>{% endif %}<form action="{{ url_for('web.logout') }}" method="post"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button type="submit">退出登录</button></form></div></details>
+    </div>
+  </header>
+  {% elif g.user %}
   <aside class="workbench-sidebar" id="workbench-sidebar" aria-label="工作空间导航">
     <div class="sidebar-brand">
       <a class="brand" href="{{ url_for('web.workspace') }}" aria-label="职序工作台"><span class="brand-mark">序</span><span class="brand-wordmark"><strong>职序</strong><span>CareerFlow</span></span></a>
@@ -37,17 +53,10 @@
     <div class="sidebar-workspace"><span class="workspace-initial">{{ g.user.display_name[:1] }}</span><span class="nav-text">{{ '管理工作台' if admin_mode else '个人工作空间' }}</span></div>
     <span class="sidebar-section-label nav-text">{{ '管理' if admin_mode else '求职工作' }}</span>
     <nav class="sidebar-navigation" aria-label="主要功能">
-      {% if admin_mode %}
       {% for key, label, symbol in admin_navigation %}
       <a class="sidebar-link {{ 'is-current' if request.endpoint == 'admin.' ~ key else '' }}" href="{{ url_for('admin.' ~ key) }}" {% if request.endpoint == 'admin.' ~ key %}aria-current="page"{% endif %}>{{ icon(symbol) }}<span class="nav-text">{{ label }}</span></a>
       {% endfor %}
       <a class="sidebar-link" href="{{ url_for('web.workspace') }}">{{ icon('briefcase') }}<span class="nav-text">返回个人工作台</span></a>
-      {% else %}
-      {% for key, label, symbol in navigation %}
-      <a class="sidebar-link {{ 'is-current' if current_view == key or (key == 'resumes' and current_view in ['resume-new','resume-import','optimize']) else '' }}" href="{{ url_for('web.workspace', view=key) }}" {% if current_view == key %}aria-current="page"{% endif %} title="{{ label }}">{{ icon(symbol) }}<span class="nav-text">{{ label }}</span>{% if current_view == key %}<span class="nav-current-dot"></span>{% endif %}</a>
-      {% endfor %}
-      {% if g.user.is_admin %}<a class="sidebar-link" href="{{ url_for('admin.dashboard') }}">{{ icon('settings') }}<span class="nav-text">管理后台</span></a>{% endif %}
-      {% endif %}
     </nav>
     <div class="sidebar-bottom">
       <label class="sidebar-theme" for="theme-select"><span class="nav-text">外观</span><select id="theme-select" aria-label="外观主题" @change="changeTheme"><option value="system">跟随系统</option><option value="light">浅色</option><option value="dark">深色</option></select></label>
@@ -68,15 +77,36 @@
     </header>
   {% else %}
   <header class="site-header">
-    <a class="brand" href="{{ url_for('web.home') }}" aria-label="职序首页"><span class="brand-mark">序</span><strong>职序</strong><span class="brand-en">CareerFlow</span><span class="version">V1</span></a>
+    <a class="brand" href="{{ url_for('web.home') }}" aria-label="职序首页"><span class="brand-mark">序</span><strong>职序</strong><span class="brand-en">CareerFlow</span></a>
     <nav class="header-actions" aria-label="主导航"><label class="theme-label"><span class="sr-only">外观主题</span><select id="theme-select" aria-label="外观主题" @change="changeTheme"><option value="system">跟随系统</option><option value="light">浅色</option><option value="dark">深色</option></select></label><a class="nav-link" href="{{ url_for('web.login') }}">登录</a><a class="button small" href="{{ url_for('web.register') }}">开始使用 {{ icon('arrow') }}</a></nav>
   </header>
   {% endif %}
   <div id="theme-feedback" role="status" class="toast" hidden></div>
-  {% with notices = get_flashed_messages(with_categories=true) %}
-    {% for category, notice in notices %}<div class="notice container" role="status">{{ notice }}</div>{% endfor %}
-  {% endwith %}
-  <main id="main" class="{{ 'workbench-content' if g.user else 'container' }}">{% block content %}{% endblock %}</main>
-  {% if g.user %}</div>{% else %}<footer class="site-footer"><span>职序 CareerFlow</span><span>把经历理清，让下一步更清晰。</span><span>V1</span></footer>{% endif %}
+  {% with notices = get_flashed_messages(with_categories=true) %}{% for category, notice in notices %}<div class="notice {{ 'workspace-notice' if g.user and not admin_mode else 'container' }}" role="status">{{ notice }}</div>{% endfor %}{% endwith %}
+  <main id="main" class="{{ 'workbench-content workspace-content' if g.user and not admin_mode else 'workbench-content' if g.user else 'guest-workspace-content' if request.endpoint == 'web.workspace' else 'container' }}">{% block content %}{% endblock %}</main>
+  {% if admin_mode %}</div>{% elif not g.user %}<footer class="site-footer"><span>职序 CareerFlow</span><span>把经历理清，让下一步更清晰。</span><a href="{{ url_for('web.login') }}">登录你的工作空间</a></footer>{% endif %}
+{% if not g.user %}
+<dialog class="auth-dialog" id="auth-dialog" aria-labelledby="auth-dialog-title">
+  <button class="auth-dialog-close" type="button" data-auth-close aria-label="关闭">×</button>
+  <div class="auth-dialog-intro"><span class="page-kicker">CAREERFLOW</span><h2 id="auth-dialog-title">登录后继续</h2><p data-auth-description>保存简历和开始岗位分析时，需要先登录账号。</p></div>
+  <form class="auth-dialog-form" data-auth-modal-form="login">
+    <p class="form-feedback" data-auth-feedback role="alert" hidden></p>
+    <label>邮箱<input name="email" type="email" autocomplete="email" required maxlength="254"></label>
+    <label>密码<input name="password" type="password" autocomplete="current-password" required minlength="12" maxlength="128"></label>
+    <p class="auth-switch"><a href="{{ url_for('web.password_reset_page') }}">忘记密码</a></p>
+    <button class="button" type="submit">登录并继续</button>
+    <p class="auth-switch">还没有账号？<a href="{{ url_for('web.register') }}" data-auth-mode="register">创建账号</a></p>
+  </form>
+  <form class="auth-dialog-form" data-auth-modal-form="register" hidden>
+    <p class="form-feedback" data-auth-feedback role="alert" hidden></p>
+    <label>称呼<input name="display_name" autocomplete="nickname" required maxlength="80"></label>
+    <label>邮箱<input name="email" type="email" autocomplete="email" required maxlength="254"></label>
+    <div class="auth-code-row"><button class="button secondary" type="button" data-auth-send-code>发送验证码</button><label>验证码<input name="code" inputmode="numeric" autocomplete="one-time-code" required pattern="[0-9]{6}" maxlength="6"></label></div>
+    <label>密码<input name="password" type="password" autocomplete="new-password" required minlength="12" maxlength="128"></label>
+    <button class="button" type="submit">验证并创建账号</button>
+    <p class="auth-switch">已有账号？<a href="{{ url_for('web.login') }}" data-auth-mode="login">登录</a></p>
+  </form>
+</dialog>
+{% endif %}
 </body>
 </html>

@@ -36,9 +36,14 @@ def readiness() -> dict[str, bool]:
         with db.engine.connect() as connection:
             version = connection.scalar(text("SELECT VERSION()"))
             checks["mysql"] = version.startswith("8.4.")
-            checks["schema"] = (
-                connection.scalar(text("SELECT version_num FROM alembic_version")) == "e6a291a24b51"
+            database_heads = set(
+                connection.scalars(text("SELECT version_num FROM alembic_version"))
             )
+            from alembic.script import ScriptDirectory
+
+            migration = current_app.extensions["migrate"].migrate
+            expected_heads = set(ScriptDirectory.from_config(migration.get_config()).get_heads())
+            checks["schema"] = bool(expected_heads) and database_heads == expected_heads
     except SQLAlchemyError:
         pass
     try:

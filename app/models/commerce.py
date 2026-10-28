@@ -14,7 +14,7 @@ class CommerceOrder(db.Model):
     __tablename__ = "commerce_orders"
     __table_args__ = (
         UniqueConstraint("user_id", "request_key"),
-        CheckConstraint("price_yuan >= 0 AND credits > 0", name="commerce_value_positive"),
+        CheckConstraint("price_yuan >= 0 AND credits >= 0", name="commerce_value_nonnegative"),
         TABLE_OPTIONS,
     )
     id: Mapped[int] = mapped_column(primary_key=True)
@@ -39,6 +39,7 @@ class Membership(db.Model):
     user_id: Mapped[int] = mapped_column(
         ForeignKey("users.id", ondelete="CASCADE"), primary_key=True
     )
+    plan_code: Mapped[str] = mapped_column(String(24), default="legacy")
     expires_at: Mapped[datetime]
     next_grant_at: Mapped[datetime]
     updated_at: Mapped[datetime] = mapped_column(default=utcnow, onupdate=utcnow)

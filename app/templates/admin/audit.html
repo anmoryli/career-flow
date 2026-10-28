@@ -3,5 +3,5 @@
 {% block breadcrumb %}操作记录{% endblock %}
 {% block content %}
 <section class="business-page-heading"><div><span class="page-kicker">管理后台</span><h1>操作记录</h1><p>展示最近 100 条配置操作；密钥和授权码不会记录在这里。</p></div></section>
-<section class="dashboard-section admin-list">{% for item in entries %}<article class="recent-row"><div class="recent-record-copy"><strong>{{ item.action }} · {{ item.target }}</strong><small>用户 #{{ item.actor_id }} · {{ item.created_at.strftime('%Y-%m-%d %H:%M') }} UTC · 请求 {{ item.request_id }}</small></div></article>{% else %}<p>暂无操作记录。</p>{% endfor %}</section>
+<section class="dashboard-section admin-list">{% for item in entries %}<article class="recent-row"><div class="recent-record-copy"><strong>{{ item.action }} · {{ item.target }}</strong><small>用户 #{{ item.actor_id }} · {{ item.created_at|datetime_cn }} · 请求 {{ item.request_id }}</small></div></article>{% else %}<p>暂无操作记录。</p>{% endfor %}</section>
 {% endblock %}

@@ -14,7 +14,6 @@ from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
 
 from app.admin_schemas import (
-    CommerceSettings,
     DiagnosisPromptSettings,
     MailSettings,
     ModelRouteSettings,
@@ -29,7 +28,6 @@ SCHEMAS = {
     "model": ModelSettings,
     "prompt_diagnosis": DiagnosisPromptSettings,
     "model_routes": ModelRouteSettings,
-    "commerce": CommerceSettings,
 }
 
 
@@ -265,13 +263,18 @@ def runtime_model(revision_id=None, *, use_environment=False):
     if item:
         if item.category != "model" or item.state != "published":
             raise BusinessError("模型配置版本不可用。", 503)
-        return item.settings | {"secret": _unseal(item.encrypted_secret), "revision_id": item.id}
+        settings = item.settings | {
+            "fallback_model_ids": item.settings.get("fallback_model_ids", []),
+            "secret": _unseal(item.encrypted_secret),
+            "revision_id": item.id,
+        }
+        return settings
     config = current_app.config
     return {
         "provider": "environment",
         "model_id": config["AI_MODEL"],
+        "fallback_model_ids": config.get("AI_FALLBACK_MODEL_IDS", []),
         "base_url": config["AI_BASE_URL"],
-        "tokens_per_credit": config["AI_TOKENS_PER_CREDIT"],
         "enabled": config["AI_ENABLED"],
         "secret": config["AI_API_KEY"],
         "revision_id": None,
@@ -289,21 +292,22 @@ def runtime_diagnosis_prompt():
     return {"instructions": "", "revision_id": None, "version": 1}
 
 
-def runtime_model_route(purpose: str, default_model_id: str):
+def runtime_model_route(purpose: str, default_model_id: str, fallback_model_ids=()):
     item = active_revision("model_routes")
-    if item and item.settings["enabled"]:
-        return {
-            "model_id": item.settings["routes"].get(purpose, default_model_id),
-            "revision_id": item.id,
-        }
-    return {"model_id": default_model_id, "revision_id": None}
-
-
-def runtime_commerce():
-    item = active_revision("commerce")
-    if item and item.settings["enabled"]:
-        return CommerceSettings.model_validate(item.settings), item.id
-    return None, None
+    primary = (
+        item.settings["routes"].get(purpose, default_model_id)
+        if item and item.settings["enabled"]
+        else default_model_id
+    )
+    candidates = []
+    for model_id in (primary, default_model_id, *fallback_model_ids):
+        if model_id and model_id not in candidates:
+            candidates.append(model_id)
+    return {
+        "model_id": primary,
+        "model_ids": candidates,
+        "revision_id": item.id if item and item.settings["enabled"] else None,
+    }
 
 
 def available_models():
@@ -312,7 +316,7 @@ def available_models():
     if not config["secret"]:
         raise BusinessError("请先在服务配置中保存模型密钥。", 503)
     endpoint = ModelSettings.model_validate(
-        {key: config[key] for key in ModelSettings.model_fields}
+        {key: config[key] for key in ModelSettings.model_fields if key in config}
     ).base_url
     hostname = urlsplit(endpoint).hostname
     try:

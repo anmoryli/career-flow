@@ -1,22 +1,62 @@
-{% from '_ui.html' import icon, pending %}
-<section class="business-page-heading"><div><h1>岗位分析</h1><p>选择一份简历，了解它与目标岗位之间的匹配与差距。</p></div><a class="subtle-link" href="{{ url_for('web.workspace', view='reports') }}">查看历史诊断 {{ icon('arrow') }}</a></section>
-<p class="small-text muted">岗位关联保存时的简历版本。先保存岗位，再确认诊断费用。</p>
-<ol class="workflow-steps" aria-label="岗位分析流程"><li class="is-current"><span>1</span>选择简历</li><li><span>2</span>填写岗位描述</li><li><span>3</span>确认岗位信息</li><li><span>4</span>开始诊断</li></ol>
-<div class="job-layout">
-  <section class="job-form-panel">
-    <form method="post" data-ui-form="job" class="business-form">
-      <section class="form-section"><h2><span class="step-number">1</span>选择用于分析的简历</h2><label for="analysis-resume">我的简历</label><select id="analysis-resume" required><option value="">请选择简历</option>{% for item in resumes %}<option value="{{ item.id }}" data-revision="{{ item.revision }}" {% if current_resume and current_resume.id == item.id %}selected{% endif %}>{{ item.title }} · 第 {{ item.revision }} 版</option>{% endfor %}</select><div class="inline-links"><a href="{{ url_for('web.workspace', view='resume-new') }}">{{ icon('plus') }} 创建简历</a></div></section>
-      <section class="form-section"><h2><span class="step-number">2</span>填写岗位描述</h2><div class="field-grid"><label>岗位名称 <small>选填</small><input id="job-title" maxlength="160" placeholder="例如：产品经理"></label><label>公司名称 <small>选填</small><input id="job-company" maxlength="160" placeholder="公司或团队名称"></label></div><label for="job-description">完整岗位描述 <span class="required-label">必填</span></label><textarea id="job-description" rows="11" required maxlength="20000" placeholder="粘贴完整 JD，包括岗位职责、任职要求和其他条件。岗位名称与公司名称为选填。"></textarea><div class="input-footnote"><span>请尽量保留招聘方的原始要求</span><span id="jd-character-count">0 字</span></div><label for="job-url">招聘链接 <small>选填</small></label><input id="job-url" type="url" placeholder="https://"><p class="small-text muted">仅供你记录来源，当前不抓取链接内容。</p><div class="form-action-row"><button class="button secondary" type="submit">检查已填写内容 {{ icon('arrow') }}</button><button class="inline-assistance" type="button" disabled title="岗位解析服务尚未接入">{{ icon('spark') }} 智能解析</button></div></section>
-    </form>
-  </section>
-  <aside class="job-context"><h2>开始之前</h2><div class="context-point">{{ icon('file') }}<div><strong>使用真实的基础简历</strong><p>分析结果应始终对应你实际提供的经历。</p></div></div><div class="context-point">{{ icon('briefcase') }}<div><strong>一份完整岗位描述即可</strong><p>公司、岗位名称和链接不作为必填步骤。</p></div></div><div class="context-point">{{ icon('lock') }}<div><strong>费用在执行前确认</strong><p>付费能力开放后，先确认上限，再执行诊断。</p></div></div></aside>
-</div>
-<section class="job-review" id="job-review" aria-live="polite" hidden>
-  <div class="work-section-heading"><h2>确认岗位信息</h2><span>来自本页填写，尚未智能解析</span></div>
-  <dl class="account-details"><div><dt>岗位名称</dt><dd id="review-job-title"></dd></div><div><dt>公司名称</dt><dd id="review-job-company"></dd></div></dl>
-  <h3>原始岗位描述</h3>
-  <p id="review-job-description" class="preserve-lines"></p>
-  <p class="data-availability">请确认岗位与简历选择，保存后可在下方继续诊断。</p>
-  <button type="button" class="button" data-save-job>确认并保存岗位</button><p id="job-save-status" role="status"></p>
+{% from '_ui.html' import icon %}
+<section class="business-page-heading job-page-heading">
+  <div><span class="page-kicker">围绕一个真实机会</span><h1>岗位分析</h1><p>选一份简历，贴入岗位描述。确认后开始分析，也可以保存岗位方便下次导入。</p></div>
+  <a class="subtle-link" href="{{ url_for('web.workspace', view='reports') }}">查看诊断报告 {{ icon('arrow') }}</a>
 </section>
-<section class="dashboard-section"><h2>已保存的岗位</h2>{% for item in jobs %}<article class="recent-row"><div class="recent-record-copy"><strong>{{ item.title or '未命名岗位' }}</strong><small>{{ item.company }}</small></div><a class="button secondary" href="{{ url_for('diagnosis.detail', job_id=item.id) }}">继续诊断</a><button type="button" data-delete-job="{{ item.id }}">删除</button></article>{% else %}<p>保存第一个目标岗位后，在这里继续。</p>{% endfor %}<p data-list-feedback role="status"></p></section>
+
+<section class="job-page-layout">
+  <div class="job-entry-panel">
+    <div class="job-entry-title"><span class="job-entry-step">01</span><div><h2>添加目标岗位</h2><p>核对信息后开始匹配分析，可选择是否保存岗位。</p></div></div>
+    <form method="post" data-ui-form="job" class="business-form job-form-simple">
+      {% if g.user %}<label for="analysis-resume">用于分析的简历</label>
+      <select id="analysis-resume" required><option value="">选择一份已保存的简历</option>{% for item in resumes %}<option value="{{ item.id }}" data-revision="{{ item.revision }}" {% if current_resume and current_resume.id == item.id %}selected{% endif %}>{{ item.title }}</option>{% endfor %}</select>
+      {% if not resumes %}<p class="small-text muted">先创建一份简历，再开始岗位分析。 <a href="{{ url_for('web.workspace', view='resume-new') }}">创建简历</a></p>{% endif %}
+      {% else %}<label for="guest-resume-file">上传简历 PDF</label><input id="guest-resume-file" type="file" accept="application/pdf,.pdf"><p class="small-text muted">简历会在本次操作中提取并暂存在当前页面；点击开始分析时再登录保存。</p><p id="guest-resume-status" class="small-text" role="status"></p>{% endif %}
+      {% if saved_jobs %}<div class="saved-job-import"><label for="saved-job-select">从已保存岗位导入</label><div class="saved-job-import-controls"><select id="saved-job-select"><option value="">选择最近或历史岗位</option>{% for item in saved_jobs %}<option value="{{ item.id }}">{{ item.title or '未命名岗位' }}{% if item.company %} · {{ item.company }}{% endif %} · {{ item.created_at|datetime_cn }}</option>{% endfor %}</select><button type="button" class="button secondary" data-import-saved-job>导入岗位</button></div><p class="small-text muted" data-import-job-status role="status"></p></div>{% endif %}
+      <div class="field-grid job-meta-fields"><label>岗位名称 <small>选填</small><input id="job-title" maxlength="160" placeholder="例如：产品经理"></label><label>公司名称 <small>选填</small><input id="job-company" maxlength="160" placeholder="公司名称"></label></div>
+      <label for="job-description">岗位描述</label><textarea id="job-description" rows="12" required maxlength="20000" placeholder="粘贴完整岗位描述，包含职责和任职要求"></textarea>
+      <div class="input-footnote"><span>保留完整要求，分析会更准确</span><span id="jd-character-count">0 字</span></div>
+      <details class="job-optional-link"><summary>添加岗位链接（选填）</summary><label for="job-url" class="sr-only">岗位链接</label><input id="job-url" type="url" placeholder="https://"></details>
+      <div class="form-action-row"><button class="button" type="submit">核对岗位信息 {{ icon('arrow') }}</button></div>
+    </form>
+    <section class="job-review" id="job-review" aria-live="polite" hidden>
+      <div class="work-section-heading"><h2>确认岗位信息</h2></div>
+      <dl class="account-details"><div><dt>岗位名称</dt><dd id="review-job-title"></dd></div><div><dt>公司名称</dt><dd id="review-job-company"></dd></div></dl>
+      <h3>岗位描述</h3><p id="review-job-description" class="preserve-lines"></p>
+      <button type="button" class="button" data-save-job>{{ '确认岗位，继续分析' if g.user else '开始分析' }}</button><p id="job-save-status" role="status"></p>
+    </section>
+  </div>
+  <aside class="job-saved-panel">
+    <div class="job-saved-heading"><span class="page-kicker">已保存</span><h2>目标岗位</h2><p>回到已有岗位继续分析。</p></div>
+    <div class="job-saved-list">
+      {% for item in saved_jobs %}
+      <article class="job-saved-item"><span class="job-saved-mark">{{ icon('briefcase') }}</span><div><strong>{{ item.title or '未命名岗位' }}</strong><small>{{ item.company or '公司未填写' }} <i>·</i> {{ item.created_at|datetime_cn }}</small></div><a href="{{ url_for('diagnosis.detail', job_id=item.id) }}" aria-label="继续分析 {{ item.title or '未命名岗位' }}">{{ icon('arrow') }}</a><button type="button" data-delete-job="{{ item.id }}" aria-label="删除岗位：{{ item.title or '未命名岗位' }}">删除</button></article>
+      {% else %}
+      <div class="job-saved-empty"><span>{{ icon('briefcase') }}</span><p>保存的岗位会显示在这里。</p></div>
+      {% endfor %}
+    </div>
+    {% set recent_only_jobs = jobs|rejectattr('is_saved')|list %}
+    {% if recent_only_jobs %}
+    <section class="job-recent-analyses" aria-labelledby="job-recent-heading">
+      <div><span class="page-kicker">历史保留</span><h3 id="job-recent-heading">近期分析</h3><p>未加入复用库的岗位也会保留在这里。</p></div>
+      {% for item in recent_only_jobs %}
+      <article class="job-recent-analysis">
+        <div><strong>{{ item.title or '目标岗位' }}</strong><small>{{ item.company or '未填写公司' }} · {{ item.created_at|datetime_cn }}</small></div>
+        <a href="{{ url_for('diagnosis.detail', job_id=item.id) }}">继续查看 {{ icon('arrow') }}</a>
+      </article>
+      {% endfor %}
+    </section>
+    {% endif %}
+    <p class="job-list-feedback" data-list-feedback role="status"></p>
+  </aside>
+</section>
+<dialog class="job-save-dialog" id="job-save-dialog" aria-labelledby="job-save-dialog-title">
+  <span class="page-kicker">开始岗位分析</span>
+  <h2 id="job-save-dialog-title">要保存这个岗位吗？</h2>
+  <p>保存后可在下次分析时直接导入；不保存则不会进入可导入列表，分析结果仍会保留在历史记录。</p>
+  <div class="job-save-dialog-actions">
+    <button type="button" class="button" data-job-save-choice="yes">保存并开始分析</button>
+    <button type="button" class="button secondary" data-job-save-choice="no">不保存，直接分析</button>
+  </div>
+  <button type="button" class="job-save-dialog-cancel" data-job-save-cancel>返回修改</button>
+</dialog>

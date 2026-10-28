@@ -78,6 +78,12 @@ class ThemeInput(Input):
     theme: Literal["light", "dark", "system"]
 
 
+class ProfileInput(Input):
+    display_name: Annotated[
+        str, StringConstraints(strip_whitespace=True, min_length=1, max_length=80)
+    ]
+
+
 class ConversationInput(Input):
     title: str = Field(min_length=1, max_length=120)
 

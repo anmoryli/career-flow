@@ -14,7 +14,7 @@ from sqlalchemy.engine import make_url
 
 from app import create_app
 from app.extensions import db
-from app.models import ActiveConfig, AdminAudit, CommerceOrder, ConfigRevision, CreditEntry, User
+from app.models import ActiveConfig, AdminAudit, CommerceOrder, ConfigRevision, User
 from app.services import auth, diagnosis
 
 root = Path(__file__).resolve().parents[1]
@@ -38,6 +38,26 @@ created = set()
 
 def fixture_provider(snapshot):
     names = ["技能匹配", "岗位职责", "工作与项目经历", "成果与影响力", "学历及其他条件"]
+    document = snapshot["document"]
+    suggestions = [
+        {
+            "path": "summary",
+            "original": document["summary"],
+            "proposed": document["summary"] + "。",
+            "reason": "补充标点",
+        }
+    ]
+    experiences = document.get("experiences", [])
+    bullets = experiences[0].get("bullets", []) if experiences else []
+    if bullets:
+        suggestions.append(
+            {
+                "path": "experiences.0.bullets.0",
+                "original": bullets[0],
+                "proposed": bullets[0] + "。",
+                "reason": "在已有工作内容后补齐标点",
+            }
+        )
     return {
         "summary": "开发测试结果，非真实模型输出",
         "dimensions": [{"name": name, "score": 60, "reason": "仅用于测试渲染"} for name in names],
@@ -50,14 +70,7 @@ def fixture_provider(snapshot):
                 "explanation": "待用户确认",
             }
         ],
-        "suggestions": [
-            {
-                "path": "summary",
-                "original": snapshot["document"]["summary"],
-                "proposed": snapshot["document"]["summary"] + "。",
-                "reason": "补充标点",
-            }
-        ],
+        "suggestions": suggestions,
         "question": "可以补充一个真实项目吗？",
     }, 1000
 
@@ -65,6 +78,18 @@ def fixture_provider(snapshot):
 app.extensions["diagnosis_provider"] = fixture_provider
 app.extensions["resume_provider"] = lambda snapshot: (
     {"proposed": (snapshot["original"] or "已提供的背景") + "，表达更清晰", "reason": "仅整理原文"},
+    1000,
+)
+app.extensions["resume_compose_provider"] = lambda snapshot: (
+    {
+        "document": {
+            "name": "林测试",
+            "role": "产品经理",
+            "summary": "负责产品需求分析",
+            "experiences": [{"company": "示例公司", "bullets": ["负责产品需求分析"]}],
+        },
+        "reason": "仅用于浏览器测试，请核对原文",
+    },
     1000,
 )
 
@@ -105,12 +130,6 @@ def test_session():
     db.session.add(user)
     db.session.commit()
     created.add(user.id)
-    balance = diagnosis.account(user.id)
-    balance.available = 10000
-    db.session.add(
-        CreditEntry(user_id=user.id, kind="grant", available_delta=10000, frozen_delta=0)
-    )
-    db.session.commit()
     response = jsonify({"user_id": user.id, "test_mode": True})
     response.set_cookie("cf_session", auth.issue_session(user), httponly=True, samesite="Lax")
     return response

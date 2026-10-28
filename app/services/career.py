@@ -44,6 +44,7 @@ def serialize_resume(item, version=None):
         "revision": version.revision,
         "template": version.template,
         "document": version.document,
+        "created_at": version.created_at.isoformat() + "Z",
         "parent_id": item.parent_id,
         "updated_at": item.updated_at.isoformat() + "Z",
     }
@@ -121,6 +122,9 @@ def save_resume(user_id, data, resume_id=None, parent_id=None):
         else:
             if data.revision:
                 raise BusinessError("新简历版本应从零开始。", 409)
+            from app.services.commerce import ensure_resume_capacity
+
+            ensure_resume_capacity(user_id)
             item = Resume(
                 user_id=user_id, request_key=key, title=data.title, revision=0, parent_id=parent_id
             )
@@ -173,6 +177,7 @@ def save_job(user_id, data):
         "description": data.description,
         "url": data.url,
         "resume_version_id": version.id,
+        "is_saved": data.save_for_later,
     }
     item = db.session.scalar(
         select(JobTarget)

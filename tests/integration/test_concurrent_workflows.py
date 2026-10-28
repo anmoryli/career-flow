@@ -70,7 +70,7 @@ def test_two_confirmations_for_same_diagnostic_only_freeze_once(mysql_app, conte
             entries = db.session.scalars(
                 select(CreditEntry).where(CreditEntry.operation_id.in_(ids))
             ).all()
-            assert len(entries) == 1 and entries[0].kind == "freeze"
+            assert entries == []
             for oid in ids:
                 diagnosis.cancel(uid, oid)
     finally:
@@ -117,7 +117,7 @@ def test_concurrent_workers_cannot_duplicate_provider_or_settlement(
             db.session.scalar(
                 select(func.count())
                 .select_from(CreditEntry)
-                .where(CreditEntry.operation_id == oid, CreditEntry.kind == "settle")
+                .where(CreditEntry.operation_id == oid)
             )
-            == 1
+            == 0
         )

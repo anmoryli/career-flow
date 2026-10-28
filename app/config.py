@@ -42,14 +42,16 @@ def load_config(overrides: dict | None = None) -> dict:
         "WTF_CSRF_TIME_LIMIT": 7200,
         "AI_ENABLED": boolean(os.getenv("AI_ENABLED", "false")),
         "AI_MODEL": os.getenv("AI_MODEL", ""),
+        "AI_FALLBACK_MODEL_IDS": [
+            item.strip()
+            for item in os.getenv("AI_FALLBACK_MODEL_IDS", "").split(",")
+            if item.strip()
+        ],
         "AI_API_KEY": os.getenv("AI_API_KEY", ""),
         "AI_BASE_URL": os.getenv("AI_BASE_URL", "https://api.openai.com/v1"),
-        "AI_TOKENS_PER_CREDIT": int(os.getenv("AI_TOKENS_PER_CREDIT", "1000")),
         "ADMIN_CONFIG_KEY": os.getenv("ADMIN_CONFIG_KEY", ""),
     }
     config.update(overrides or {})
-    if config["AI_TOKENS_PER_CREDIT"] < 1:
-        raise ValueError("AI_TOKENS_PER_CREDIT must be positive")
     url = make_url(config["SQLALCHEMY_DATABASE_URI"])
     if url.drivername != "mysql+pymysql" or url.query.get("charset") != "utf8mb4":
         raise ValueError("DATABASE_URL must use mysql+pymysql and charset=utf8mb4")

@@ -1,29 +1,10 @@
-<section class="business-page-heading"><div><h1>积分与会员</h1><p>查看余额、会员有效期和每笔订单的处理结果。</p></div></section>
-<section class="account-section"><h2>积分账户</h2><p>可用 {{ balance.available if balance else 0 }} · 冻结 {{ balance.frozen if balance else 0 }}</p>
-  <p class="small-text muted">会员 {{ category_balances.get('member', (0, 0))[0] }} · 体验 {{ category_balances.get('experience', (0, 0))[0] }} · 购买 {{ category_balances.get('purchased', (0, 0))[0] }}。依次使用，购买积分永久有效。</p>
+{% set plan_names = {'membership_monthly':'月付会员','membership_quarterly':'季度会员','membership_30':'旧月度会员','membership_90':'旧季度会员','membership_365':'历史年度会员'} %}
+<section class="business-page-heading"><div><span class="page-kicker">会员方案</span><h1>会员与权益</h1><p>免费版可编辑和保存简历，含 5 次 AI 优化；会员可导出 PDF 并使用岗位分析。</p></div></section>
+
+<section class="billing-overview"><div><span>当前方案</span><strong class="billing-member-status">{% if entitlements.is_member %}{{ entitlements.plan_name }}{% else %}免费版{% endif %}</strong><small>{% if entitlements.is_member and entitlements.expires_at %}有效至 {{ entitlements.expires_at|datetime_cn }}{% else %}简历和历史记录会保留{% endif %}</small></div><div><span>简历数量</span><strong>{{ entitlements.resume_count }} / {{ entitlements.resume_limit }}</strong><small>{% if entitlements.is_member %}最多 10 份{% else %}免费版最多 2 份{% endif %}</small></div><div><span>简历 AI 优化</span><strong>{% if entitlements.is_member %}不限次数{% else %}{{ entitlements.resume_ai_remaining }} / 5 次{% endif %}</strong><small>{% if entitlements.is_member %}会员期内不限次数{% else %}总额度，用完需会员{% endif %}</small></div><div><span>PDF 导出</span><strong>{% if entitlements.can_export_resume %}可导出{% else %}会员权益{% endif %}</strong><small>{% if entitlements.can_export_resume %}简历可另存为 PDF{% else %}免费版可编辑和保存{% endif %}</small></div><div><span>岗位分析</span><strong>{% if entitlements.is_member %}不限次数{% else %}0 次{% endif %}</strong><small>会员可使用岗位分析</small></div></section>
+
+<section class="billing-shop"><div class="billing-section-heading"><div><h2>选择会员周期</h2><p>会员生效后可创建最多 10 份简历，并不限次数使用简历 AI 优化。</p></div></div>
+  <div class="billing-plans">{% for key, plan in commerce_plans.items() %}<article class="billing-plan-card {{ 'is-featured' if key == 'membership_quarterly' else '' }}"><div class="billing-plan-head"><div><span class="billing-plan-period">{{ '按月付费' if plan.days == 30 else '按季度付费' }}</span><h3>{{ plan.title }}</h3></div>{% if key == 'membership_quarterly' %}<span class="billing-recommended">季度更省</span>{% endif %}</div><p class="billing-price"><span>¥</span>{{ '%.0f'|format(plan.price_yuan) }}</p><p class="billing-plan-credit">{{ '每月扣费，随时管理' if plan.days == 30 else '一次支付 3 个月，约 ¥33 / 月' }}</p><ul class="membership-benefit-list"><li>简历 AI 优化不限次数</li><li>最多保存 10 份简历</li><li>导出简历 PDF</li><li>岗位分析不限次数</li></ul>{% if mock_payment_enabled %}<form method="post" action="{{ url_for('commerce.order') }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><input type="hidden" name="request_key" value="{{ uuid4() }}"><input type="hidden" name="plan_code" value="{{ key }}"><button class="button {{ 'billing-featured-button' if key == 'membership_quarterly' else 'secondary' }}" type="submit">立即开通</button></form>{% else %}<button class="button secondary" type="button" disabled>支付暂未开通</button>{% endif %}</article>{% endfor %}</div>
 </section>
-<section class="account-section"><h2>会员状态</h2>{% if membership and membership.expires_at > now %}<p>有效至 {{ membership.expires_at.strftime('%Y-%m-%d %H:%M') }} UTC · 手动续费，不自动扣款。</p>{% else %}<p>当前没有有效会员。</p>{% endif %}</section>
-{% if mock_payment_enabled and offers %}
-<section class="account-section"><h2>选择套餐</h2><p class="small-text muted">这里仅模拟支付，确认后不会发生真实扣款。会员积分每 30 天发放一次。</p>
-  <div class="billing-offers">
-  {% for key, title in [('membership_30','30 天会员'),('membership_90','90 天会员'),('membership_365','365 天会员'),('credit_pack_1','积分包一'),('credit_pack_2','积分包二'),('credit_pack_3','积分包三')] %}
-  {% set offer = offers|attr(key) %}
-  <form action="{{ url_for('commerce.order') }}" method="post" class="billing-offer">
-    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><input type="hidden" name="request_key" value="{{ new_request_key() }}"><input type="hidden" name="plan_code" value="{{ key }}">
-    <div><strong>{{ title }}</strong><p>{{ offer.credits }} 积分{{ ' / 30 天' if key.startswith('membership') else '，永久有效' }}</p></div>
-    <div><strong>¥{{ offer.price_yuan }}</strong><button type="submit" class="button secondary small">创建订单</button></div>
-  </form>
-  {% endfor %}
-  </div>
-</section>
-{% elif mock_payment_enabled %}<section class="account-section"><h2>套餐暂未开放</h2><p>管理员发布套餐后，这里会显示价格与权益。</p></section>
-{% endif %}
-<section class="account-section"><h2>订单记录</h2>
-  {% for order in orders %}<div class="recent-row billing-order"><div class="recent-record-copy"><strong>#{{ order.id }} · {{ order.plan_code }} · ¥{{ order.price_yuan }}</strong><small>{{ order.created_at.strftime('%Y-%m-%d %H:%M') }} UTC · {{ {'pending':'待模拟支付','paid':'模拟成功','failed':'模拟失败'}[order.state] }}</small></div>
-    {% if order.state == 'pending' and mock_payment_enabled %}<div class="billing-order-actions">
-      <form action="{{ url_for('commerce.mock_payment', order_id=order.id) }}" method="post"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><input type="hidden" name="outcome" value="success"><button class="button small" type="submit">模拟成功</button></form>
-      <form action="{{ url_for('commerce.mock_payment', order_id=order.id) }}" method="post"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><input type="hidden" name="outcome" value="failure"><button class="button secondary small" type="submit">模拟失败</button></form>
-    </div>{% endif %}
-  </div>{% else %}<p>暂无订单。</p>{% endfor %}
-</section>
-<section class="account-section"><h2>积分流水</h2><div>{% for item in entries %}<p>{{ item.created_at.strftime('%Y-%m-%d %H:%M') }} UTC · {{ {'freeze':'冻结','settle':'结算','release':'释放','grant':'发放'}.get(item.kind, item.kind) }} · {{ {'member':'会员','experience':'体验','purchased':'购买'}.get(item.category, item.category) }} · 可用变动 {{ item.available_delta }} · 冻结变动 {{ item.frozen_delta }}</p>{% else %}<p>尚无积分流水。未确认的费用预估不会扣费。</p>{% endfor %}</div></section>
+
+<section class="billing-record-section"><div class="billing-section-heading"><div><h2>会员订单</h2><p>查看会员方案与开通状态。</p></div></div><div class="billing-order-list">{% for item in orders %}<article class="billing-order-row"><div><strong>{{ plan_names.get(item.plan_code, '历史购买记录') }}</strong><small>{{ item.created_at|datetime_cn }} · {{ item.period_days }} 天</small></div><strong class="billing-order-price">¥{{ item.price_yuan }}</strong><span class="billing-order-state {{ 'is-paid' if item.state == 'paid' else 'is-failed' if item.state == 'failed' else '' }}">{{ {'paid':'已开通','pending':'处理中','failed':'未完成'}.get(item.state, '已结束') }}</span></article>{% else %}<p class="billing-empty">暂无会员订单。</p>{% endfor %}</div></section>

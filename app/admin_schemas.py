@@ -1,5 +1,4 @@
 import ipaddress
-from decimal import Decimal
 from typing import Literal
 from urllib.parse import urlsplit
 
@@ -34,9 +33,28 @@ class ModelSettings(BaseModel):
     model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
     provider: str = Field(min_length=1, max_length=60)
     model_id: str = Field(min_length=1, max_length=120)
+    fallback_model_ids: list[str] = Field(default_factory=list, max_length=2)
     base_url: str = Field(min_length=12, max_length=500)
-    tokens_per_credit: int = Field(ge=1, le=1000000)
+    # Accept the retired setting in previously published configurations; it is unused.
+    tokens_per_credit: int | None = Field(default=None, ge=1, le=1000000)
     enabled: bool = False
+
+    @field_validator("fallback_model_ids")
+    @classmethod
+    def valid_fallback_ids(cls, value):
+        if any(not model_id or len(model_id) > 120 for model_id in value):
+            raise ValueError("Fallback model IDs must be 1 to 120 characters")
+        if len(set(value)) != len(value):
+            raise ValueError("Fallback model IDs must be unique")
+        return value
+
+    @model_validator(mode="after")
+    def unique_primary_and_fallbacks(self):
+        if self.model_id in self.fallback_model_ids:
+            raise ValueError("The primary model cannot also be a fallback")
+        if self.enabled and len(self.fallback_model_ids) < 2:
+            raise ValueError("Enabled model configuration requires a primary and two fallbacks")
+        return self
 
     @field_validator("base_url")
     @classmethod
@@ -106,25 +124,6 @@ class ModelRouteSettings(BaseModel):
         if any(not model_id or len(model_id) > 120 for model_id in value.values()):
             raise ValueError("Model IDs must be 1 to 120 characters")
         return value
-
-
-class CommerceOffer(BaseModel):
-    model_config = ConfigDict(extra="forbid")
-    price_yuan: Decimal = Field(gt=0, max_digits=10, decimal_places=2)
-    credits: int = Field(ge=1, le=1_000_000)
-
-
-class CommerceSettings(BaseModel):
-    """Published prices and credits; periods are fixed by the V1 product rule."""
-
-    model_config = ConfigDict(extra="forbid")
-    membership_30: CommerceOffer
-    membership_90: CommerceOffer
-    membership_365: CommerceOffer
-    credit_pack_1: CommerceOffer
-    credit_pack_2: CommerceOffer
-    credit_pack_3: CommerceOffer
-    enabled: bool = False
 
 
 class ConfigDraftInput(BaseModel):

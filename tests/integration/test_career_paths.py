@@ -8,7 +8,7 @@ from PIL import Image
 
 from app.career_schemas import JobSave, ResumeSave
 from app.extensions import db
-from app.models import AIOperation, Diagnostic, utcnow
+from app.models import AIOperation, Diagnostic, ResumeImport, utcnow
 from app.services import career, diagnosis, pdf_import
 from app.services.errors import BusinessError
 from tests.integration.test_career import client_for, make_operation
@@ -38,12 +38,39 @@ def test_api_resume_job_success_and_replay(mysql_app, context):
     result = client.post("/api/jobs", json=job, headers=headers)
     jid = result.json["id"]
     assert result.status_code == 201
+    saved_job = client.get(f"/api/jobs/{jid}")
+    assert saved_job.status_code == 200
+    assert saved_job.json["description"] == job["description"]
+    assert saved_job.json["is_saved"] is True
+    assert saved_job.json["resume_id"] == rid
+    assert saved_job.json["resume_revision"] == 1
     assert client.post("/api/jobs", json=job, headers=headers).json["id"] == jid
+    unsaved_job = {
+        **job,
+        "request_key": str(uuid4()),
+        "title": "仅用于本次分析",
+        "save_for_later": False,
+    }
+    unsaved = client.post("/api/jobs", json=unsaved_job, headers=headers)
+    assert unsaved.status_code == 201
+    assert unsaved.json["is_saved"] is False
+    assert client.get(f"/api/jobs/{unsaved.json['id']}").json["is_saved"] is False
+    jobs_page = client.get("/workspace?view=jobs").text
+    assert unsaved_job["title"] in jobs_page
+    assert 'class="job-recent-analyses"' in jobs_page
     job["description"] = "改过的 JD"
     assert client.post("/api/jobs", json=job, headers=headers).status_code == 409
     assert (
         client.post(
             f"/api/jobs/{jid}/delete", json={"confirm": "delete"}, headers=headers
+        ).status_code
+        == 200
+    )
+    assert (
+        client.post(
+            f"/api/jobs/{unsaved.json['id']}/delete",
+            json={"confirm": "delete"},
+            headers=headers,
         ).status_code
         == 200
     )
@@ -104,9 +131,43 @@ def test_operation_endpoints_and_queue_failure(mysql_app, context, monkeypatch):
     response = client.post(f"/api/operations/{oid}/confirm", json={}, headers=headers)
     assert response.status_code == 503 and "private" not in response.text
     assert client.get(f"/api/operations/{oid}").json["state"] == "cancelled"
-    credits = client.get("/api/credits").json
-    assert credits["available"] == 10000 and credits["frozen"] == 0
+    assert "??" not in response.text and "??" not in response.text
     assert client.post(f"/api/operations/{oid}/cancel", json={}, headers=headers).status_code == 200
+
+
+def test_running_report_stays_visible_and_diagnosis_shows_progress(mysql_app, context):
+    uid, _, job_id, diagnostic_id = context
+    with mysql_app.app_context():
+        diagnostic = db.session.get(Diagnostic, diagnostic_id)
+        operation = AIOperation(
+            user_id=uid,
+            diagnostic_id=diagnostic_id,
+            resume_id=None,
+            request_key=str(uuid4()),
+            kind="report",
+            state="running",
+            diagnostic_revision=diagnostic.revision,
+            ceiling=0,
+            input_snapshot={},
+            expires_at=utcnow() + timedelta(minutes=10),
+            started_at=utcnow(),
+        )
+        db.session.add(operation)
+        db.session.commit()
+        operation_id = operation.id
+
+    client, _ = client_for(mysql_app, uid)
+    reports_page = client.get("/workspace?view=reports")
+    assert reports_page.status_code == 200
+    assert f'data-report-operation="{operation_id}"' in reports_page.text
+    assert 'data-operation-state="running"' in reports_page.text
+    assert "稍后回来可接着查看" in reports_page.text
+
+    diagnosis_page = client.get(f"/jobs/{job_id}")
+    assert diagnosis_page.status_code == 200
+    assert "diagnosis-running-premium" in diagnosis_page.text
+    assert f'data-operation="{operation_id}"' in diagnosis_page.text
+    assert 'aria-busy="true"' in diagnosis_page.text
 
 
 @pytest.mark.parametrize(
@@ -140,14 +201,14 @@ def test_task_crash_recovery_and_quoted_cancel(mysql_app, context):
         uid, _, _, did = context
         op = make_operation(uid, did)
         diagnosis.cancel(uid, op.id)
-        assert op.state == "cancelled" and diagnosis.account(uid).frozen == 0
+        assert op.state == "cancelled" and op.ceiling == op.charged == 0
         op = make_operation(uid, did)
         diagnosis.confirm(uid, op.id)
         op.created_at = utcnow() - timedelta(minutes=6)
         db.session.commit()
         assert diagnosis.recover_stale_tasks() == 1
         assert diagnosis.recover_stale_tasks() == 0
-        assert diagnosis.account(uid).available == 10000
+        assert db.session.get(AIOperation, op.id).charged == 0
         assert db.session.get(AIOperation, op.id).state == "failed"
 
 
@@ -247,6 +308,20 @@ def test_pdf_upload_confirm_authorization_and_errors(mysql_app, context, user_fa
     assert client.post(f"/api/imports/{iid}/confirm", json={}, headers=headers).status_code == 409
     with mysql_app.app_context():
         pdf_import.run_import(iid)
+        item = db.session.get(ResumeImport, iid)
+        item.document = {
+            **item.document,
+            "education": [{
+                "school": "Verified University", "degree": "Bachelor",
+                "period": "2020-2024", "detail": "Verified major",
+            }],
+            "projects": [{
+                "name": "Verified Project", "role": "Developer",
+                "period": "2023-2024", "tech": "Python",
+                "description": "Source backed work",
+            }],
+        }
+        db.session.commit()
     assert upload(minimal_pdf()).json["state"] == "ready"
     assert client.post(f"/api/imports/{iid}/confirm", json={}, headers=headers).status_code == 422
     result = client.post(
@@ -255,6 +330,11 @@ def test_pdf_upload_confirm_authorization_and_errors(mysql_app, context, user_fa
         headers=headers,
     )
     assert result.status_code == 201
+    imported = client.get(f"/api/resumes/{result.json['id']}").json
+    assert imported["document"]["name"] == "\u5df2\u6838\u5bf9"
+    assert imported["document"]["education"][0]["school"] == "Verified University"
+    assert imported["document"]["projects"][0]["name"] == "Verified Project"
+    assert imported["document"]["email"] == "email@example.com"
     other, _ = user_factory()
     other_client, other_headers = client_for(mysql_app, other)
     assert other_client.get(f"/api/imports/{iid}").status_code == 404
@@ -279,10 +359,6 @@ def test_empty_missing_and_duplicate_apply(mysql_app, context):
             diagnosis.apply_suggestions(uid, oid, data.model_copy(update={"indices": [-1]}))
 
 
-def test_cli_credits_and_recovery(mysql_app, context):
+def test_task_recovery_cli(mysql_app):
     runner = mysql_app.test_cli_runner()
-    assert runner.invoke(args=["grant-development-credits", str(context[0]), "10"]).exit_code == 0
-    assert runner.invoke(args=["grant-development-credits", "999999999", "10"]).exit_code != 0
     assert runner.invoke(args=["recover-stale-tasks"]).exit_code == 0
-    mysql_app.config["APP_ENV"] = "production"
-    assert runner.invoke(args=["grant-development-credits", str(context[0]), "10"]).exit_code != 0

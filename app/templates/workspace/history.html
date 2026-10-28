@@ -1,18 +1,73 @@
 {% from '_ui.html' import icon %}
-<section class="business-page-heading"><div><h1>历史记录</h1><p>回顾过去的求职工作，继续尚未完成的事项。</p></div></section>
-<div class="history-filters" role="group" aria-label="记录类型">{% for key,label in [('all','全部'),('resume','简历优化'),('diagnostic','岗位诊断'),('report','已完成报告'),('task','进行中任务'),('legacy','个人记录')] %}<button type="button" data-history-filter="{{ key }}" aria-pressed="{{ 'true' if loop.first else 'false' }}" class="filter-button {{ 'is-active' if loop.first else '' }}">{{ label }}</button>{% endfor %}</div>
-<div class="history-search"><label for="history-search">{{ icon('search') }}<span class="sr-only">搜索历史记录</span><input id="history-search" type="search" placeholder="搜索记录名称" autocomplete="off"></label><span class="muted small-text">{{ count }} 条已有个人记录</span></div>
-<p class="data-availability">简历优化、岗位诊断与报告服务尚未接入，因此当前没有对应记录。已有个人记录单独归为“个人记录”，不会被伪装成业务诊断；业务服务接入后将在对应分类中呈现。</p>
-<section class="history-table" aria-label="已有记录">
-  <div class="history-table-head"><span>名称 / 类型</span><span>创建时间（UTC）</span><span>状态</span><span>操作</span></div>
+<section class="business-page-heading history-page-heading">
+  <div>
+    <span class="eyebrow">求职工作空间</span>
+    <h1>历史记录</h1>
+    <p>简历、岗位和诊断报告都在这里，随时可以继续。</p>
+  </div>
+</section>
+
+<section class="history-toolbar" aria-label="筛选和搜索历史记录">
+  <div class="history-filters" role="group" aria-label="记录类型">
+    {% for key,label in [('all','全部'),('resume','简历'),('diagnostic','岗位'),('report','报告'),('legacy','个人记录')] %}
+    <button type="button" data-history-filter="{{ key }}" aria-pressed="{{ 'true' if loop.first else 'false' }}" class="filter-button {{ 'is-active' if loop.first else '' }}">{{ label }}</button>
+    {% endfor %}
+  </div>
+  <label class="history-search" for="history-search">
+    {{ icon('search') }}
+    <span class="sr-only">搜索历史记录</span>
+    <input id="history-search" type="search" placeholder="搜索名称" autocomplete="off">
+  </label>
+</section>
+
+<section class="history-list" aria-label="历史记录">
+  {% for item in resumes %}
+  <article class="history-row" data-history-row data-record-type="resume" data-record-title="{{ item.title|lower }}">
+    <div class="history-record-name"><span class="history-record-icon">{{ icon('file') }}</span><div><strong>{{ item.title }}</strong><small>简历 <i>·</i> 第 {{ item.revision }} 版</small></div></div>
+    <div class="history-record-meta"><span class="history-type-label">简历</span><time>{{ item.updated_at|datetime_cn }}</time></div>
+    <span class="status-badge">可编辑</span>
+    <a class="history-open-link" href="{{ url_for('web.workspace', view='resume-new', resume_id=item.id) }}">打开 {{ icon('arrow') }}</a>
+  </article>
+  {% endfor %}
+  {% for item in jobs %}
+  <article class="history-row" data-history-row data-record-type="diagnostic" data-record-title="{{ (item.title or item.company or '岗位')|lower }}">
+    <div class="history-record-name"><span class="history-record-icon">{{ icon('briefcase') }}</span><div><strong>{{ item.title or '未命名岗位' }}</strong><small>{{ item.company or '岗位分析' }}</small></div></div>
+    <div class="history-record-meta"><span class="history-type-label">岗位</span><time>{{ item.created_at|datetime_cn }}</time></div>
+    <span class="status-badge {{ 'status-readonly' if not item.is_saved else '' }}">{{ '可再次导入' if item.is_saved else '仅本次分析' }}</span>
+    <a class="history-open-link" href="{{ url_for('diagnosis.detail', job_id=item.id) }}">打开 {{ icon('arrow') }}</a>
+  </article>
+  {% endfor %}
+  {% for operation, diagnostic, job in reports %}
+  <article class="history-row" data-history-row data-record-type="report" data-record-title="{{ job.title }} {{ job.company }}">
+    <div class="history-record-name"><span class="history-record-icon">{{ icon('report') }}</span><div><strong>{{ job.title }} <i>·</i> {{ job.company }}</strong><small>匹配度 {{ operation.result.get('overall_score', '—') if operation.result else '—' }} / 100</small></div></div>
+    <div class="history-record-meta"><span class="history-type-label">诊断报告</span><time>{{ operation.created_at|datetime_cn }}</time></div>
+    <span class="status-badge {{ 'status-readonly' if operation.state != 'succeeded' else '' }}">{{ {'queued':'排队中','running':'正在分析','succeeded':'已完成','failed':'需要重试','cancelled':'已取消'}.get(operation.state, '处理中') }}</span>
+    <a class="history-open-link" href="{{ url_for('diagnosis.detail', job_id=diagnostic.job_id) }}">{{ '查看报告' if operation.state == 'succeeded' else '继续查看' }} {{ icon('arrow') }}</a>
+  </article>
+  {% endfor %}
   {% for item in conversations %}
   <article class="history-row" data-history-row data-record-type="legacy" data-record-title="{{ item.title|lower }}">
-    <div class="history-record-name">{{ icon('file') }}<div><strong>{{ item.title }}</strong><small>个人记录 · 尚未关联业务</small></div></div>
-    <time datetime="{{ item.created_at.isoformat() }}Z">{{ item.created_at.strftime('%Y-%m-%d %H:%M') }}</time>
+    <div class="history-record-name"><span class="history-record-icon">{{ icon('history') }}</span><div><strong>{{ item.title }}</strong><small>个人记录</small></div></div>
+    <div class="history-record-meta"><span class="history-type-label">个人记录</span><time>{{ item.created_at|datetime_cn }}</time></div>
     <span class="status-badge {{ 'status-readonly' if item.status != 'active' else '' }}">{{ '可继续' if item.status == 'active' else '只读' }}</span>
-    <a class="subtle-link" href="{{ url_for('web.conversation', conversation_id=item.id) }}">{{ '继续记录' if item.status == 'active' else '查看详情' }} {{ icon('arrow') }}</a>
+    <a class="history-open-link" href="{{ url_for('web.conversation', conversation_id=item.id) }}">打开 {{ icon('arrow') }}</a>
   </article>
   {% endfor %}
 </section>
-<div class="workspace-empty" id="history-empty" {% if conversations %}hidden{% endif %}><span class="empty-line-icon">{{ icon('history') }}</span><h3>此分类下暂无可显示的工作记录</h3><p>简历优化、岗位诊断与报告会按业务归档。<br>你也可以先开始一项新的求职工作。</p><a class="button secondary" href="{{ url_for('web.workspace', view='jobs') }}">开始岗位分析 {{ icon('arrow') }}</a></div>
-<details class="legacy-record-tools"><summary>兼容旧版个人记录</summary><p class="small-text muted">保留原有记录功能，不作为简历或岗位分析的前置步骤。</p><form action="{{ url_for('web.create_conversation') }}" method="post" class="legacy-record-form"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><label for="title">记录名称</label><input id="title" name="title" required maxlength="120" placeholder="个人备忘或经历梳理"><button class="button secondary" type="submit">新增个人记录</button></form></details>
+
+<div class="workspace-empty history-empty" id="history-empty" {% if resumes or jobs or reports or conversations %}hidden{% endif %}>
+  <span class="history-empty-icon">{{ icon('history') }}</span>
+  <h3>还没有历史记录</h3>
+  <p>创建一份简历或添加岗位描述后，相关内容会显示在这里。</p>
+  <a class="button" href="{{ url_for('web.workspace', view='resume-new') }}">创建简历</a>
+</div>
+
+<details class="legacy-record-tools">
+  <summary>添加个人记录</summary>
+  <form action="{{ url_for('web.create_conversation') }}" method="post" class="legacy-record-form">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <label for="title">记录名称</label>
+    <input id="title" name="title" required maxlength="120" placeholder="个人备忘或经历梳理">
+    <button class="button secondary" type="submit">新增记录</button>
+  </form>
+</details>

@@ -11,7 +11,7 @@ from app.services.errors import BusinessError
 @pytest.mark.parametrize(
     "changes",
     [
-        {"AI_TOKENS_PER_CREDIT": 0},
+        {"SQLALCHEMY_DATABASE_URI": "sqlite:///:memory:"},
         {"APP_ENV": "unknown"},
         {"SECRET_KEY": "short"},
     ],
@@ -63,6 +63,7 @@ def test_complete_production_configuration_passes_guards(config):
         config
         | {
             "APP_ENV": "production",
+            "MOCK_PAYMENT_ENABLED": False,
             "SESSION_COOKIE_SECURE": True,
             "MAIL_USE_TLS": True,
             "MAIL_USERNAME": "test-user",

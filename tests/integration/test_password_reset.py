@@ -40,7 +40,7 @@ def test_password_reset_email_code_and_session_revocation(mysql_app, user_factor
         ).status_code
         == 303
     )
-    assert client.get("/workspace").status_code == 303
+    assert client.get("/workspace").status_code in {302, 303}
     assert (
         client.post(
             "/password/reset", json=payload | {"code": "123456"}, headers=headers

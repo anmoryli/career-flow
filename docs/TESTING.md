@@ -1,3 +1,7 @@
+2026-10-26 AI 收费交互调整：用户点击即启动简历润色、粘贴整理或岗位报告；前端不再显示积分预估或费用二次确认，完成后显示实际扣分。`npx.cmd playwright test --grep "resume to job to report|paid resume suggestion|pasted facts"` 使用隔离 MySQL 测试库、每轮新建测试用户和明确标记的测试 Provider，在桌面/平板/手机验证完整岗位报告及实际扣分、逐条润色、首次粘贴简历整理，共 9 passed。测试输出不代表真实模型供应商验收，未触发真实支付。
+
+2026-10-27 ????????? MySQL ?????? 5 ?????????? 61 ????126 ?????????????????????????????????????????????????????
+
 # 测试方法
 
 2026-10-25 简历编辑交接任务回归：`uv run python scripts/test-integration.py` 在原生 MySQL/Redis 上为 173 passed、1 skipped，覆盖率 93%；随后新增的跨用户 AI 任务状态校验、队列不可用退款与未确认报价允许删简历用例，定向运行 `uv run python scripts/test-focus.py tests/integration/test_resume_ai.py -q` 为 7 passed。`npx.cmd playwright test` 为 64 passed、2 skipped；弹窗居中调整后定向运行 6 passed，覆盖桌面、平板、手机的逐条建议及接受/保留原文。`npm.cmd run build`、`uv run ruff check app tests scripts/e2e-server.py scripts/verify-db-lifecycle.py` 和 `git diff --check` 通过。`uv run python scripts/verify-db-lifecycle.py` 在隔离恢复库完成新迁移升降级和备份恢复，开发库升级后 `flask db check` 无差异。简历改写只使用明确标记的测试模型，未调用真实模型、未进行生产部署。
@@ -37,3 +41,10 @@ OCR 增量验证：加入 Tesseract 后完整 MySQL/Redis 集成套件 158 passe
 `uv run pip-audit --disable-pip --no-deps -r requirements.txt --format json -o output/pip-audit.json` 与 `npm audit --json`。扫描是执行时的已知公告快照，不等于全部供应链风险都已消除。
 
 已知待测：真实模型输出与计费、完整结构化交互、PDF/OCR、管理端、生产 Nginx/PM2、数据库断连/恢复与大规模负载。
+
+
+## 2026-10-26 PDF 导入与 A4 导出
+
+- `uv run pytest tests/test_pdf_limits.py -q`（使用项目内 `.tools/tesseract`）：10 passed。覆盖文字 PDF、扫描页 OCR、中文扫描简历字段、文字与嵌入头像混合 PDF、结构化字段、协议前缀清理、损坏/空 PDF、图片误识别过滤与资源限制。
+- Playwright PDF 导入/导出定向回归：桌面 4 passed；简历工作流在桌面、平板、手机 3 passed。实测较多内容压为 A4 单页，极长内容触到压缩下限后保留分页。
+- 本机 MySQL 账户 `anmory` 的原 PDF 经前端重新导入并更新现有简历版本；确认头像保存并显示、教育/项目/技能/荣誉字段入库、主页和 GitHub 不含 `https://`，列表与历史仍可见。该手动流程未替代完整 MySQL 集成套件。

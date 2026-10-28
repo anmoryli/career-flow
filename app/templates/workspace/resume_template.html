@@ -1,0 +1,30 @@
+{% from 'resume/_document.html' import resume_document %}
+{% from '_ui.html' import icon %}
+{% set template_preview = {
+  'name':'示例姓名','role':'目标岗位','phone':'138 0000 0000','email':'name@example.com','city':'杭州',
+  'website':'','github':'','linkedin':'','summary':'这里展示个人简介的排版。','photo':'',
+  'experiences':[{'company':'示例公司','role':'产品经理','period':'2022.06 — 至今','location':'杭州','bullets':['负责需求梳理与产品迭代']}],
+  'projects':[{'name':'产品项目','role':'项目负责人','period':'2023','tech':'用户研究 · 产品设计','description':'展示项目内容与成果的排版。','link':''}],
+  'education':[{'school':'示例大学','degree':'本科 · 信息管理','period':'2018 — 2022','detail':''}],
+  'skills':[{'label':'产品能力','items':['需求分析','产品规划','用户研究']}],
+  'certificates':[],'languages':[],'custom_sections':[],'hidden_sections':[],
+  'section_order':['summary','experiences','projects','education','skills','certificates','languages']
+} %}
+<section class="business-page-heading resume-template-heading">
+  <div><h1>从模板创建</h1><p>选择一款简历模板，接着填写内容。</p></div>
+  <a class="subtle-link" href="{{ url_for('web.workspace', view='resumes') }}">返回我的简历</a>
+</section>
+<nav class="resume-template-grid" aria-label="选择简历模板">
+  {% for key, title, audience, description in [
+    ('classic','经典商务','金融 · 咨询 · 行政 · 管理','清晰稳重的商务排版'),
+    ('technical','技术项目','研发 · 算法 · 数据 · 产品','突出项目与技术能力'),
+    ('modern','简约现代','产品 · 设计 · 市场 · 内容','简洁轻盈的内容布局')
+  ] %}
+  <a class="template-choice resume-template-choice" data-template-choice="{{ key }}"
+     href="{{ url_for('web.workspace', view='resume-new', create='1', template=key) }}">
+    <span class="template-choice-preview"><span class="template-thumb">{{ resume_document(key, template_preview, true) }}</span><span class="template-sample-badge">示例预览</span></span>
+    <span class="template-choice-copy"><strong>{{ title }}</strong><small>{{ audience }}</small><em>{{ description }}</em></span>
+    <span class="template-choice-action">选择此模板 {{ icon('arrow') }}</span>
+  </a>
+  {% endfor %}
+</nav>

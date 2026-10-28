@@ -1,6 +1,5 @@
 import copy
 import json
-import math
 from datetime import timedelta
 
 from flask import current_app
@@ -19,10 +18,9 @@ from app.models import (
     ResumeVersion,
     utcnow,
 )
-from app.services import credits
 from app.services.career import owned, save_resume
-from app.services.credits import account as account
-from app.services.credits import owner_lock
+from app.services.commerce import ensure_job_analysis_capacity
+from app.services.commerce import lock_user as owner_lock
 from app.services.errors import BusinessError
 
 PROMPT_VERSION = "career-diagnosis-1"
@@ -80,6 +78,9 @@ def active_operation(diagnostic_id):
 def quote(user_id, diagnostic_id, data):
     owner_lock(user_id)
     diagnostic = owned(Diagnostic, user_id, diagnostic_id, True)
+    # Verify ownership before revealing account entitlement state. A foreign
+    # diagnostic must remain indistinguishable from a missing one.
+    ensure_job_analysis_capacity(user_id)
     previous = db.session.scalar(
         select(AIOperation)
         .where(AIOperation.user_id == user_id, AIOperation.request_key == str(data.request_key))
@@ -93,7 +94,7 @@ def quote(user_id, diagnostic_id, data):
     if diagnostic.state == "completed" or active_operation(diagnostic.id):
         raise BusinessError("诊断已完成或任务正在执行。", 409)
     if not is_configured():
-        raise BusinessError("真实 AI 尚未配置，不能确认费用或启动诊断。", 503)
+        raise BusinessError("真实 AI 尚未配置，暂时无法启动诊断。", 503)
     if data.kind == "analysis" and diagnostic.rounds >= 10:
         raise BusinessError("追问已达十轮，请生成报告。", 409)
     job = owned(JobTarget, user_id, diagnostic.job_id)
@@ -105,7 +106,21 @@ def quote(user_id, diagnostic_id, data):
     ).all()
     document = dict(version.document)
     document.pop("photo", None)  # A text model never needs the user's photo.
-    for section in document.get("hidden_sections", []):
+    hidden_sections = document.get("hidden_sections", [])
+    hidden_custom_ids = {
+        section.removeprefix("custom:")
+        for section in hidden_sections
+        if section.startswith("custom:")
+    }
+    if hidden_custom_ids:
+        document["custom_sections"] = [
+            section
+            for section in document.get("custom_sections", [])
+            if section.get("id") not in hidden_custom_ids
+        ]
+    for section in hidden_sections:
+        if section.startswith("custom:"):
+            continue
         document[section] = "" if section == "summary" else []
     from app.services.admin_config import (
         runtime_diagnosis_prompt,
@@ -115,7 +130,9 @@ def quote(user_id, diagnostic_id, data):
 
     model = runtime_model()
     prompt = runtime_diagnosis_prompt()
-    route = runtime_model_route(data.kind, model["model_id"])
+    route = runtime_model_route(
+        data.kind, model["model_id"], model.get("fallback_model_ids", [])
+    )
     snapshot = {
         "document": document,
         "jd": job.description,
@@ -130,22 +147,20 @@ def quote(user_id, diagnostic_id, data):
         "prompt_revision_id": prompt["revision_id"],
         "prompt_instructions": prompt["instructions"],
         "model": route["model_id"],
+        "model_candidates": route["model_ids"],
         "model_revision_id": model["revision_id"],
         "model_route_revision_id": route["revision_id"],
-        "tokens_per_credit": model["tokens_per_credit"],
     }
     input_bytes = len(json.dumps(snapshot, ensure_ascii=False).encode())
     if input_bytes > 100000:
         raise BusinessError("本次诊断文字过长，请缩减重复经历或岗位描述后重试。", 422)
-    # Conservative UTF-8 upper bound + output/schema budget, both attempts included.
-    ceiling = math.ceil(2 * (input_bytes + 24000) / snapshot["tokens_per_credit"])
     item = AIOperation(
         user_id=user_id,
         diagnostic_id=diagnostic.id,
         request_key=str(data.request_key),
         kind=data.kind,
         diagnostic_revision=diagnostic.revision,
-        ceiling=ceiling,
+        ceiling=0,
         input_snapshot=snapshot,
         state="quoted",
         expires_at=utcnow() + timedelta(minutes=10),
@@ -164,13 +179,14 @@ def confirm(user_id, operation_id):
         db.session.commit()
         return item
     diagnostic = owned(Diagnostic, user_id, item.diagnostic_id, True)
+    if item.expires_at <= utcnow():
+        raise BusinessError("报价已过期，请重新开始本次操作。", 409)
     if (
-        item.expires_at <= utcnow()
-        or diagnostic.revision != item.diagnostic_revision
+        diagnostic.revision != item.diagnostic_revision
         or diagnostic.state == "completed"
         or active_operation(diagnostic.id)
     ):
-        raise BusinessError("费用预估已过期或诊断已更新，请重新预估。", 409)
+        raise BusinessError("诊断已更新，请重试。", 409)
     from app.services.admin_config import (
         runtime_diagnosis_prompt,
         runtime_model,
@@ -179,26 +195,28 @@ def confirm(user_id, operation_id):
 
     model = runtime_model()
     prompt = runtime_diagnosis_prompt()
-    route = runtime_model_route(item.kind, model["model_id"])
+    route = runtime_model_route(
+        item.kind, model["model_id"], model.get("fallback_model_ids", [])
+    )
+    if not is_configured():
+        raise BusinessError("AI 服务暂不可用，请稍后重试。", 503)
     if (
-        not is_configured()
-        or item.input_snapshot["model"] != route["model_id"]
+        item.input_snapshot["model"] != route["model_id"]
+        or item.input_snapshot.get("model_candidates", [item.input_snapshot["model"]])
+        != route["model_ids"]
         or item.input_snapshot.get("model_revision_id") != model["revision_id"]
         or item.input_snapshot.get("model_route_revision_id") != route["revision_id"]
         or item.input_snapshot.get("prompt_revision_id") != prompt["revision_id"]
     ):
-        raise BusinessError("模型配置不可用或已改变，请重新预估。", 503)
-    from app.services.commerce import grant_due
-
-    grant_due(user_id)
-    credits.freeze(user_id, item.id, item.ceiling)
+        raise BusinessError("模型配置已更新，请重新启动本次操作。", 409)
+    item.ceiling = 0
     item.state = "queued"
     db.session.commit()
     return item
 
 
 def release(item, state, error=""):
-    credits.release(item.user_id, item.id, item.ceiling)
+    item.ceiling = 0
     item.state = state
     item.error = error
 
@@ -338,25 +356,31 @@ def run_operation(operation_id):
     result = None
     tokens = 0
     attempts = 0
-    for attempt in range(2):
-        attempts = attempt + 1
-        try:
-            from app.services.model_provider import generate
+    from app.services.model_fallback import candidates, model_unavailable
+    from app.services.model_provider import generate
 
-            provider = (
-                current_app.extensions.get("diagnosis_provider") if current_app.testing else None
-            )
-            raw, usage = (provider or generate)(snapshot)
-            if not isinstance(usage, int) or not 0 < usage <= 2000000:
-                raise ValueError("费用用量不可用")
-            tokens += usage
-            result = validate_output(raw, snapshot)
+    provider = current_app.extensions.get("diagnosis_provider") if current_app.testing else None
+    stop_fallback = False
+    for model_id in candidates(snapshot):
+        for retry in range(2):
+            attempts += 1
+            try:
+                raw, usage = (provider or generate)(snapshot | {"model": model_id})
+                if not isinstance(usage, int) or not 0 < usage <= 2000000:
+                    raise ValueError("费用用量不可用")
+                tokens += usage
+                result = validate_output(raw, snapshot)
+                break
+            except Exception as error:
+                # Never persist provider exception strings (may contain credentials/documents).
+                current_app.logger.warning(
+                    "ai_attempt_failed operation=%s type=%s", operation_id, type(error).__name__
+                )
+                if retry == 1 and not model_unavailable(error):
+                    stop_fallback = True
+                    break
+        if result is not None or stop_fallback:
             break
-        except Exception as error:
-            # Never persist provider exception strings (may contain credentials/documents).
-            current_app.logger.warning(
-                "ai_attempt_failed operation=%s type=%s", operation_id, type(error).__name__
-            )
     owner_lock(user_id)
     item = owned(AIOperation, user_id, operation_id, True)
     if item.state != "running":
@@ -365,12 +389,11 @@ def run_operation(operation_id):
     item.attempts = attempts
     item.tokens = tokens
     if result is None:
-        release(item, "failed", "模型超时、输出无效或费用不可查询；冻结积分已全额释放。")
+        release(item, "failed", "模型超时或输出无效，请稍后重试。")
     else:
-        charged = min(item.ceiling, math.ceil(tokens / snapshot["tokens_per_credit"]))
-        credits.settle(user_id, item.id, item.ceiling, charged)
         item.result = result
-        item.charged = charged
+        item.ceiling = 0
+        item.charged = 0
         item.state = "succeeded"
         diagnostic = owned(Diagnostic, user_id, item.diagnostic_id, True)
         diagnostic.revision += 1
@@ -451,7 +474,7 @@ def recover_stale_tasks():
             item.state == "running" and (item.started_at or item.created_at) < cutoff
         )
         if stale:
-            release(item, "failed", "后台任务中断或超时，冻结积分已释放，请重新预估。")
+            release(item, "failed", "后台任务中断或超时，请重试。")
             recovered += 1
         db.session.commit()
     imports = db.session.scalars(

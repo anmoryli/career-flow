@@ -211,7 +211,7 @@ def test_recovery_and_cancel_race_does_not_refund_twice(mysql_app, context, monk
 
         monkeypatch.setattr(diagnosis, "owner_lock", cancel_then_lock)
         assert diagnosis.recover_stale_tasks() == 0
-        assert diagnosis.account(uid).available == 10000 and diagnosis.account(uid).frozen == 0
+        assert op.ceiling == op.charged == 0
 
 
 def test_recovery_does_not_cancel_a_task_that_just_started(mysql_app, context, monkeypatch):
@@ -235,7 +235,7 @@ def test_recovery_does_not_cancel_a_task_that_just_started(mysql_app, context, m
 
         monkeypatch.setattr(diagnosis, "owner_lock", start_then_lock)
         assert diagnosis.recover_stale_tasks() == 0
-        assert diagnosis.account(uid).frozen == op.ceiling
+        assert op.ceiling == 0
         diagnosis.cancel(uid, op.id)
 
 

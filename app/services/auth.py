@@ -316,7 +316,7 @@ def delete_account(user_id: int, data: AccountDeleteInput) -> None:
         raise BusinessError("还有进行中的诊断任务，请先取消或等待完成后再注销。", 409)
     account = db.session.get(CreditAccount, user_id)
     if account is not None and account.frozen:
-        raise BusinessError("还有未结算的积分，请稍后再注销。", 409)
+        raise BusinessError("仍有正在处理的 AI 任务，请完成后再注销。", 409)
     db.session.execute(delete(JobTarget).where(JobTarget.user_id == user_id))
     db.session.execute(
         delete(EmailVerificationCode).where(EmailVerificationCode.email == user.email)

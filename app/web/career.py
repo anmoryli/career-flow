@@ -5,8 +5,8 @@ from sqlalchemy import delete, select
 from app.career_schemas import ConfirmDelete, CopyResume, JobSave, ResumeSave
 from app.extensions import db
 from app.models import AIOperation, JobTarget, Resume, ResumeVersion
-from app.resume_ai_schemas import ResumeAIQuote
-from app.services import career, resume_ai
+from app.resume_ai_schemas import ResumeAIQuote, ResumeComposeQuote
+from app.services import career, commerce, resume_ai
 from app.services.errors import BusinessError
 from app.web.routes import input_data, login_required
 
@@ -72,7 +72,7 @@ def delete_resume(item_id):
         .where(AIOperation.resume_id == item.id, AIOperation.state != "quoted")
         .limit(1)
     ):
-        raise BusinessError("这份简历含有积分消费记录，不能单独删除。", 409)
+        raise BusinessError("这份简历已有 AI 操作记录，不能单独删除。", 409)
     db.session.execute(delete(Resume).where(Resume.id == item.id))
     db.session.commit()
     return {"deleted": True}
@@ -82,6 +82,24 @@ def delete_resume(item_id):
 @login_required
 def create_job():
     return career.save_job(g.user.id, JobSave.model_validate(input_data())), 201
+
+
+@career_web.get("/api/jobs/<int:item_id>")
+@login_required
+def get_job(item_id):
+    item = career.owned(JobTarget, g.user.id, item_id)
+    version = db.session.get(ResumeVersion, item.resume_version_id)
+    resume = career.owned(Resume, g.user.id, version.resume_id)
+    return {
+        "id": item.id,
+        "title": item.title,
+        "company": item.company,
+        "description": item.description,
+        "url": item.url,
+        "is_saved": item.is_saved,
+        "resume_id": resume.id,
+        "resume_revision": version.revision,
+    }
 
 
 @career_web.post("/api/jobs/<int:item_id>/delete")
@@ -104,17 +122,23 @@ def delete_job(item_id):
 @login_required
 def print_resume(item_id):
     item = career.owned(Resume, g.user.id, item_id)
+    commerce.ensure_resume_export_capacity(g.user.id)
     version = career.version_of(item, request.args.get("revision", type=int))
     return render_template("resume/print.html", resume=item, version=version)
 
 
 def resume_operation_json(item):
+    partial = (
+        item.result.get("partial")
+        if item.state == "running" and isinstance(item.result, dict)
+        else None
+    )
     return {
         "id": item.id,
         "state": item.state,
-        "ceiling": item.ceiling,
         "charged": item.charged,
-        "result": item.result,
+        "result": None if partial else item.result,
+        "partial": partial,
         "error": item.error,
         "expires_at": item.expires_at.isoformat() + "Z",
     }
@@ -124,6 +148,62 @@ def resume_operation_json(item):
 @login_required
 def quote_resume_ai(item_id):
     item = resume_ai.quote(g.user.id, item_id, ResumeAIQuote.model_validate(input_data()))
+    return resume_operation_json(item)
+
+
+@career_web.post("/api/resumes/<int:item_id>/ai/compose/quote")
+@login_required
+def quote_resume_compose(item_id):
+    from app.services.infrastructure import rate_limit
+
+    rate_limit("resume-compose", str(g.user.id), 5, 60)
+    item = resume_ai.quote_compose(
+        g.user.id, item_id, ResumeComposeQuote.model_validate(input_data())
+    )
+    return resume_operation_json(item)
+
+
+def queue_resume_operation(item):
+    if item.state == "queued":
+        try:
+            Queue("careerflow", connection=current_app.extensions["redis"]).enqueue(
+                "app.jobs.resume_ai_job",
+                item.id,
+                job_timeout=120,
+                job_id=f"resume-ai-{item.id}",
+            )
+        except Exception:
+            from app.services.diagnosis import cancel
+
+            cancel(g.user.id, item.id)
+            return None
+    return item
+
+
+@career_web.post("/api/resumes/<int:item_id>/ai/start")
+@login_required
+def start_resume_ai(item_id):
+    item = resume_ai.quote(g.user.id, item_id, ResumeAIQuote.model_validate(input_data()))
+    item = resume_ai.confirm(g.user.id, item.id)
+    item = queue_resume_operation(item)
+    if item is None:
+        return {"error": "任务队列暂不可用，请重试。"}, 503
+    return resume_operation_json(item)
+
+
+@career_web.post("/api/resumes/<int:item_id>/ai/compose/start")
+@login_required
+def start_resume_compose(item_id):
+    from app.services.infrastructure import rate_limit
+
+    rate_limit("resume-compose", str(g.user.id), 5, 60)
+    item = resume_ai.quote_compose(
+        g.user.id, item_id, ResumeComposeQuote.model_validate(input_data())
+    )
+    item = resume_ai.confirm(g.user.id, item.id)
+    item = queue_resume_operation(item)
+    if item is None:
+        return {"error": "任务队列暂不可用，请重试。"}, 503
     return resume_operation_json(item)
 
 
@@ -143,7 +223,7 @@ def confirm_resume_ai(item_id):
             from app.services.diagnosis import cancel
 
             cancel(g.user.id, item.id)
-            return {"error": "任务队列暂不可用，冻结积分已释放。"}, 503
+            return {"error": "任务队列暂不可用，请重试。"}, 503
     return resume_operation_json(item)
 
 

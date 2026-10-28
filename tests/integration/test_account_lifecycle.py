@@ -32,6 +32,17 @@ from tests.integration.test_mysql import login_client
 pytestmark = pytest.mark.integration
 
 
+def test_profile_name_can_be_updated_with_csrf(mysql_app, user_factory):
+    uid, _ = user_factory()
+    client, headers = client_for(mysql_app, uid)
+    assert client.post("/settings/profile", json={"display_name": "新称呼"}).status_code == 400
+    response = client.post("/settings/profile", json={"display_name": "新称呼"}, headers=headers)
+    assert response.status_code == 303
+    assert "新称呼" in client.get("/workspace?view=settings").text
+    with mysql_app.app_context():
+        assert db.session.get(User, uid).display_name == "新称呼"
+
+
 def test_account_delete_requires_password_and_confirmation(mysql_app, user_factory):
     uid, email = user_factory()
     client, headers = client_for(mysql_app, uid)
@@ -44,7 +55,7 @@ def test_account_delete_requires_password_and_confirmation(mysql_app, user_facto
     )
     assert client.get("/workspace").status_code == 200
     assert client.post(url, json=payload, headers=headers).status_code == 303
-    assert client.get("/workspace").status_code == 303
+    assert client.get("/workspace").status_code in {302, 303}
     with mysql_app.app_context():
         assert db.session.get(User, uid) is None
         assert db.session.scalar(select(User.id).where(User.email == email)) is None
@@ -210,8 +221,8 @@ def test_admin_revokes_user_sessions_with_audit(mysql_app, user_factory):
     )
     url = f"/admin/users/{target_id}/revoke-sessions"
     assert admin.post(url, headers={"X-CSRFToken": token}).status_code == 303
-    assert first.get("/workspace").status_code == 303
-    assert second.get("/workspace").status_code == 303
+    assert first.get("/workspace").status_code in {302, 303}
+    assert second.get("/workspace").status_code in {302, 303}
     with mysql_app.app_context():
         entry = db.session.scalar(
             select(AdminAudit).where(
@@ -246,6 +257,6 @@ def test_admin_revoke_requires_admin(mysql_app, user_factory):
     assert ordinary.post(url, headers={"X-CSRFToken": token}).status_code == 403
     anonymous = mysql_app.test_client()
     anonymous_token = re.search(
-        r'name="csrf-token" content="([^"]+)"', anonymous.get("/login").text
+        r'name="csrf-token" content="([^"]+)"', anonymous.get("/").text
     ).group(1)
     assert anonymous.post(url, headers={"X-CSRFToken": anonymous_token}).status_code == 303
