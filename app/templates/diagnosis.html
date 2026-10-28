@@ -76,7 +76,7 @@
     </main>
 
     <aside class="diagnosis-side-column" aria-label="本次诊断信息">
-      <section class="diagnosis-context-card"><span class="diagnosis-eyebrow">本次诊断依据</span><h2>{{ resume.title if resume else '关联简历' }}</h2><p>使用保存的第 {{ resume_version.revision if resume_version else '—' }} 版简历快照</p><div class="diagnosis-context-divider"></div><strong>{{ job.title or '目标岗位' }}</strong><small>{{ job.company or '未填写公司' }}</small><details class="diagnosis-jd-details"><summary>查看岗位描述</summary><p class="preserve-lines">{{ job.description }}</p></details></section>
+      <section class="diagnosis-context-card"><span class="diagnosis-eyebrow">本次诊断依据</span><h2>{{ resume.title if resume else '关联简历' }}</h2><p>使用保存的第 {{ resume_version.revision if resume_version else '—' }} 版简历快照</p><div class="diagnosis-context-divider"></div><strong>{{ job.title or '目标岗位' }}</strong><small>{{ job.company or '未填写公司' }}</small><details class="diagnosis-jd-details"><summary>查看岗位描述</summary><div class="job-markdown">{{ job.description|resume_markdown }}</div></details></section>
       <section class="diagnosis-side-note"><span class="diagnosis-side-icon" aria-hidden="true">✓</span><div><strong>建议基于真实经历</strong><p>简历未提到不等于你没有。补充信息后，逐条检查建议再保存。</p></div></section>
     </aside>
   </div>

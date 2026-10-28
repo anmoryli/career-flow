@@ -2,47 +2,45 @@
 {% set active_resume = resumes[0] if resumes else none %}
 <section class="workspace-home-hero">
   <div class="workspace-home-copy">
-    <span class="page-kicker">你的求职空间</span>
+    <h1 class="workspace-home-greeting">你好，<span>{{ g.user.display_name|trim or '求职者' }}</span></h1>
     {% if active_resume %}
-    <h1>{{ g.user.display_name }}，<br><em>接着完善你的经历。</em></h1>
-    <p>最近编辑的是「{{ active_resume.title }}」。你可以继续修改简历，或带着它准备一个目标岗位。</p>
-    <div class="workspace-home-actions"><a class="button" href="{{ url_for('web.workspace', view='resume-new', resume_id=active_resume.id) }}">继续编辑简历 {{ icon('arrow') }}</a><a class="workspace-home-secondary" href="{{ url_for('web.workspace', view='jobs', resume_id=active_resume.id) }}">准备目标岗位</a></div>
+    <h2 class="workspace-home-next">继续编辑「{{ active_resume.title|trim or '未命名简历' }}」</h2>
+    <p>或选择一个岗位，查看简历与要求的匹配情况。</p>
+    <div class="workspace-home-actions"><a class="button" href="{{ url_for('web.workspace', view='resume-new', resume_id=active_resume.id) }}">继续编辑 {{ icon('arrow') }}</a><a class="workspace-home-secondary" href="{{ url_for('web.workspace', view='jobs', resume_id=active_resume.id) }}">岗位分析</a></div>
     {% else %}
-    <h1>把经历理清，<br><em>再走向下一步。</em></h1>
-    <p>从你真实做过的事情开始。创建一份简历后，再对照目标岗位逐项准备。</p>
-    <div class="workspace-home-actions"><a class="button" href="{{ url_for('web.workspace', view='resumes') }}">开始整理简历 {{ icon('arrow') }}</a></div>
+    <h2 class="workspace-home-next">先整理一份简历</h2>
+    <p>粘贴简历、上传 PDF，或从模板开始。</p>
+    <div class="workspace-home-actions"><a class="button" href="{{ url_for('web.workspace', view='resumes') }}">创建简历 {{ icon('arrow') }}</a></div>
     {% endif %}
-    <span class="workspace-home-note">内容由你确认，随时可以回来继续。</span>
   </div>
-  <aside class="workspace-path" aria-label="求职准备进度">
-    <div class="workspace-path-head"><span>准备路径</span><span>YOUR NEXT STEP</span></div>
-    <ol>
-      <li class="{{ 'is-done' if resumes else 'is-current' }}"><span class="workspace-path-marker">{% if resumes %}✓{% else %}01{% endif %}</span><a href="{{ url_for('web.workspace', view='resumes') }}"><strong>整理简历</strong><small>{{ '已有 ' ~ resumes|length ~ ' 份，继续管理' if resumes else '粘贴、导入 PDF 或选模板' }}</small></a><span class="workspace-path-state">{{ '已完成' if resumes else '从这里开始' }}</span></li>
-      <li class="{{ 'is-done' if jobs else 'is-current' if resumes else '' }}"><span class="workspace-path-marker">{% if jobs %}✓{% else %}02{% endif %}</span><a href="{{ url_for('web.workspace', view='jobs') }}"><strong>对照岗位</strong><small>{{ '已有 ' ~ jobs|length ~ ' 个岗位' if jobs else '查看岗位要求与简历依据' }}</small></a><span class="workspace-path-state">{{ '已保存' if jobs else '下一步' if resumes else '稍后继续' }}</span></li>
-      <li class="{{ 'is-done' if completed_reports else 'is-current' if jobs else '' }}"><span class="workspace-path-marker">{% if completed_reports %}✓{% else %}03{% endif %}</span><a href="{{ url_for('web.workspace', view='reports') }}"><strong>查看分析</strong><small>{{ '已有 ' ~ completed_reports|length ~ ' 份完成报告' if completed_reports else '逐条核对匹配与修改建议' }}</small></a><span class="workspace-path-state">{{ '已完成' if completed_reports else '稍后继续' }}</span></li>
-    </ol>
-    <span class="workspace-path-line" aria-hidden="true"></span>
-  </aside>
-  <span class="workspace-home-orbit" aria-hidden="true"></span><span class="workspace-home-mark" aria-hidden="true">序</span>
+  <div class="overview-intelligence" aria-hidden="true">
+    <div class="overview-orbit overview-orbit-a"><i></i></div>
+    <div class="overview-orbit overview-orbit-b"><i></i></div>
+    <div class="overview-orbit overview-orbit-c"><i></i></div>
+    <div class="overview-core"><span>✦</span><small>AI</small></div>
+    <div class="overview-signal overview-signal-a">经历 <span>↗</span></div>
+    <div class="overview-signal overview-signal-b">岗位 <span>✧</span></div>
+    <div class="overview-signal overview-signal-c">下一步 <span>→</span></div>
+  </div>
 </section>
 
 {% if not resumes %}
 <section class="workspace-first-actions" aria-labelledby="workspace-first-actions-title">
-  <div class="workspace-first-actions-heading"><span class="page-kicker">从一种方式开始</span><h2 id="workspace-first-actions-title">先把已有经历放进来</h2></div>
+  <div class="workspace-first-actions-heading"><h2 id="workspace-first-actions-title">选择创建方式</h2></div>
   <div class="workspace-entryways">
-    <a href="{{ url_for('web.workspace', view='resume-new', start='paste') }}"><span class="workspace-entryway-index">01</span><span><strong>粘贴简历文字</strong><small>整理后逐项核对</small></span>{{ icon('arrow') }}</a>
-    <a href="{{ url_for('web.workspace', view='resume-import') }}"><span class="workspace-entryway-index">02</span><span><strong>上传 PDF</strong><small>导入后检查内容</small></span>{{ icon('arrow') }}</a>
-    <a href="{{ url_for('web.workspace', view='resume-template') }}"><span class="workspace-entryway-index">03</span><span><strong>从模板创建</strong><small>选好版式再填写</small></span>{{ icon('arrow') }}</a>
+    <a href="{{ url_for('web.workspace', view='resume-new', start='paste') }}"><span><strong>粘贴简历文字</strong><small>整理后检查</small></span>{{ icon('arrow') }}</a>
+    <a href="{{ url_for('web.workspace', view='resume-import') }}"><span><strong>上传 PDF</strong><small>导入后检查</small></span>{{ icon('arrow') }}</a>
+    <a href="{{ url_for('web.workspace', view='resume-template') }}"><span><strong>从模板创建</strong><small>选择版式</small></span>{{ icon('arrow') }}</a>
   </div>
 </section>
 {% endif %}
 
 {% if resumes or jobs %}
 <section class="workspace-recent" aria-label="最近内容">
-  <div class="workspace-section-heading"><div><span class="page-kicker">接着上次</span><h2>最近处理的内容</h2></div><a href="{{ url_for('web.workspace', view='history') }}">全部记录 {{ icon('arrow') }}</a></div>
+  <div class="workspace-section-heading"><h2>最近内容</h2><a href="{{ url_for('web.workspace', view='history') }}">全部记录 {{ icon('arrow') }}</a></div>
   <div class="workspace-recent-list">
-    {% for item in resumes[:3] %}<article class="workspace-recent-item"><span class="workspace-recent-icon">{{ icon('file') }}</span><div><strong>{{ item.title }}</strong><small>简历 <i>·</i> 更新于 {{ item.updated_at|datetime_cn }}</small></div><a href="{{ url_for('web.workspace', view='resume-new', resume_id=item.id) }}">打开 {{ icon('arrow') }}</a></article>{% endfor %}
-    {% for item in jobs[:3] %}<article class="workspace-recent-item"><span class="workspace-recent-icon is-job">{{ icon('briefcase') }}</span><div><strong>{{ item.title or '未命名岗位' }}</strong><small>{{ item.company or '岗位分析' }} <i>·</i> {{ item.created_at|datetime_cn }}</small></div><a href="{{ url_for('diagnosis.detail', job_id=item.id) }}">查看 {{ icon('arrow') }}</a></article>{% endfor %}
+    {% for item in resumes[:3] %}<article class="workspace-recent-item"><span class="workspace-recent-icon">{{ icon('file') }}</span><div><strong>{{ item.title|trim or '未命名简历' }}</strong><small>简历 · {{ item.updated_at|datetime_cn }}</small></div><a href="{{ url_for('web.workspace', view='resume-new', resume_id=item.id) }}">打开 {{ icon('arrow') }}</a></article>{% endfor %}
+    {% for item in jobs[:3] %}<article class="workspace-recent-item"><span class="workspace-recent-icon is-job">{{ icon('briefcase') }}</span><div><strong>{{ item.title or '未命名岗位' }}</strong><small>{{ item.company or '岗位分析' }} · {{ item.created_at|datetime_cn }}</small></div><a href="{{ url_for('diagnosis.detail', job_id=item.id) }}">查看 {{ icon('arrow') }}</a></article>{% endfor %}
   </div>
 </section>
 {% endif %}

@@ -9,14 +9,15 @@
   <meta name="description" content="职序 CareerFlow，你的求职工作空间。">
   <title>{% block title %}职序 CareerFlow{% endblock %}</title>
   <script src="{{ url_for('static', filename='js/theme.js') }}"></script>
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css', v='20261028-analysis-state-motion-v2') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css', v='20261029-overview-intelligence-v2') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/overview.css', v='20261029-intelligence-v2') }}">
   <script src="{{ url_for('static', filename='vendor/htmx.min.js') }}" defer></script>
   <script src="{{ url_for('static', filename='js/app.js', v='20261027-saved-job-import') }}" defer></script>
   <script src="{{ url_for('static', filename='js/resume_print.js') }}" defer></script>
   <script src="{{ url_for('static', filename='js/career.js', v='20261027-saved-job-import') }}" defer></script>
   <script src="{{ url_for('static', filename='js/resume_ai.js', v='20261026-model-fallback') }}" defer></script>
   <script src="{{ url_for('static', filename='js/resume_compose.js') }}" defer></script>
-  <script src="{{ url_for('static', filename='js/diagnosis.js', v='20261028-analysis-state-motion-v2') }}" defer></script>
+  <script src="{{ url_for('static', filename='js/diagnosis.js', v='20261029-analysis-state-refresh') }}" defer></script>
   <script src="{{ url_for('static', filename='js/auth.js') }}" defer></script>
   <script src="{{ url_for('static', filename='js/imports.js') }}" defer></script>
   <script src="{{ url_for('static', filename='js/admin.js', v='20261026-model-fallback') }}" defer></script>
@@ -40,7 +41,7 @@
     </nav>
     <div class="workspace-header-tools">
       <label class="workspace-theme-select"><span class="sr-only">外观主题</span><select id="theme-select" aria-label="外观主题" @change="changeTheme"><option value="system">跟随系统</option><option value="light">浅色</option><option value="dark">深色</option></select></label>
-      <details class="workspace-account-menu"><summary><span class="account-avatar">{{ g.user.display_name[:1] }}</span><span class="workspace-account-name">{{ g.user.display_name }}</span>{{ icon('chevron') }}</summary><div class="workspace-account-popover"><span>{{ g.user.email }}</span><a href="{{ url_for('web.workspace', view='settings') }}">个人中心</a><a href="{{ url_for('web.workspace', view='billing') }}">会员方案</a>{% if g.user.is_admin %}<a href="{{ url_for('admin.dashboard') }}">管理后台</a>{% endif %}<form action="{{ url_for('web.logout') }}" method="post"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button type="submit">退出登录</button></form></div></details>
+      <details class="workspace-account-menu"><summary><span class="account-avatar">{{ g.user.display_name[:1] }}</span><span class="workspace-account-name" title="{{ g.user.display_name }}">{{ g.user.display_name|trim or '求职者' }}</span>{{ icon('chevron') }}</summary><div class="workspace-account-popover"><strong class="workspace-account-fullname">{{ g.user.display_name|trim or '求职者' }}</strong><span>{{ g.user.email }}</span><a href="{{ url_for('web.workspace', view='settings') }}">个人中心</a><a href="{{ url_for('web.workspace', view='billing') }}">会员方案</a>{% if g.user.is_admin %}<a href="{{ url_for('admin.dashboard') }}">管理后台</a>{% endif %}<form action="{{ url_for('web.logout') }}" method="post"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button type="submit">退出登录</button></form></div></details>
     </div>
   </header>
   {% elif g.user %}

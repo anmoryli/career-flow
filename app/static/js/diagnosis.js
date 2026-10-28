@@ -151,7 +151,7 @@
         });
         if (!response.ok) throw new Error('读取任务失败，请稍后刷新');
         const result = await response.json();
-        if (!['queued', 'running'].includes(result.state)) {
+        if (result.state !== running.dataset.operationState) {
           window.clearInterval(interval);
           window.location.reload();
         }
