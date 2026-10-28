@@ -71,4 +71,5 @@ def load_config(overrides: dict | None = None) -> dict:
             raise ValueError("Production requires authenticated TLS mail")
         if not url.query.get("ssl_ca"):
             raise ValueError("Production requires MySQL TLS with ssl_ca")
+    config.setdefault("TEMPLATES_AUTO_RELOAD", config["APP_ENV"] == "development")
     return config

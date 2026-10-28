@@ -18,6 +18,7 @@ from app.services.resume_markdown import inline_markdown, resume_markdown
 
 def create_app(overrides: dict | None = None) -> Flask:
     app = Flask(__name__)
+    app.config.update(load_config(overrides))
     app.jinja_env.filters["resume_markdown"] = resume_markdown
     app.jinja_env.filters["resume_markdown_inline"] = inline_markdown
     app.jinja_env.filters["datetime_cn"] = lambda value: (
@@ -25,7 +26,6 @@ def create_app(overrides: dict | None = None) -> Flask:
         .astimezone(timezone(timedelta(hours=8)))
         .strftime("%Y-%m-%d %H:%M UTC+8")
     )
-    app.config.update(load_config(overrides))
     db.init_app(app)
     migrate.init_app(app, db)
     app.extensions["redis"] = Redis.from_url(
