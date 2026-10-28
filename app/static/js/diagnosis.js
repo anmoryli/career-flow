@@ -1,12 +1,16 @@
 (() => {
   const root = document.querySelector('[data-diagnostic]');
   const reportList = document.querySelector('[data-report-list]');
-  const activeReportCards = [...(reportList?.querySelectorAll('[data-operation-state="queued"],[data-operation-state="running"]') || [])];
-  if (activeReportCards.length) {
+  const activeOperationCards = [
+    ...(reportList?.querySelectorAll('[data-operation-state="queued"],[data-operation-state="running"]') || []),
+    ...document.querySelectorAll('[data-active-operation]'),
+  ];
+  if (activeOperationCards.length) {
     const interval = window.setInterval(async () => {
-      const states = await Promise.all(activeReportCards.map(async card => {
+      const states = await Promise.all(activeOperationCards.map(async card => {
+        const operationId = card.dataset.reportOperation || card.dataset.activeOperation;
         try {
-          const response = await fetch(`/api/operations/${card.dataset.reportOperation}`, {
+          const response = await fetch(`/api/operations/${operationId}`, {
             credentials: 'same-origin', redirect: 'error',
           });
           if (!response.ok) return 'running';
@@ -45,45 +49,29 @@
     progress.dataset.active = String(active);
     root.querySelector('.diagnosis-start-panel')?.classList.toggle('is-analysis-starting', active);
   };
-  const waitForResult = async id => {
-    for (let attempt = 0; attempt < 65; attempt++) {
-      const response = await fetch(`/api/operations/${id}`, {
-        credentials: 'same-origin', redirect: 'error',
-      });
-      const item = await response.json();
-      if (!response.ok) throw new Error(item.error || '读取任务失败');
-      if (!['queued', 'running'].includes(item.state)) return item;
-      setProgress(item.state === 'queued' ? '已加入处理队列，正在准备分析…' : '正在对照岗位要求与简历证据…');
-      await new Promise(resolve => setTimeout(resolve, 1200));
-    }
-    throw new Error('任务仍在运行，稍后可在本页查看结果。');
-  };
-
   root.querySelectorAll('[data-start-ai]').forEach(button => button.addEventListener('click', async () => {
     const kind = button.dataset.startAi;
+    const startPanel = root.querySelector('.diagnosis-start-panel');
+    const animationTemplate = root.querySelector('#diagnosis-running-template');
+    const animation = animationTemplate?.content.firstElementChild.cloneNode(true);
     root.querySelectorAll('[data-start-ai]').forEach(item => { item.disabled = true; });
     if (status) status.textContent = '';
-    setProgress(kind === 'report' ? '正在准备生成完整岗位报告…' : '正在启动匹配分析…');
+    if (startPanel && animation) {
+      startPanel.hidden = true;
+      startPanel.after(animation);
+    } else {
+      setProgress('Preparing the analysis?');
+    }
     const started = await call(button, `/api/diagnostics/${root.dataset.diagnostic}/start`, {
       kind, request_key: crypto.randomUUID(),
     });
     if (!started) {
+      animation?.remove();
+      if (startPanel) startPanel.hidden = false;
       root.querySelectorAll('[data-start-ai]').forEach(item => { item.disabled = false; });
-      setProgress(status?.textContent || 'Analysis could not start. Please try again.', false);
       return;
     }
-    try {
-      const finished = await waitForResult(started.id);
-      if (finished.state === 'succeeded') {
-        setProgress('分析完成，正在整理结果…');
-      } else {
-      setProgress(finished.error || '任务未完成，请稍后重试。');
-      }
-      window.setTimeout(() => window.location.reload(), 450);
-    } catch (error) {
-      setProgress(error.message, false);
-      root.querySelectorAll('[data-start-ai]').forEach(item => { item.disabled = false; });
-    }
+    window.location.reload();
   }));
 
   root.querySelectorAll('[data-cancel-operation]').forEach(button => button.addEventListener('click', async () => {

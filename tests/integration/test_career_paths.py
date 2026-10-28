@@ -169,6 +169,44 @@ def test_running_report_stays_visible_and_diagnosis_shows_progress(mysql_app, co
     assert f'data-operation="{operation_id}"' in diagnosis_page.text
     assert 'aria-busy="true"' in diagnosis_page.text
 
+    with mysql_app.app_context():
+        diagnostic = db.session.get(Diagnostic, diagnostic_id)
+        operation.state = "cancelled"
+        diagnostic.state = "completed"
+        analysis = AIOperation(
+            user_id=uid,
+            diagnostic_id=diagnostic_id,
+            resume_id=None,
+            request_key=str(uuid4()),
+            kind="analysis",
+            state="running",
+            diagnostic_revision=diagnostic.revision,
+            ceiling=0,
+            input_snapshot={},
+            expires_at=utcnow() + timedelta(minutes=10),
+            started_at=utcnow(),
+        )
+        db.session.add(analysis)
+        db.session.commit()
+        analysis_id = analysis.id
+
+    jobs_page = client.get("/workspace?view=jobs")
+    assert jobs_page.status_code == 200
+    assert 'class="job-active-analyses"' in jobs_page.text
+    assert f'data-active-job="{job_id}"' in jobs_page.text
+    assert 'href="/jobs/' + str(job_id) + '"' in jobs_page.text
+    assert jobs_page.text.count('data-active-job=') == 1
+    assert 'class="workspace-nav-active"' in jobs_page.text
+
+    reports_page = client.get("/workspace?view=reports")
+    assert f'data-report-operation="{analysis_id}"' in reports_page.text
+    diagnosis_page = client.get(f"/jobs/{job_id}")
+    assert diagnosis_page.status_code == 200
+    assert f'data-operation="{analysis_id}"' in diagnosis_page.text
+    assert 'data-operation-kind="analysis"' in diagnosis_page.text
+    assert "diagnosis-running-stages" in diagnosis_page.text
+    assert "diagnosis-running-art" in diagnosis_page.text
+
 
 @pytest.mark.parametrize(
     "suffix,method,payload",

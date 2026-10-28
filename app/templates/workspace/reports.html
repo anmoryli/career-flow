@@ -13,7 +13,7 @@
         <div class="report-card-title">
           <span class="report-status-dot {{ 'is-running' if active else 'is-failed' if operation.state == 'failed' else 'is-cancelled' if operation.state == 'cancelled' else '' }}" aria-hidden="true"></span>
           <h2>{{ job.title or '目标岗位' }}</h2>
-          <span class="report-state {{ 'is-running' if active else 'is-failed' if operation.state in ['failed', 'cancelled'] else 'is-complete' }}">{{ state_label }}</span>
+          <span class="report-state {{ 'is-running' if active else 'is-failed' if operation.state in ['failed', 'cancelled'] else 'is-complete' }}">{{ ('报告' if operation.kind == 'report' else '匹配') ~ ' · ' if active else '' }}{{ state_label }}</span>
         </div>
         <p class="report-company">{{ job.company or '未填写公司' }}</p>
         <div class="report-meta">
@@ -25,7 +25,7 @@
       {% if operation.state == 'succeeded' and operation.result and operation.result.get('overall_score') is not none %}
         <div class="report-score"><strong>{{ operation.result.get('overall_score') }}</strong><span>匹配度</span></div>
       {% endif %}
-      <a class="button secondary report-open" href="{{ url_for('diagnosis.detail', job_id=diagnostic.job_id) }}">{{ '查看报告' if operation.state == 'succeeded' else '返回诊断' }}</a>
+      <a class="button secondary report-open" href="{{ url_for('diagnosis.detail', job_id=diagnostic.job_id) }}">{{ '回到分析' if active else '查看报告' if operation.state == 'succeeded' else '返回诊断' }}</a>
     </article>
   {% else %}
     <div class="report-empty">

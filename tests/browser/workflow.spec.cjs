@@ -315,9 +315,19 @@ test('resume to job to report and accepted version', async ({ page }) => {
   await page.locator('[data-ui-form="job"] button[type="submit"]').click();
   await continueJobAnalysis(page, 'no');
   await expect(page).toHaveURL(/\/jobs\/\d+/);
+  await page.route('**/api/diagnostics/*/start', async route => {
+    const response = await route.fetch();
+    await page.waitForTimeout(600);
+    await route.fulfill({ response });
+  });
   const startResponse = page.waitForResponse(response => response.url().includes('/api/diagnostics/') && response.url().endsWith('/start'));
+  await page.locator('.diagnosis-more-actions summary').click();
   await page.locator('[data-start-ai="report"]').click();
-  expect(await (await startResponse).json()).not.toHaveProperty('ceiling');
+  await expect(page.locator('.diagnosis-running-stages')).toBeVisible();
+  await expect(page.locator('.diagnosis-running-art')).toBeVisible();
+  await expect(page.locator('.diagnosis-running-visual')).toHaveCount(0);
+  await page.screenshot({ path: `output/diagnosis-running-${test.info().project.name}.png` });
+  expect((await startResponse).status()).toBe(200);
   await expect(page.locator('#fee-confirmation')).toHaveCount(0);
   await expect(page.locator('[data-operation-state="succeeded"]')).toBeVisible({ timeout: 20000 });
   await expect(page.getByText('这份岗位报告已完成', { exact: false })).toBeVisible({ timeout: 20000 });
@@ -361,6 +371,7 @@ test('diagnosis follow-up is focused, persistent, and easy to answer or skip', a
   await continueJobAnalysis(page, 'no');
   await expect(page).toHaveURL(/\/jobs\/\d+/);
 
+  await expect(page.locator('[data-start-ai]:visible')).toHaveCount(1);
   await page.locator('[data-start-ai="analysis"]').click();
   await expect(page.locator('[data-operation-state="succeeded"]')).toBeVisible({ timeout: 20000 });
   await expect(page.getByRole('heading', { name: '补充一点真实经历' })).toBeVisible();

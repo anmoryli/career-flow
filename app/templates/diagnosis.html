@@ -13,10 +13,32 @@
   </section>
   {% endif %}
 {% endmacro %}
+{% macro running_panel(operation=None) %}
+  {% set operation_state = operation.state if operation else 'queued' %}
+  <section class="diagnosis-running diagnosis-running-premium" data-operation="{{ operation.id if operation else '' }}" data-operation-kind="{{ operation.kind if operation else 'analysis' }}" data-operation-state="{{ operation_state }}" aria-live="polite" aria-busy="true">
+    <div class="diagnosis-running-copy">
+      <span class="diagnosis-running-badge"><i aria-hidden="true"></i>{{ '已进入分析队列' if operation_state == 'queued' else 'AI 正在为你分析' }}</span>
+      <h2>{{ '正在准备岗位分析' if operation_state == 'queued' else '正在为你核对这份岗位' }}</h2>
+      <p>我们会从岗位要求里找出你已有的真实经历，也会标明简历暂时没有写到的部分，不会替你编造经历。你可以先忙别的，分析完成后再回来查看。</p>
+      <div class="diagnosis-running-stages" aria-label="分析过程">
+        <div class="diagnosis-running-stage is-active"><span class="stage-index">01</span><span><strong>读懂岗位</strong><small>提取关键要求</small></span><i aria-hidden="true"></i></div>
+        <div class="diagnosis-running-stage"><span class="stage-index">02</span><span><strong>寻找证据</strong><small>对照真实经历</small></span><i aria-hidden="true"></i></div>
+        <div class="diagnosis-running-stage"><span class="stage-index">03</span><span><strong>整理建议</strong><small>给出下一步方向</small></span><i aria-hidden="true"></i></div>
+      </div>
+    </div>
+    <div class="diagnosis-running-art" aria-hidden="true">
+      <div class="analysis-paper analysis-paper-resume"><span class="paper-topline"></span><span></span><span></span><span></span><b>简历</b></div>
+      <div class="analysis-bridge"><i></i><i></i><i></i></div>
+      <div class="analysis-paper analysis-paper-role"><span class="role-orb">✦</span><strong>岗位</strong><small>要求与经历匹配</small><span class="paper-match"><i></i><i></i><i></i></span></div>
+      <span class="analysis-float-tag tag-skill">技能匹配</span><span class="analysis-float-tag tag-proof">经历证据</span>
+    </div>
+    {% if operation %}<button class="diagnosis-cancel-task" type="button" data-cancel-operation="{{ operation.id }}">取消这次分析</button>{% endif %}
+  </section>
+{% endmacro %}
 {% block content %}
 <div class="diagnosis-workspace" data-diagnostic="{{ diagnostic.id }}" data-revision="{{ diagnostic.revision }}">
   <nav class="diagnosis-breadcrumb" aria-label="面包屑"><a href="{{ url_for('web.workspace', view='jobs') }}">岗位分析</a><span aria-hidden="true">/</span><span>{{ job.title or '岗位诊断' }}</span></nav>
-  <header class="diagnosis-page-header"><div><span class="diagnosis-eyebrow">岗位匹配工作区</span><h1>{{ job.title or '目标岗位' }}</h1><p>{{ job.company or '未填写公司' }}<span aria-hidden="true">·</span>简历与岗位要求逐项对照</p></div><a class="button secondary" href="{{ url_for('web.workspace', view='reports') }}">查看其他报告</a></header>
+  <header class="diagnosis-page-header"><div><span class="diagnosis-eyebrow">岗位匹配工作区</span><h1>{{ job.title or '目标岗位' }}</h1><p>{{ job.company or '未填写公司' }}<span aria-hidden="true">·</span>简历与岗位要求逐项对照</p></div></header>
 
   <ol class="diagnosis-stepper" aria-label="诊断进度">
     <li class="is-complete"><span>1</span><div><strong>岗位与简历</strong><small>已关联</small></div></li>
@@ -28,20 +50,10 @@
   <div class="diagnosis-layout">
     <main class="diagnosis-main-column">
       {% if not configured %}<div class="diagnosis-notice" role="status"><strong>AI 服务暂不可用</strong><p>当前无法启动新的分析。已有岗位和报告仍可查看。</p></div>{% endif %}
-      {% if diagnostic.state != 'completed' %}
-        {% if active_operation %}
-        <section class="diagnosis-running diagnosis-running-premium" data-operation="{{ active_operation.id }}" data-operation-kind="{{ active_operation.kind }}" data-operation-state="{{ active_operation.state }}" aria-live="polite" aria-busy="true">
-          <div class="diagnosis-running-visual" aria-hidden="true"><span class="diagnosis-running-orbit"></span><span class="diagnosis-running-mark">✦</span></div>
-          <div class="diagnosis-running-copy">
-            <span class="diagnosis-running-badge">{{ '已进入分析队列' if active_operation.state == 'queued' else 'AI 正在认真分析' }}</span>
-            <strong>{{ '正在准备岗位分析' if active_operation.state == 'queued' else '正在为你核对这份岗位' }}</strong>
-            <p>系统正在对照岗位要求与简历内容。你可以先去处理其他事情；完成后此页会自动更新，也能随时从“诊断与报告”回来继续查看。</p>
-            <div class="diagnosis-running-focus" aria-label="分析内容"><span>拆解岗位重点</span><span>核对简历依据</span><span>整理行动建议</span></div>
-            <div class="diagnosis-running-track" aria-hidden="true"><span></span></div>
-          </div>
-          <button class="button secondary" type="button" data-cancel-operation="{{ active_operation.id }}">取消任务</button>
-        </section>
-        {% elif diagnostic.question %}
+      {% if active_operation %}
+        {{ running_panel(active_operation) }}
+      {% elif diagnostic.state != 'completed' %}
+        {% if diagnostic.question %}
         <section class="diagnosis-chat diagnosis-chat-focus" aria-labelledby="diagnosis-chat-title" data-diagnosis-chat>
           <header class="diagnosis-chat-header"><div><span class="diagnosis-eyebrow">岗位诊断对话 · 补充真实经历</span><h2 id="diagnosis-chat-title">补充一点真实经历</h2><p>回答后会继续分析；没有相关经历可以跳过。</p></div><span class="diagnosis-round">第 {{ diagnostic.rounds + 1 }} / 10 轮</span></header>
           {% if answers %}<details class="diagnosis-answer-history"><summary>查看之前的问答（{{ answers|length }}）</summary><div class="diagnosis-answer-list">{% for answer in answers %}<article><div><span>AI 提问 · 第 {{ answer.round }} 轮</span><p>{{ answer.question }}</p></div><div class="is-user-answer"><span>你的回答</span><p>{{ '本轮已跳过' if answer.skipped else answer.answer }}</p></div></article>{% endfor %}</div></details>{% endif %}
@@ -49,7 +61,7 @@
           <div class="diagnosis-chat-composer"><label for="diagnostic-answer">补充说明</label><textarea id="diagnostic-answer" rows="4" maxlength="2000" placeholder="写下你实际做过的工作、项目或结果。不要补写没有发生过的经历。" aria-describedby="diagnosis-answer-hint"></textarea><div class="diagnosis-chat-actions"><p id="diagnosis-answer-hint">最多还可补充 {{ 10 - diagnostic.rounds }} 轮；跳过也会计入一轮。</p><div><button class="button secondary" type="button" data-answer="skip">跳过</button><button class="button" type="button" data-answer="answer">提交并继续</button></div></div></div>
         </section>
         {% else %}
-        <section class="diagnosis-start-panel"><div class="diagnosis-start-icon" aria-hidden="true">↗</div><div class="diagnosis-start-copy"><span class="diagnosis-eyebrow">{{ '继续岗位诊断' if latest_analysis else '准备就绪' }}</span><h2>{{ '继续补充证据，或查看完整报告' if latest_analysis else '开始查看简历与岗位的匹配情况' }}</h2><p>系统会标出匹配证据、岗位要求和当前简历未体现的内容。你可以再补充真实经历，再生成完整报告。</p><div class="diagnosis-start-actions"><button class="button" type="button" data-start-ai="analysis" {% if not configured or diagnostic.rounds >= 10 %}disabled{% endif %}>{{ '继续分析' if latest_analysis else '开始匹配分析' }}</button><button class="button secondary" type="button" data-start-ai="report" {% if not configured %}disabled{% endif %}>{{ '生成完整报告' if latest_analysis else '直接生成完整报告' }}</button></div><p class="diagnosis-progress" data-start-status role="status" aria-live="polite" hidden></p></div></section>
+        <section class="diagnosis-start-panel"><div class="diagnosis-start-icon" aria-hidden="true">↗</div><div class="diagnosis-start-copy"><span class="diagnosis-eyebrow">{{ '继续岗位诊断' if latest_analysis else '准备就绪' }}</span><h2>{{ '继续补充证据，或查看完整报告' if latest_analysis else '开始查看简历与岗位的匹配情况' }}</h2><p>系统会标出匹配证据、岗位要求和当前简历未体现的内容。你可以再补充真实经历，再生成完整报告。</p><div class="diagnosis-start-actions"><button class="button" type="button" data-start-ai="analysis" {% if not configured or diagnostic.rounds >= 10 %}disabled{% endif %}>{{ '继续分析' if latest_analysis else '开始岗位分析' }}</button><details class="diagnosis-more-actions"><summary>其他分析方式</summary><button class="button secondary" type="button" data-start-ai="report" {% if not configured %}disabled{% endif %}>直接生成完整报告</button></details></div><p class="diagnosis-progress" data-start-status role="status" aria-live="polite" hidden></p><template id="diagnosis-running-template">{{ running_panel() }}</template></div></section>
         {% endif %}
       {% else %}<div class="diagnosis-complete-banner"><span aria-hidden="true">✓</span><div><strong>这份岗位报告已完成</strong><p>报告内容只读。你仍可以查看结果，并把核实过的建议另存为岗位简历版本。</p></div></div>{% endif %}
 

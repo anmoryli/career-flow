@@ -9,14 +9,14 @@
   <meta name="description" content="职序 CareerFlow，你的求职工作空间。">
   <title>{% block title %}职序 CareerFlow{% endblock %}</title>
   <script src="{{ url_for('static', filename='js/theme.js') }}"></script>
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css', v='20261027-auth-modal-guest-analysis-v1') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css', v='20261028-analysis-state-motion-v2') }}">
   <script src="{{ url_for('static', filename='vendor/htmx.min.js') }}" defer></script>
   <script src="{{ url_for('static', filename='js/app.js', v='20261027-saved-job-import') }}" defer></script>
   <script src="{{ url_for('static', filename='js/resume_print.js') }}" defer></script>
   <script src="{{ url_for('static', filename='js/career.js', v='20261027-saved-job-import') }}" defer></script>
   <script src="{{ url_for('static', filename='js/resume_ai.js', v='20261026-model-fallback') }}" defer></script>
   <script src="{{ url_for('static', filename='js/resume_compose.js') }}" defer></script>
-  <script src="{{ url_for('static', filename='js/diagnosis.js') }}" defer></script>
+  <script src="{{ url_for('static', filename='js/diagnosis.js', v='20261028-analysis-state-motion-v2') }}" defer></script>
   <script src="{{ url_for('static', filename='js/auth.js') }}" defer></script>
   <script src="{{ url_for('static', filename='js/imports.js') }}" defer></script>
   <script src="{{ url_for('static', filename='js/admin.js', v='20261026-model-fallback') }}" defer></script>
@@ -35,7 +35,7 @@
     <a class="workspace-brand" href="{{ url_for('web.workspace') }}" aria-label="职序工作空间首页"><span class="brand-mark">序</span><span><strong>职序</strong><small>CAREERFLOW</small></span></a>
     <nav class="workspace-nav" aria-label="求职导航">
       {% for key, label, symbol in navigation if key in ['dashboard','resumes','jobs','reports','history'] %}
-      <a class="workspace-nav-link {{ 'is-current' if current_view == key or (key == 'resumes' and current_view in ['resume-template','resume-new','resume-import','optimize']) else '' }}" href="{{ url_for('web.workspace', view=key) }}" {% if current_view == key %}aria-current="page"{% endif %}><span class="workspace-nav-long">{{ '总览' if key == 'dashboard' else '报告' if key == 'reports' else label }}</span><span class="workspace-nav-short">{{ '总览' if key == 'dashboard' else '简历' if key == 'resumes' else '岗位' if key == 'jobs' else '报告' if key == 'reports' else '历史' }}</span></a>
+      <a class="workspace-nav-link {{ 'is-current' if current_view == key or (key == 'resumes' and current_view in ['resume-template','resume-new','resume-import','optimize']) else '' }}" href="{{ url_for('web.workspace', view=key) }}" {% if current_view == key %}aria-current="page"{% endif %}><span class="workspace-nav-long">{{ '总览' if key == 'dashboard' else '报告' if key == 'reports' else label }}</span><span class="workspace-nav-short">{{ '总览' if key == 'dashboard' else '简历' if key == 'resumes' else '岗位' if key == 'jobs' else '报告' if key == 'reports' else '历史' }}</span>{% if key == 'jobs' and active_jobs|default([])|length %}<span class="workspace-nav-active" aria-label="{{ active_jobs|length }} 个岗位正在分析">{{ active_jobs|length }} 个进行中</span>{% endif %}</a>
       {% endfor %}
     </nav>
     <div class="workspace-header-tools">

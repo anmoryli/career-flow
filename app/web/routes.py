@@ -3,7 +3,7 @@ from urllib.parse import urlsplit
 from uuid import uuid4
 
 from flask import Blueprint, flash, g, jsonify, redirect, render_template, request, session, url_for
-from sqlalchemy import delete, func, select
+from sqlalchemy import and_, delete, func, or_, select
 
 from app.extensions import db
 from app.models import Conversation, ConversationMemory, ConversationMessage, utcnow
@@ -206,7 +206,9 @@ def workspace():
         )
         return render_template(
             "workspace.html", conversations=[], count=0, resumes=[], jobs=[], saved_jobs=[],
-            current_resume=None, reports=[], completed_reports=[], entitlements=guest_entitlements,
+            current_resume=None, reports=[], completed_reports=[], active_jobs=[],
+            active_job_ids=set(), inactive_saved_jobs=[], recent_only_jobs=[],
+            entitlements=guest_entitlements,
             membership=None, orders=[], commerce_plans={}, mock_payment_enabled=False,
             uuid4=uuid4, now=utcnow(),
         )
@@ -224,6 +226,25 @@ def workspace():
         .limit(100)
     ).all()
     saved_jobs = [item for item in jobs if item.is_saved]
+    active_job_rows = db.session.execute(
+        select(AIOperation, Diagnostic, JobTarget)
+        .join(Diagnostic, AIOperation.diagnostic_id == Diagnostic.id)
+        .join(JobTarget, Diagnostic.job_id == JobTarget.id)
+        .where(
+            AIOperation.user_id == g.user.id,
+            AIOperation.state.in_(["queued", "running"]),
+        )
+        .order_by(AIOperation.id.desc())
+    ).all()
+    active_jobs = []
+    seen_active_job_ids = set()
+    for row in active_job_rows:
+        if row[2].id not in seen_active_job_ids:
+            active_jobs.append(row)
+            seen_active_job_ids.add(row[2].id)
+    active_job_ids = {job.id for _, _, job in active_jobs}
+    inactive_saved_jobs = [job for job in saved_jobs if job.id not in active_job_ids]
+    recent_only_jobs = [job for job in jobs if not job.is_saved and job.id not in active_job_ids]
     resume_id = request.args.get("resume_id", type=int)
     current_resume = serialize_resume(owned(Resume, g.user.id, resume_id)) if resume_id else None
     reports = db.session.execute(
@@ -232,8 +253,15 @@ def workspace():
         .join(JobTarget, Diagnostic.job_id == JobTarget.id)
         .where(
             AIOperation.user_id == g.user.id,
-            AIOperation.kind == "report",
-            AIOperation.state.in_(["queued", "running", "succeeded", "failed", "cancelled"]),
+            or_(
+                and_(
+                    AIOperation.kind == "report",
+                    AIOperation.state.in_(
+                        ["queued", "running", "succeeded", "failed", "cancelled"]
+                    ),
+                ),
+                AIOperation.state.in_(["queued", "running"]),
+            ),
         )
         .order_by(AIOperation.id.desc())
         .limit(100)
@@ -274,6 +302,10 @@ def workspace():
         resumes=resumes,
         jobs=jobs,
         saved_jobs=saved_jobs,
+        active_jobs=active_jobs,
+        active_job_ids=active_job_ids,
+        inactive_saved_jobs=inactive_saved_jobs,
+        recent_only_jobs=recent_only_jobs,
         current_resume=current_resume,
         reports=reports,
         completed_reports=completed_reports,

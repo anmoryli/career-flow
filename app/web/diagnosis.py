@@ -4,7 +4,7 @@ from sqlalchemy import select
 
 from app.diagnosis_schemas import AnswerInput, ApplySuggestion, QuoteInput
 from app.extensions import db
-from app.models import AIOperation, DiagnosticAnswer, JobTarget, Resume, ResumeVersion
+from app.models import AIOperation, Diagnostic, DiagnosticAnswer, JobTarget, Resume, ResumeVersion
 from app.services import diagnosis
 from app.services.career import owned
 from app.services.interactions import active_question
@@ -60,6 +60,22 @@ def detail(job_id):
     active_operation = next(
         (item for item in operations if item.state in {"queued", "running"}), None
     )
+    active_job_rows = db.session.execute(
+        select(AIOperation, Diagnostic, JobTarget)
+        .join(Diagnostic, AIOperation.diagnostic_id == Diagnostic.id)
+        .join(JobTarget, Diagnostic.job_id == JobTarget.id)
+        .where(
+            AIOperation.user_id == g.user.id,
+            AIOperation.state.in_(["queued", "running"]),
+        )
+        .order_by(AIOperation.id.desc())
+    ).all()
+    active_jobs = []
+    seen_active_job_ids = set()
+    for row in active_job_rows:
+        if row[2].id not in seen_active_job_ids:
+            active_jobs.append(row)
+            seen_active_job_ids.add(row[2].id)
     resume_version = db.session.get(ResumeVersion, job.resume_version_id)
     resume = db.session.get(Resume, resume_version.resume_id) if resume_version else None
     return render_template(
@@ -72,6 +88,7 @@ def detail(job_id):
         latest_report=latest_report,
         suggestion_operation=suggestion_operation,
         active_operation=active_operation,
+        active_jobs=active_jobs,
         resume=resume,
         resume_version=resume_version,
         configured=diagnosis.is_configured(),

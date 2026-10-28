@@ -4,6 +4,21 @@
   <a class="subtle-link" href="{{ url_for('web.workspace', view='reports') }}">查看诊断报告 {{ icon('arrow') }}</a>
 </section>
 
+{% if active_jobs %}
+<section class="job-active-analyses" aria-labelledby="active-jobs-heading">
+  <header><span class="job-active-signal" aria-hidden="true"></span><div><h2 id="active-jobs-heading">正在分析的岗位</h2><p>任务会在后台继续。随时回来查看当前进度。</p></div></header>
+  <div class="job-active-list">
+    {% for operation, diagnostic, job in active_jobs %}
+    <article class="job-active-item" data-active-job="{{ job.id }}" data-active-operation="{{ operation.id }}" data-operation-state="{{ operation.state }}">
+      <div class="job-active-icon" aria-hidden="true"><span></span><span></span><span></span></div>
+      <div class="job-active-copy"><span>{{ '岗位报告生成中' if operation.kind == 'report' else '岗位匹配分析中' }}</span><strong>{{ job.title or '目标岗位' }}</strong><small>{{ job.company or '未填写公司' }} · {{ '正在排队' if operation.state == 'queued' else 'AI 正在分析' }}</small></div>
+      <a class="button job-active-return" href="{{ url_for('diagnosis.detail', job_id=job.id) }}">回到分析</a>
+    </article>
+    {% endfor %}
+  </div>
+</section>
+{% endif %}
+
 <section class="job-page-layout">
   <div class="job-entry-panel">
     <div class="job-entry-title"><span class="job-entry-step">01</span><div><h2>添加目标岗位</h2><p>核对信息后开始匹配分析，可选择是否保存岗位。</p></div></div>
@@ -29,13 +44,12 @@
   <aside class="job-saved-panel">
     <div class="job-saved-heading"><span class="page-kicker">已保存</span><h2>目标岗位</h2><p>回到已有岗位继续分析。</p></div>
     <div class="job-saved-list">
-      {% for item in saved_jobs %}
+      {% for item in inactive_saved_jobs %}
       <article class="job-saved-item"><span class="job-saved-mark">{{ icon('briefcase') }}</span><div><strong>{{ item.title or '未命名岗位' }}</strong><small>{{ item.company or '公司未填写' }} <i>·</i> {{ item.created_at|datetime_cn }}</small></div><a href="{{ url_for('diagnosis.detail', job_id=item.id) }}" aria-label="继续分析 {{ item.title or '未命名岗位' }}">{{ icon('arrow') }}</a><button type="button" data-delete-job="{{ item.id }}" aria-label="删除岗位：{{ item.title or '未命名岗位' }}">删除</button></article>
       {% else %}
-      <div class="job-saved-empty"><span>{{ icon('briefcase') }}</span><p>保存的岗位会显示在这里。</p></div>
+      <div class="job-saved-empty"><span>{{ icon('briefcase') }}</span><p>{{ '正在分析的岗位显示在上方。' if active_jobs else '保存的岗位会显示在这里。' }}</p></div>
       {% endfor %}
     </div>
-    {% set recent_only_jobs = jobs|rejectattr('is_saved')|list %}
     {% if recent_only_jobs %}
     <section class="job-recent-analyses" aria-labelledby="job-recent-heading">
       <div><span class="page-kicker">历史保留</span><h3 id="job-recent-heading">近期分析</h3><p>未加入复用库的岗位也会保留在这里。</p></div>

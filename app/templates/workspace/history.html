@@ -38,12 +38,14 @@
   </article>
   {% endfor %}
   {% for operation, diagnostic, job in reports %}
+  {% if operation.kind == 'report' %}
   <article class="history-row" data-history-row data-record-type="report" data-record-title="{{ job.title }} {{ job.company }}">
     <div class="history-record-name"><span class="history-record-icon">{{ icon('report') }}</span><div><strong>{{ job.title }} <i>·</i> {{ job.company }}</strong><small>匹配度 {{ operation.result.get('overall_score', '—') if operation.result else '—' }} / 100</small></div></div>
     <div class="history-record-meta"><span class="history-type-label">诊断报告</span><time>{{ operation.created_at|datetime_cn }}</time></div>
     <span class="status-badge {{ 'status-readonly' if operation.state != 'succeeded' else '' }}">{{ {'queued':'排队中','running':'正在分析','succeeded':'已完成','failed':'需要重试','cancelled':'已取消'}.get(operation.state, '处理中') }}</span>
     <a class="history-open-link" href="{{ url_for('diagnosis.detail', job_id=diagnostic.job_id) }}">{{ '查看报告' if operation.state == 'succeeded' else '继续查看' }} {{ icon('arrow') }}</a>
   </article>
+  {% endif %}
   {% endfor %}
   {% for item in conversations %}
   <article class="history-row" data-history-row data-record-type="legacy" data-record-title="{{ item.title|lower }}">
