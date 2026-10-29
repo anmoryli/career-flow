@@ -108,6 +108,7 @@
   }));
 
   root.querySelectorAll('[data-apply-suggestions]').forEach(form => {
+    if (form.matches('[data-review-workbench]')) return;
     let key = crypto.randomUUID();
     form.addEventListener('input', () => { key = crypto.randomUUID(); });
     form.addEventListener('submit', async event => {

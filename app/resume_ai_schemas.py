@@ -3,9 +3,10 @@
 from typing import Literal
 from uuid import UUID
 
-from pydantic import Field
+from pydantic import Field, field_validator
 
 from app.career_schemas import ResumeDocument
+from app.resume_text import ready_to_insert
 from app.schemas import Input
 
 RewriteMode = Literal["optimize", "expand", "generate", "professional", "concise"]
@@ -23,6 +24,11 @@ class ResumeAIQuote(Input):
 class ResumeAIOutput(Input):
     proposed: str = Field(min_length=1, max_length=3000)
     reason: str = Field(min_length=1, max_length=500)
+
+    @field_validator("proposed")
+    @classmethod
+    def replacement_text(cls, value):
+        return ready_to_insert(value)
 
 
 class ResumeComposeQuote(Input):

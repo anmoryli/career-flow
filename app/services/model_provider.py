@@ -176,7 +176,10 @@ def generate_resume(snapshot, on_progress=None):
 不得编造工作经历、学历、技能、数字、成果、证书或项目。
 optimize 改善表达；expand 补足表达但不增加事实。
 generate 仅根据已有背景起草，信息不足则说明缺少事实。
-professional 更专业；concise 更凝练。输出 proposed 和简短 reason。不得输出 HTML、代码或其他字段。"""
+professional 更专业；concise 更凝练。
+proposed 是可直接替换原文的完整简历正文，直接以动作、职责或成果起笔。
+不要添加“此外”“另外”“同时”等开场连接词，不写“建议”“你可以”“优化后”等说明，不加引号。
+说明只放 reason。输出 proposed 和简短 reason。不得输出 HTML、代码或其他字段。"""
 
     async def run():
         async with AsyncOpenAI(

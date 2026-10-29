@@ -59,20 +59,27 @@ def build_references(snapshot):
     for index, answer in enumerate(snapshot.get("answers", [])):
         if not answer["skipped"]:
             add_evidence(answer["answer"], "answer", f"answers.{index}")
+    return {
+        "requirements": requirements,
+        "evidence": evidence,
+        "targets": editable_targets(snapshot["document"]),
+    }
+
+
+def editable_targets(document):
     targets = {}
 
     def add_target(path, original):
         if isinstance(original, str) and original.strip() and len(original) <= 3000:
             targets[f"T{len(targets)}"] = {"path": path, "original": original}
 
-    document = snapshot["document"]
     add_target("summary", document.get("summary"))
     for index, experience in enumerate(document.get("experiences", [])):
         for bullet, text in enumerate(experience.get("bullets", [])):
             add_target(f"experiences.{index}.bullets.{bullet}", text)
     for index, project in enumerate(document.get("projects", [])):
         add_target(f"projects.{index}.description", project.get("description"))
-    return {"requirements": requirements, "evidence": evidence, "targets": targets}
+    return targets
 
 
 def resolve_references(output, references):
@@ -113,6 +120,10 @@ references.evidence 保存简历和已确认回答的原文；evidence_id 只能
 没有对应证据就填 null，category=missing。不得自行写 evidence、source 或 requirement 字段。
 每条 finding 的解释必须与选中的岗位要求和证据一致，不能把关联证据说成满足未体现的要求。
 references.targets 保存允许修改的原文和位置。suggestions.target_id 只能选择 T 编号，
-proposed 只改善该段已有内容，不添加未经确认事实；reason 解释修改理由。不同建议使用不同编号。
+proposed 必须是可直接替换 original 的完整简历正文，直接以动作、职责或成果起笔。
+不要写“此外”“另外”“同时”等开场连接词，不写“建议”“你可以”“优化后”等说明，不加引号或 Markdown 包装。
+只改善该段已有内容，不添加未经确认事实；所有说明单独放 reason。
+逐项检查全部 targets，按实际可改善的位置返回建议，不固定三条，不为凑数改写已清楚的段落。
+同一段落可以涵盖多个岗位要求，但只返回一条完整替换稿；不同建议使用不同编号。
 不得输出 path 或 original 字段，它们由服务端根据编号读取。没有安全的修改就返回空数组。
 每轮最多提出一个问题；报告不追问。评分不保证 ATS 通过。"""

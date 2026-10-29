@@ -473,6 +473,19 @@ def apply_suggestions(user_id, operation_id, data):
         parent = get_path(document, ".".join(parts[:-1])) if len(parts) > 1 else document
         key = int(parts[-1]) if isinstance(parent, list) else parts[-1]
         parent[key] = data.edits.get(index, suggestion["proposed"])
+    from app.services.diagnosis_references import editable_targets
+
+    allowed = {target["path"] for target in editable_targets(version.document).values()}
+    if not set(data.paragraph_edits).issubset(allowed):
+        raise BusinessError("只能修改本次简历中已有的可编辑段落。", 422)
+    selected_paths = {suggestions[index]["path"] for index in data.indices}
+    if selected_paths.intersection(data.paragraph_edits):
+        raise BusinessError("同一段落不能重复提交修改。", 422)
+    for path, text in data.paragraph_edits.items():
+        parts = path.split(".")
+        parent = get_path(document, ".".join(parts[:-1])) if len(parts) > 1 else document
+        key = int(parts[-1]) if isinstance(parent, list) else parts[-1]
+        parent[key] = text
     document["photo"] = version.document.get("photo", "")
     return save_resume(
         user_id,

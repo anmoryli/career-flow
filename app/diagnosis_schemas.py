@@ -1,8 +1,9 @@
 from typing import Annotated, Literal
 from uuid import UUID
 
-from pydantic import Field, model_validator
+from pydantic import Field, field_validator, model_validator
 
+from app.resume_text import ready_to_insert
 from app.schemas import Input
 
 
@@ -46,6 +47,11 @@ class Suggestion(Input):
     proposed: str = Field(min_length=1, max_length=3000)
     reason: str = Field(min_length=1, max_length=2000)
 
+    @field_validator("proposed")
+    @classmethod
+    def replacement_text(cls, value):
+        return ready_to_insert(value)
+
 
 class DiagnosisOutput(Input):
     summary: str = Field(min_length=1, max_length=3000)
@@ -63,12 +69,30 @@ class DiagnosisOutput(Input):
 
 class ApplySuggestion(Input):
     request_key: UUID
-    indices: list[int] = Field(min_length=1, max_length=30)
+    indices: list[int] = Field(default_factory=list, max_length=30)
     confirmed: Literal["yes"]
     title: str = Field(min_length=1, max_length=120)
     edits: dict[int, Annotated[str, Field(min_length=1, max_length=3000)]] = Field(
         default_factory=dict, max_length=30
     )
+
+    paragraph_edits: dict[
+        Annotated[
+            str,
+            Field(
+                pattern=r"^(summary|experiences\.[0-9]{1,2}\.bullets\.[0-9]{1,2}|projects\.[0-9]{1,2}\.description)$"
+            ),
+        ],
+        Annotated[str, Field(min_length=1, max_length=3000)],
+    ] = Field(default_factory=dict, max_length=30)
+
+    @model_validator(mode="after")
+    def changes_required(self):
+        if not self.indices and not self.paragraph_edits:
+            raise ValueError("请至少选择一段修改")
+        if len(set(self.indices)) + len(self.paragraph_edits) > 30:
+            raise ValueError("一次最多保存 30 段")
+        return self
 
 
 class DiagnosisResult(DiagnosisOutput):

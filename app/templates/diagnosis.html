@@ -66,7 +66,7 @@
       {% else %}<div class="diagnosis-complete-banner"><span aria-hidden="true">✓</span><div><strong>这份岗位报告已完成</strong><p>报告内容只读。你仍可以查看结果，并把核实过的建议另存为岗位简历版本。</p></div></div>{% endif %}
 
       {% if latest_report %}{{ result_panel(latest_report, '最终报告') }}{% elif latest_analysis %}{{ result_panel(latest_analysis, '最近一次匹配分析') }}{% endif %}
-      {% if suggestion_operation %}<section class="diagnosis-suggestion-launch"><div><span class="diagnosis-eyebrow">下一步</span><h2>简历修改建议</h2><p>本次结果包含 {{ suggestion_operation.result.suggestions|length }} 条建议。打开独立页面逐条比较、编辑并选择要保存的内容。</p></div><a class="button" href="{{ url_for('diagnosis.suggestions', job_id=job.id, operation_id=suggestion_operation.id) }}">查看并核实建议</a></section>{% endif %}
+      {% if suggestion_operation %}<section class="diagnosis-suggestion-launch"><div><span class="diagnosis-eyebrow">下一步</span><h2>简历修改建议</h2><p>按简历段落查看已有建议，也可以继续改写或手动编辑其他内容。</p></div><a class="button" href="{{ url_for('diagnosis.suggestions', job_id=job.id, operation_id=suggestion_operation.id) }}">查看并核实建议</a></section>{% endif %}
 
       {% if answers and not diagnostic.question %}<details class="diagnosis-answer-history diagnosis-answers-after-turn"><summary>查看之前的问答（{{ answers|length }}）</summary><div class="diagnosis-answer-list">{% for answer in answers %}<article><div><span>AI 提问 · 第 {{ answer.round }} 轮</span><p>{{ answer.question }}</p></div><div class="is-user-answer"><span>你的回答</span><p>{{ '本轮已跳过' if answer.skipped else answer.answer }}</p></div></article>{% endfor %}</div></details>{% endif %}
 

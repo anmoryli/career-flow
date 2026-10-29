@@ -54,7 +54,7 @@ def detail(job_id):
         (
             item
             for item in operations
-            if item.state == "succeeded" and (item.result or {}).get("suggestions")
+            if item.state == "succeeded" and item.result
         ),
         None,
     )
@@ -109,14 +109,15 @@ def suggestions(job_id):
     if (
         operation.diagnostic_id != diagnostic.id
         or operation.state != "succeeded"
-        or not (operation.result or {}).get("suggestions")
     ):
         abort(404)
     resume_version = db.session.get(ResumeVersion, job.resume_version_id)
     resume = db.session.get(Resume, resume_version.resume_id) if resume_version else None
+    from app.services.diagnosis_review import review_paragraphs
+
     return render_template(
         "diagnosis_suggestions.html",
-        job=job,
+        review_rows=review_paragraphs(operation),        job=job,
         diagnostic=diagnostic,
         operation=operation,
         resume=resume,
