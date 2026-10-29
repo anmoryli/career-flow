@@ -1,0 +1,7 @@
+{% extends 'frontend/base.html' %}
+{% from '_ui.html' import icon %}
+{% block title %}用户 · 职序管理{% endblock %}
+{% block breadcrumb %}用户{% endblock %}
+{% block content %}
+<section class="cf-page cf-admin-page"><header class="cf-page-heading"><div><span class="cf-eyebrow">账号管理</span><h1>用户</h1><p>最近 100 位注册用户，账号权限由服务端控制。</p></div><span class="cf-admin-total">{{ users|length }} 位用户</span></header>{% if users %}<div class="cf-admin-table-wrap" tabindex="0" role="region" aria-label="用户列表"><table class="cf-table cf-admin-user-table"><thead><tr><th scope="col">用户</th><th scope="col">邮箱</th><th scope="col">角色</th><th scope="col">注册时间</th><th scope="col">登录会话</th></tr></thead><tbody>{% for item in users %}<tr><td><div class="cf-admin-person"><span aria-hidden="true">{{ item.display_name[:1] }}</span><strong>{{ item.display_name }}</strong></div></td><td>{{ item.email }}</td><td><span class="cf-badge">{{ '管理员' if item.is_admin else '用户' }}</span></td><td>{{ item.created_at|datetime_cn }}</td><td><form action="{{ url_for('admin.revoke_user_sessions', user_id=item.id) }}" method="post"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="cf-button is-secondary is-small" type="submit">撤销会话</button></form></td></tr>{% endfor %}</tbody></table></div>{% else %}<div class="cf-empty"><span>{{ icon('file') }}</span><h2>还没有注册用户</h2><p>新用户注册后会出现在这里。</p></div>{% endif %}</section>
+{% endblock %}

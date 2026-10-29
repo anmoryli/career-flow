@@ -24,6 +24,7 @@ from app.services import auth
 from app.services.conversations import append_message, owned_conversation, save_memory
 from app.services.errors import BusinessError
 from app.services.infrastructure import rate_limit, readiness
+from app.web.frontend import workspace_template
 
 web = Blueprint("web", __name__)
 
@@ -95,7 +96,7 @@ def ready():
 
 @web.get("/")
 def home():
-    return render_template("home.html")
+    return render_template("frontend/public/home.html")
 
 
 @web.route("/register", methods=["GET", "POST"])
@@ -103,9 +104,7 @@ def register():
     if request.method == "GET":
         if g.user:
             return redirect(url_for("web.workspace"), code=303)
-        return redirect(
-            url_for("web.home", auth="register", next=request.args.get("next", "/workspace"))
-        )
+        return render_template("frontend/public/auth.html", mode="register")
     rate_limit("registration-ip", request.remote_addr or "unknown", 20, 600)
     data = RegisterInput.model_validate(input_data())
     user = auth.register(data)
@@ -128,9 +127,7 @@ def send_code():
 def login():
     if request.method == "GET":
         if not g.user:
-            return redirect(
-                url_for("web.home", auth="login", next=request.args.get("next", "/workspace"))
-            )
+            return render_template("frontend/public/auth.html", mode="login")
         return redirect(url_for("web.workspace"), code=303)
     rate_limit("login-ip", request.remote_addr or "unknown", 30, 600)
     data = LoginInput.model_validate(input_data())
@@ -141,7 +138,7 @@ def login():
 
 @web.get("/password/reset")
 def password_reset_page():
-    return render_template("password_reset.html")
+    return render_template("frontend/public/password_reset.html")
 
 
 @web.post("/password/reset/code")
@@ -206,7 +203,7 @@ def workspace():
             resume_ai_remaining=5,
         )
         return render_template(
-            "workspace.html", conversations=[], count=0, resumes=[], jobs=[], saved_jobs=[],
+            workspace_template(view), conversations=[], count=0, resumes=[], jobs=[], saved_jobs=[],
             current_resume=None, reports=[], completed_reports=[], active_jobs=[],
             active_job_ids=set(), inactive_saved_jobs=[], recent_only_jobs=[],
             entitlements=guest_entitlements, resume_previews={},
@@ -298,7 +295,7 @@ def workspace():
         )
     )
     return render_template(
-        "workspace.html",
+        workspace_template(view),
         conversations=conversations,
         count=count,
         resumes=resumes,
@@ -406,7 +403,7 @@ def conversation(conversation_id):
         .limit(100)
     ).all()
     return render_template(
-        "conversation.html",
+        "frontend/analysis/conversation.html",
         conversation=item,
         messages=messages,
         memories=memories,

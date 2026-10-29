@@ -83,7 +83,7 @@ def detail(item_id):
     if resume_id:
         resume_revision = version_of(owned(Resume, g.user.id, resume_id)).revision
     return render_template(
-        "import.html",
+        "frontend/resume/import_review.html",
         item=owned(ResumeImport, g.user.id, item_id),
         resume_id=resume_id,
         resume_revision=resume_revision,

@@ -1,0 +1,7 @@
+{% extends 'frontend/base.html' %}
+{% from '_ui.html' import icon %}
+{% block title %}操作记录 · 职序管理{% endblock %}
+{% block breadcrumb %}操作记录{% endblock %}
+{% block content %}
+<section class="cf-page cf-admin-page"><header class="cf-page-heading"><div><span class="cf-eyebrow">操作追溯</span><h1>操作记录</h1><p>最近 100 条管理操作。密钥与授权码不会记录在这里。</p></div><span class="cf-admin-total">{{ entries|length }} 条记录</span></header>{% if entries %}<div class="cf-admin-table-wrap" tabindex="0" role="region" aria-label="管理操作记录"><table class="cf-table cf-admin-audit-table"><thead><tr><th scope="col">操作时间</th><th scope="col">执行人</th><th scope="col">操作</th><th scope="col">对象</th><th scope="col">请求编号</th></tr></thead><tbody>{% for item in entries %}<tr><td>{{ item.created_at|datetime_cn }}</td><td>用户 #{{ item.actor_id }}</td><td><strong>{{ item.action }}</strong></td><td>{{ item.target }}</td><td><code>{{ item.request_id }}</code></td></tr>{% endfor %}</tbody></table></div>{% else %}<div class="cf-empty"><span>{{ icon('history') }}</span><h2>暂无操作记录</h2><p>配置保存等管理操作会记录在这里。</p></div>{% endif %}</section>
+{% endblock %}

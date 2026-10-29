@@ -1,0 +1,19 @@
+{% extends 'frontend/base.html' %}
+{% from '_ui.html' import icon %}
+{% block title %}{{ '创建账号' if mode == 'register' else '登录' }} · 职序{% endblock %}
+{% block content %}
+<section class="cf-public-auth">
+  <div class="cf-public-auth-main"><a class="cf-public-auth-back" href="{{ url_for('web.home') }}">{{ icon('arrow') }} 返回首页</a><span class="cf-eyebrow">你的简历与求职工作台</span><h1>{{ '创建你的账号' if mode == 'register' else '欢迎回来' }}</h1><p>{{ '保存每一段经历，继续准备下一次机会。' if mode == 'register' else '登录后，接着完成你正在准备的简历。' }}</p><nav class="cf-public-auth-tabs" aria-label="账号入口"><a href="{{ url_for('web.login') }}" {% if mode != 'register' %}aria-current="page"{% endif %}>登录</a><a href="{{ url_for('web.register') }}" {% if mode == 'register' %}aria-current="page"{% endif %}>创建账号</a></nav>
+    <form method="post" data-ui-form="auth" class="cf-public-auth-form"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><p id="auth-feedback" class="cf-feedback" role="alert" hidden></p>
+      {% if mode == 'register' %}<label class="cf-field" for="display-name">称呼<input id="display-name" name="display_name" required maxlength="80" autocomplete="nickname" placeholder="希望我们如何称呼你"></label>{% endif %}
+      <label class="cf-field" for="email">邮箱<input id="email" name="email" type="email" autocomplete="email" required maxlength="254" placeholder="you@example.com"></label>
+      {% if mode == 'register' %}<div class="cf-public-code-field"><label class="cf-field" for="code">邮箱验证码<input id="code" name="code" required pattern="[0-9]{6}" maxlength="6" inputmode="numeric" autocomplete="one-time-code" placeholder="六位数字"></label><button class="cf-button is-secondary" type="button" data-send-code>发送验证码</button></div>{% endif %}
+      <div class="cf-public-password-field"><label class="cf-field" for="password">密码<input id="password" name="password" type="password" required minlength="12" maxlength="128" autocomplete="{{ 'new-password' if mode == 'register' else 'current-password' }}" aria-describedby="password-help"></label><button type="button" class="cf-button is-quiet is-small" data-password-toggle aria-controls="password" aria-pressed="false">显示密码</button></div><small id="password-help">12–128 个字符，建议使用独立的长密码。</small>
+      {% if mode != 'register' %}<a class="cf-public-forgot" href="{{ url_for('web.password_reset_page') }}">忘记密码？</a>{% endif %}
+      <button class="cf-button" type="submit">{{ '验证并创建账号' if mode == 'register' else '登录工作空间' }} {{ icon('arrow') }}</button>
+    </form>
+    <p class="cf-public-auth-note">你的简历和历史记录会保存在账号中。</p>
+  </div>
+  <aside class="cf-public-auth-aside"><span class="cf-public-auth-symbol" aria-hidden="true">序</span><div><span class="cf-eyebrow">CAREERFLOW</span><h2>把经历理清，<br>把下一步走稳。</h2><p>简历内容、岗位分析与修改记录，<br>在同一个地方慢慢完成。</p></div><ul><li>{{ icon('file') }} 统一管理简历文档</li><li>{{ icon('spark') }} 核对后再采用 AI 建议</li><li>{{ icon('history') }} 保留每次保存的版本</li></ul></aside>
+</section>
+{% endblock %}

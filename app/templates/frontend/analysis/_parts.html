@@ -1,0 +1,26 @@
+{% from '_ui.html' import icon %}
+{% macro state_badge(state) -%}
+<span class="cf-badge cfa-state cfa-state-{{ state }}">{{ {'queued':'排队中','running':'正在分析','succeeded':'已完成','failed':'需要重试','cancelled':'已取消'}.get(state,'待开始') }}</span>
+{%- endmacro %}
+{% macro operation_running(operation=none) -%}
+<section class="cfa-running" data-operation="{{ operation.id if operation else '' }}" data-operation-kind="{{ operation.kind if operation else 'analysis' }}" data-operation-state="{{ operation.state if operation else 'queued' }}" aria-live="polite" aria-busy="true">
+  <div class="cfa-running-visual" aria-hidden="true"><div class="cfa-running-orbit"></div><span>✦</span></div>
+  <div class="cfa-running-copy"><span class="cf-eyebrow">{{ '正在排队' if not operation or operation.state == 'queued' else '正在核对岗位与简历' }}</span><h2>{{ '分析已加入队列' if not operation or operation.state == 'queued' else '让每一项匹配都有依据' }}</h2><p>提取岗位要求、查找简历证据，再整理待补充内容。你可以离开，任务会继续运行。</p><div class="cfa-running-scope"><span>{{ icon('briefcase') }} 岗位要求</span><span>{{ icon('file') }} 真实经历</span><span>{{ icon('check') }} 修改方向</span></div></div>
+  {% if operation %}<button class="cf-button is-quiet is-small" type="button" data-cancel-operation="{{ operation.id }}">取消本次任务</button>{% endif %}
+</section>
+{%- endmacro %}
+{% macro results(operation) -%}
+{% if operation and operation.result %}
+<section class="cfa-result" id="match-result" data-operation="{{ operation.id }}" data-operation-state="succeeded">
+  <header class="cfa-result-summary"><div><span class="cf-eyebrow">{{ '完整岗位报告' if operation.kind == 'report' else '当前匹配分析' }}</span><h2>匹配总览</h2><p>{{ operation.result.summary }}</p></div><div class="cfa-score"><strong>{{ operation.result.overall_score|int }}</strong><span>/ 100</span><small>当前匹配度</small></div></header>
+  <div class="cfa-dimensions" aria-label="五项匹配度">{% for dimension in operation.result.dimensions %}<article><header><h3>{{ dimension.name }}</h3><strong>{{ dimension.score }}<small>/100</small></strong></header><meter min="0" max="100" value="{{ dimension.score }}" aria-label="{{ dimension.name }} {{ dimension.score }} 分"></meter><p>{{ dimension.reason }}</p></article>{% endfor %}</div>
+</section>
+<section class="cfa-evidence" id="evidence-details"><header class="cfa-section-heading"><div><span class="cf-eyebrow">逐项对照</span><h2>岗位要求与简历证据</h2></div><span class="cfa-meta">{{ operation.result.findings|length }} 项依据</span></header><p class="cfa-evidence-note">简历未体现，不等于你不具备。可以补充真实经历后再分析。</p>
+<div class="cf-tabs cfa-evidence-tabs" role="group" aria-label="筛选岗位证据">{% for key,label in [('all','全部证据'),('hard','岗位要求'),('bonus','加分项'),('missing','待补充')] %}<button type="button" data-evidence-filter="{{ key }}" aria-pressed="{{ 'true' if loop.first else 'false' }}">{{ label }}</button>{% endfor %}</div>
+<div class="cfa-findings">{% for finding in operation.result.findings %}<article class="cfa-finding" data-evidence-category="{{ finding.category }}"><header><span class="cfa-finding-index">{{ '%02d'|format(loop.index) }}</span><span class="cf-badge cfa-category-{{ finding.category }}">{{ {'hard':'岗位要求','bonus':'加分项','missing':'待补充'}[finding.category] }}</span><h3>{{ finding.requirement }}</h3></header><div class="cfa-finding-comparison"><section><span class="cfa-label">简历证据</span>{% if finding.evidence %}<blockquote>{{ finding.evidence }}</blockquote>{% else %}<p class="cfa-muted">当前简历没有找到对应内容</p>{% endif %}</section><section><span class="cfa-label">分析说明</span><p>{{ finding.explanation }}</p></section></div></article>{% endfor %}</div><p class="cf-empty cfa-filter-empty" data-evidence-empty hidden>当前分类没有对应证据。</p>
+</section>
+{% endif %}
+{%- endmacro %}
+{% macro history_rows(operations) -%}
+<div class="cfa-task-ledger">{% for operation in operations %}<article><div><strong>{{ '完整报告' if operation.kind == 'report' else '匹配分析' }}</strong><time>{{ operation.created_at|datetime_cn }}</time></div>{{ state_badge(operation.state) }}{% if operation.state == 'succeeded' and operation.result %}<span>{{ operation.result.overall_score|int }} 分</span>{% elif operation.error %}<p>{{ operation.error|ai_public_error }}</p>{% endif %}</article>{% endfor %}</div>
+{%- endmacro %}

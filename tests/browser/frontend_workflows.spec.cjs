@@ -1,0 +1,43 @@
+const {test,expect}=require('@playwright/test');
+const {randomUUID}=require('node:crypto');
+const fs=require('node:fs'),path=require('node:path'),os=require('node:os'),{execFileSync}=require('node:child_process');
+let uid,email;
+const testPassword='Browser-refactor-test-123!';
+const headers=async p=>({'X-CSRFToken':await p.locator('meta[name="csrf-token"]').getAttribute('content')});
+async function member(p){await p.goto('/workspace?view=billing');await p.locator('[data-membership-plan="membership_quarterly"] button[type=submit]').click();await p.waitForLoadState('networkidle');}
+async function create(p){const r=await p.request.post('/api/resumes',{headers:await headers(p),data:{request_key:randomUUID(),revision:0,title:'工作流简历',document:{name:'真实姓名',email:'candidate@example.com',summary:'真实产品经验',experiences:[{company:'测试企业',role:'产品经理',bullets:['梳理需求','跟进上线','整理用户反馈']}],projects:[{name:'真实项目',description:'整理业务流程'}]}}});expect(r.ok()).toBeTruthy();return r.json();}
+test.beforeEach(async({page})=>{await page.goto('/login');const r=await page.request.post('/__test/session',{headers:await headers(page),data:{password:testPassword}});const user=await r.json();uid=user.user_id;email=user.email;});
+test.afterEach(async({page})=>{if(uid)await page.request.post('/__test/cleanup',{headers:await headers(page),data:{user_id:uid}});});
+test('public pages, dark/system themes and accessible dialogs use the new shell',async({page})=>{
+ await page.context().clearCookies();
+ for(const route of ['/','/login','/register','/password/reset','/not-a-page']){const r=await page.goto(route);expect(r.status()).toBe(route==='/not-a-page'?404:200);await expect(page.locator('body')).toHaveAttribute('data-frontend','refactored');expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBeTruthy();}
+ await page.goto('/');await page.locator('[data-auth-open="login"]').click();await expect(page.locator('#auth-dialog')).toBeVisible();await page.keyboard.press('Escape');await expect(page.locator('#auth-dialog')).toBeHidden();
+ for(const theme of ['light','dark','system']){await page.locator('#theme-select').selectOption(theme);await expect(page.locator('html')).toHaveAttribute('data-preference',theme);await page.screenshot({path:`output/refactor-public-${test.info().project.name}-${theme}.png`,fullPage:true,animations:'disabled'});}
+});
+test('document library operations and text import complete in the new frontend',async({page})=>{
+ await member(page);await create(page);await page.goto('/workspace?view=resumes');
+ await page.locator('[data-library-document] details summary').first().click();await page.locator('[data-library-rename]').first().click();await page.locator('[data-library-rename-dialog] [name=title]').fill('重命名文档');await page.locator('[data-library-rename-form] button[type=submit]').click();await expect(page.locator('[data-library-document]')).toHaveAttribute('data-document-title','重命名文档');
+ await page.locator('[data-library-document] details summary').first().click();await page.locator('[data-library-copy]').first().click();await expect(page.locator('[data-library-document]')).toHaveCount(2);
+ await page.locator('[data-library-document] details summary').first().click();await page.locator('[data-delete-resume]').first().click();await page.locator('[data-library-delete-confirm]').click();await expect(page.locator('[data-library-document]')).toHaveCount(1);
+ await page.locator('[data-create-resume="paste"]').first().click();await page.locator('[data-create-form] [name=title]').fill('文字导入');await page.locator('[data-create-form] [name=source]').fill('真实姓名，产品经理，负责用户访谈与产品需求分析，跟进功能迭代上线。');await page.locator('[data-create-submit]').click();
+ await expect(page.locator('[data-compose-accept]')).toBeEnabled({timeout:20000});await expect(page.locator('#resume-name')).toHaveValue('');await page.locator('[data-compose-accept]').click();await expect(page.locator('#resume-name')).toHaveValue('林测试');
+});
+test('inline AI, repeat fields, custom sections, photo and history preserve document state',async({page})=>{
+ await member(page);const resume=await create(page);await page.goto(`/workspace?view=resume-new&resume_id=${resume.id}`);
+ await page.locator('[data-section-tab="summary"]').click();await page.locator('#resume-summary').fill('负责用户访谈与需求分析');await page.locator('#resume-summary-section [data-resume-ai-mode="professional"]').click();
+ await expect(page.locator('[data-resume-ai-accept]')).toBeEnabled({timeout:15000});await expect(page.locator('#resume-summary')).toHaveValue('负责用户访谈与需求分析');await page.locator('[data-resume-ai-accept]').click();await expect(page.locator('#resume-summary')).toHaveValue('负责用户访谈与需求分析，表达更清晰');
+ await page.locator('[data-add-custom-section]').click();await page.locator('[data-rf-field="custom_sections.0.title"]').fill('真实奖项');await page.locator('[data-rf-field="custom_sections.0.content"]').fill('获得校级奖学金');
+ await page.locator('[data-section-tab="photo"]').click();const png=await page.evaluate(()=>{const canvas=document.createElement('canvas');canvas.width=120;canvas.height=160;canvas.getContext('2d').fillRect(0,0,120,160);return canvas.toDataURL('image/png').split(',')[1];});await page.locator('#resume-photo').setInputFiles({name:'test.png',mimeType:'image/png',buffer:Buffer.from(png,'base64')});await expect(page.locator('[data-photo-control-image]')).toBeVisible();
+ await page.locator('[data-save-resume]').click();await expect(page.locator('[data-resume-editor]')).toHaveAttribute('data-dirty','false',{timeout:10000});const stored=await (await page.request.get(`/api/resumes/${resume.id}`)).json();expect(stored.document.custom_sections[0].title).toBe('真实奖项');expect(stored.document.photo).toMatch(/^data:image\//);
+ await page.locator('[data-version-history]').click();await expect(page.locator('#version-history button').first()).toBeVisible();await page.keyboard.press('Escape');
+});
+test('PDF import and actual export produce a clean printable resume',async({page})=>{
+ const source=await page.context().newPage();await source.setContent('<h1>Resume Candidate</h1><p>candidate@example.com</p><p>Verified product experience.</p>');const pdf=await source.pdf();await source.close();
+ await member(page);await page.goto('/workspace?view=resume-import');await page.locator('#resume-file').setInputFiles({name:'candidate.pdf',mimeType:'application/pdf',buffer:pdf});await page.locator('[data-upload-pdf]').click();await expect(page.locator('[data-import-confirm]')).toBeVisible({timeout:20000});await page.locator('[name=name]').fill('核对姓名');await page.locator('[name=confirmed]').check();await page.locator('[data-import-confirm] button[type=submit]').click();await expect(page.locator('#resume-name')).toHaveValue('核对姓名');
+ const sourceDialog=page.locator('#cf-resume-source');if(await sourceDialog.isVisible())await page.keyboard.press('Escape');await page.evaluate(()=>window.prepareResumePrint());await page.emulateMedia({media:'print'});await expect(page.locator('.cf-editor-topbar')).toBeHidden();const exported=await page.pdf({format:'A4',printBackground:true});const dir=fs.mkdtempSync(path.join(os.tmpdir(),'cf-refactor-'));const file=path.join(dir,'resume.pdf');
+ try{fs.writeFileSync(file,exported);const local=path.join(process.cwd(),'.venv','Scripts','python.exe'),python=process.env.CF_TEST_PYTHON||(fs.existsSync(local)?local:'python');const result=JSON.parse(execFileSync(python,['-c','import sys,json,pdfplumber; r=pdfplumber.open(sys.argv[1]); print(json.dumps({"pages":len(r.pages),"text":"".join(p.extract_text() or "" for p in r.pages)},ensure_ascii=True))',file],{encoding:'utf8'}));expect(result.pages).toBe(1);expect(result.text).toContain('核对姓名');expect(result.text).not.toContain('岗位匹配分析');}finally{fs.rmSync(dir,{recursive:true,force:true});}
+});
+
+test('guest draft resumes through real login with fresh CSRF',async({page})=>{
+ await page.context().clearCookies();await page.goto('/workspace?view=resume-new&fresh=1');await page.locator('#resume-name').fill('访客保留的姓名');await page.locator('[data-save-resume]').click();await expect(page.locator('#auth-dialog')).toBeVisible();await page.locator('[data-auth-modal-form="login"] [name=email]').fill(email);await page.locator('[data-auth-modal-form="login"] [name=password]').fill(testPassword);await page.locator('[data-auth-modal-form="login"] button[type=submit]').click();await expect(page.locator('[data-resume-editor]')).toHaveAttribute('data-dirty','false',{timeout:15000});const id=await page.locator('[data-resume-editor]').getAttribute('data-resume-id');expect(Number(id)).toBeGreaterThan(0);const saved=await(await page.request.get(`/api/resumes/${id}`)).json();expect(saved.document.name).toBe('访客保留的姓名');
+});

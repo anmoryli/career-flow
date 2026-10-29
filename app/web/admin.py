@@ -40,14 +40,14 @@ def dashboard():
             select(func.count()).select_from(Membership).where(Membership.expires_at > utcnow())
         ),
     }
-    return render_template("admin/dashboard.html", counts=counts)
+    return render_template("frontend/admin/dashboard.html", counts=counts)
 
 
 @admin_web.get("/users")
 @admin_required
 def users():
     items = db.session.scalars(select(User).order_by(User.created_at.desc()).limit(100)).all()
-    return render_template("admin/users.html", users=items)
+    return render_template("frontend/admin/users.html", users=items)
 
 
 @admin_web.get("/orders")
@@ -59,7 +59,7 @@ def orders():
         .order_by(CommerceOrder.id.desc())
         .limit(100)
     ).all()
-    return render_template("admin/orders.html", orders=items)
+    return render_template("frontend/admin/orders.html", orders=items)
 
 
 @admin_web.post("/users/<int:user_id>/revoke-sessions")
@@ -90,7 +90,7 @@ def settings():
         category: admin_config.history(category)
         for category in ("mail", "model", "model_routes", "prompt_diagnosis")
     }
-    return render_template("admin/settings.html", configurations=configurations)
+    return render_template("frontend/admin/settings.html", configurations=configurations)
 
 
 @admin_web.get("/audit")
@@ -99,7 +99,7 @@ def audit():
     items = db.session.scalars(
         select(AdminAudit).order_by(AdminAudit.created_at.desc()).limit(100)
     ).all()
-    return render_template("admin/audit.html", entries=items)
+    return render_template("frontend/admin/audit.html", entries=items)
 
 
 @admin_web.get("/api/config/<category>")

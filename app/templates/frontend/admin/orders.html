@@ -1,0 +1,7 @@
+{% extends 'frontend/base.html' %}
+{% from '_ui.html' import icon %}
+{% block title %}订单 · 职序管理{% endblock %}
+{% block breadcrumb %}订单{% endblock %}
+{% block content %}
+<section class="cf-page cf-admin-page"><header class="cf-page-heading"><div><span class="cf-eyebrow">会员业务</span><h1>订单</h1><p>最近 100 笔订单，价格和周期以创建时的方案快照为准。</p></div><span class="cf-admin-total">{{ orders|length }} 笔订单</span></header>{% if orders %}<div class="cf-admin-table-wrap" tabindex="0" role="region" aria-label="会员订单列表"><table class="cf-table"><thead><tr><th scope="col">订单</th><th scope="col">用户</th><th scope="col">方案</th><th scope="col">金额</th><th scope="col">会员周期</th><th scope="col">状态</th><th scope="col">创建时间</th></tr></thead><tbody>{% for order,email in orders %}<tr><td class="cf-admin-order-id">#{{ order.id }}</td><td>{{ email }}</td><td>{{ {'membership_monthly':'月付会员','membership_quarterly':'季度会员','membership_30':'旧月度会员','membership_90':'旧季度会员','membership_365':'历史年度会员'}.get(order.plan_code, '历史订单') }}</td><td>¥{{ order.price_yuan }}</td><td>{{ order.period_days }} 天</td><td><span class="cf-badge {{ 'is-success' if order.state == 'paid' else 'is-danger' if order.state == 'failed' else '' }}">{{ {'pending':'处理中','paid':'已开通','failed':'未完成'}.get(order.state, '已结束') }}</span></td><td>{{ order.created_at|datetime_cn }}</td></tr>{% endfor %}</tbody></table></div>{% else %}<div class="cf-empty"><span>{{ icon('wallet') }}</span><h2>暂无会员订单</h2><p>开通会员后，可在这里查看订单状态与方案。</p></div>{% endif %}</section>
+{% endblock %}

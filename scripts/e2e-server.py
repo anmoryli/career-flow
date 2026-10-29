@@ -130,7 +130,16 @@ def test_session():
     db.session.add(user)
     db.session.commit()
     created.add(user.id)
-    response = jsonify({"user_id": user.id, "test_mode": True})
+    password = (request.get_json(silent=True) or {}).get("password")
+    if password:
+        from werkzeug.security import generate_password_hash
+
+        from app.models import AuthIdentity
+
+        identity = AuthIdentity(user_id=user.id, password_hash=generate_password_hash(password))
+        db.session.add(identity)
+        db.session.commit()
+    response = jsonify({"user_id": user.id, "email": user.email, "test_mode": True})
     response.set_cookie("cf_session", auth.issue_session(user), httponly=True, samesite="Lax")
     return response
 

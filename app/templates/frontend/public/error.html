@@ -1,0 +1,6 @@
+{% extends 'frontend/base.html' %}
+{% from '_ui.html' import icon %}
+{% block title %}请求未完成 · 职序{% endblock %}
+{% block content %}
+<section class="cf-public-error"><div class="cf-public-error-mark" aria-hidden="true">{{ status }}</div><span class="cf-eyebrow">请求未完成</span><h1>这一步暂时没有完成。</h1><p role="alert">{{ message }}</p><div class="cf-public-actions"><a class="cf-button" href="{{ url_for('web.workspace') if g.user else url_for('web.home') }}">{{ '返回工作空间' if g.user else '返回首页' }} {{ icon('arrow') }}</a><a class="cf-button is-secondary" href="{{ url_for('web.workspace', view='resumes') }}">我的简历</a></div><small>请求编号：<code>{{ g.request_id }}</code></small></section>
+{% endblock %}

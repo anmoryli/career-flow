@@ -125,7 +125,7 @@ def print_resume(item_id):
     item = career.owned(Resume, g.user.id, item_id)
     commerce.ensure_resume_export_capacity(g.user.id)
     version = career.version_of(item, request.args.get("revision", type=int))
-    return render_template("resume/print.html", resume=item, version=version)
+    return render_template("frontend/resume/print.html", resume=item, version=version)
 
 
 def resume_operation_json(item):

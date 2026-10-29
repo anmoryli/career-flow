@@ -1,0 +1,79 @@
+/* Shared transport, dialog lifecycle and shell behavior. No page business state lives here. */
+(() => {
+  'use strict';
+  const csrf=()=>document.querySelector('meta[name="csrf-token"]')?.content||'';
+  const request=async(url,options={},networkRetries=0)=>{
+    const target=new URL(url,location.href);
+    if(target.origin!==location.origin) throw new Error('请求地址不属于当前站点。');
+    let response;
+    for(let attempt=0;attempt<=networkRetries;attempt++){
+      try {response=await fetch(target,{credentials:'same-origin',redirect:'error',...options});break;}
+      catch {if(attempt===networkRetries)throw new Error('连接暂时中断，请重试。填写内容仍会保留。');await new Promise(resolve=>setTimeout(resolve,180));}
+    }
+    let result;
+    try {result=await response.json();}
+    catch {throw new Error(`服务暂未完成请求（${response.status}），请刷新登录状态后重试。`);}
+    if(!response.ok){const error=new Error(result.error==='login_required'?'请先登录后继续。':result.error||'请求暂未完成，请稍后重试。');error.status=response.status;error.fields=result.fields||{};error.loginRequired=Boolean(result.login_required)||response.status===401;throw error;}
+    return result;
+  };
+  window.cfApi=(url,payload)=>request(url,{method:'POST',headers:{'Content-Type':'application/json','X-CSRFToken':csrf()},body:JSON.stringify(payload)},typeof payload?.request_key==='string'?1:0);
+  window.cfGet=url=>request(url,{},1);
+  window.cfRequest=request;
+  window.cfRefreshCSRF=async()=>{
+    const response=await fetch(location.href,{credentials:'same-origin',cache:'no-store'});
+    if(!response.ok)throw new Error('登录成功，但页面状态尚未同步，请刷新后继续。');
+    const page=new DOMParser().parseFromString(await response.text(),'text/html');
+    const token=page.querySelector('meta[name="csrf-token"]')?.content;
+    if(!token)throw new Error('无法同步页面校验信息，请刷新后继续。');
+    document.querySelector('meta[name="csrf-token"]').content=token;
+    document.querySelectorAll('input[name="csrf_token"]').forEach(input=>{input.value=token;});
+  };
+  let toastTimer;
+  window.cfToast=message=>{const toast=document.querySelector('#theme-feedback');if(!toast)return;clearTimeout(toastTimer);toast.textContent=message;toast.hidden=false;toastTimer=setTimeout(()=>{toast.hidden=true;},3200);};
+  const themeSelector=document.querySelector('#theme-select');
+  const syncThemeChoices=()=>{
+    const preference=document.documentElement.dataset.preference;
+    if(themeSelector)themeSelector.value=preference;
+    document.querySelectorAll('[data-theme-choice]').forEach(button=>button.setAttribute('aria-pressed',String(button.dataset.themeChoice===preference)));
+  };
+  const changeTheme=async value=>{
+    window.cfTheme(value);syncThemeChoices();try{localStorage.setItem('cf-theme',value);}catch{}
+    const status=document.querySelector('#settings-theme-status');
+    if(document.body.dataset.authenticated!=='yes'){if(status)status.textContent='外观偏好已保存到当前设备。';return;}
+    let message='外观偏好已同步';
+    try{await window.cfApi('/settings/theme',{theme:value});}catch{message='已在本机切换，跨设备同步暂未完成';}
+    if(status)status.textContent=message;window.cfToast(message);
+  };
+  themeSelector?.addEventListener('change',()=>changeTheme(themeSelector.value));
+  document.querySelectorAll('[data-theme-choice]').forEach(button=>button.addEventListener('click',()=>changeTheme(button.dataset.themeChoice)));
+  syncThemeChoices();
+  const openers=new WeakMap();
+  window.cfOpenDialog=dialog=>{if(typeof dialog==='string')dialog=document.getElementById(dialog);if(!dialog||dialog.open)return;openers.set(dialog,document.activeElement);dialog.showModal();};
+  window.cfCloseDialog=dialog=>{if(!dialog?.open)return;dialog.close();};
+  document.addEventListener('click',event=>{
+    const opener=event.target.closest('[data-dialog-open]');if(opener){event.preventDefault();window.cfOpenDialog(opener.dataset.dialogOpen);}
+    const closer=event.target.closest('[data-dialog-close]');if(closer){event.preventDefault();window.cfCloseDialog(closer.closest('dialog'));}
+    if(event.target instanceof HTMLDialogElement){const r=event.target.getBoundingClientRect();if(event.clientX<r.left||event.clientX>r.right||event.clientY<r.top||event.clientY>r.bottom)event.target.dispatchEvent(new Event('cancel',{cancelable:true}));}
+    document.querySelectorAll('.cf-account-menu[open]').forEach(menu=>{if(!menu.contains(event.target))menu.open=false;});
+  });
+  document.querySelectorAll('dialog').forEach(dialog=>{
+    dialog.addEventListener('close',()=>{const trigger=openers.get(dialog);if(trigger?.isConnected)trigger.focus();});
+    dialog.addEventListener('cancel',event=>{queueMicrotask(()=>{if(!event.defaultPrevented)window.cfCloseDialog(dialog);});});
+  });
+  document.addEventListener('keydown',event=>{if(event.key==='Escape')document.querySelectorAll('.cf-account-menu[open]').forEach(menu=>{menu.open=false;menu.querySelector('summary').focus();});});
+  document.addEventListener('htmx:configRequest',event=>{event.detail.headers['X-CSRFToken']=csrf();});
+  // Disable only ordinary server forms after all page listeners had a chance to cancel submission.
+  document.addEventListener('submit',event=>{const form=event.target;if(form.matches('[data-ui-form]'))return;queueMicrotask(()=>{if(event.defaultPrevented)return;form.querySelectorAll('button[type="submit"]').forEach(button=>{button.disabled=true;button.setAttribute('aria-busy','true');});});});
+  window.addEventListener('pageshow',()=>document.querySelectorAll('button[aria-busy=true]').forEach(button=>{button.disabled=false;button.removeAttribute('aria-busy');}));
+  const resize=new ResizeObserver(entries=>entries.forEach(({target})=>{
+    const doc=target.querySelector('.resume-doc');if(!doc||!target.clientWidth)return;
+    const style=getComputedStyle(target);const width=target.clientWidth-parseFloat(style.paddingLeft)-parseFloat(style.paddingRight);
+    doc.style.zoom=String(width/794);
+  }));
+  document.querySelectorAll('[data-document-thumbnail]').forEach(element=>resize.observe(element));
+  // Filter only the rows already rendered for this user; no external search service.
+  document.querySelectorAll('[data-filter-target]').forEach(input=>input.addEventListener('input',()=>{
+    const query=input.value.trim().toLocaleLowerCase();
+    document.querySelectorAll(input.dataset.filterTarget).forEach(row=>{row.hidden=!row.textContent.toLocaleLowerCase().includes(query);});
+  }));
+})();

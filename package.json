@@ -7,7 +7,7 @@
     "test": "tests"
   },
   "scripts": {
-    "build": "node scripts/build-assets.cjs && npx @tailwindcss/cli -i app/static/css/input.css -o app/static/css/app.css --minify"
+    "build": "node scripts/build-frontend.cjs"
   },
   "keywords": [],
   "author": "",

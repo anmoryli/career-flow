@@ -80,7 +80,7 @@ def detail(job_id):
     resume_version = db.session.get(ResumeVersion, job.resume_version_id)
     resume = db.session.get(Resume, resume_version.resume_id) if resume_version else None
     return render_template(
-        "diagnosis.html",
+        "frontend/analysis/detail.html",
         job=job,
         diagnostic=diagnostic,
         operations=operations,
@@ -116,7 +116,7 @@ def suggestions(job_id):
     from app.services.diagnosis_review import review_paragraphs
 
     return render_template(
-        "diagnosis_suggestions.html",
+        "frontend/analysis/review.html",
         review_rows=review_paragraphs(operation),        job=job,
         diagnostic=diagnostic,
         operation=operation,

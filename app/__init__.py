@@ -99,7 +99,7 @@ def create_app(overrides: dict | None = None) -> Flask:
             if field_errors:
                 body["fields"] = field_errors
             return body, status
-        return render_template("error.html", message=message, status=status), status
+        return render_template("frontend/public/error.html", message=message, status=status), status
 
     @app.errorhandler(BusinessError)
     def business_error(error):

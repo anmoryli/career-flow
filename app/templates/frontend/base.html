@@ -1,0 +1,50 @@
+{% set current_view = request.args.get('view','dashboard') if request.endpoint == 'web.workspace' else 'jobs' if request.blueprint == 'diagnosis' else 'resumes' if request.blueprint == 'imports' else 'history' if request.endpoint == 'web.conversation' else '' %}
+{% set editor_page = request.endpoint == 'web.workspace' and current_view == 'resume-new' %}
+{% set admin_page = request.blueprint == 'admin' %}
+<!doctype html>
+<html lang="zh-CN" data-user-theme="{{ g.user.theme if g.user else '' }}">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="csrf-token" content="{{ csrf_token() }}"><meta name="htmx-config" content='{"allowEval":false,"includeIndicatorStyles":false}'>
+  <meta name="description" content="职序 CareerFlow · 简历编辑、AI 改写与岗位分析工作台"><link rel="icon" href="data:,">
+  <title>{% block title %}职序简历 · 为下一次机会做好准备{% endblock %}</title>
+  <script src="{{ url_for('static', filename='js/frontend/theme.js', v='20261029-refactor') }}"></script>
+  {% set styles = ['utilities','tokens','components','shell','document'] %}
+  {% if admin_page %}{% set styles = styles + ['admin'] %}
+  {% elif (request.endpoint == 'web.workspace' and current_view in ['resumes','resume-template','resume-new','resume-import','optimize']) or request.blueprint == 'imports' %}{% set styles = styles + ['resume'] %}
+  {% elif (request.endpoint == 'web.workspace' and current_view in ['settings','billing']) %}{% set styles = styles + ['account'] %}
+  {% elif request.blueprint == 'diagnosis' or request.endpoint == 'web.conversation' or (request.endpoint == 'web.workspace' and current_view in ['jobs','reports','history']) %}{% set styles = styles + ['analysis'] %}
+  {% elif request.endpoint != 'web.workspace' %}{% set styles = styles + ['public'] %}{% endif %}
+  {% for asset in styles %}<link rel="stylesheet" href="{{ url_for('static', filename='css/frontend/' ~ asset ~ '.css', v='20261029-refactor') }}">{% endfor %}
+  <script src="{{ url_for('static', filename='js/frontend/runtime.js', v='20261029-refactor') }}" defer></script>
+  <script src="{{ url_for('static', filename='js/frontend/auth.js', v='20261029-refactor') }}" defer></script>
+  {% block head %}{% endblock %}
+</head>
+{% from '_ui.html' import icon %}
+
+<body class="cf-body {{ 'cf-editor-page' if editor_page else 'cf-admin-page' if admin_page else 'cf-workspace-page' if g.user else 'cf-public-page' }}" data-frontend="refactored" data-authenticated="{{ 'yes' if g.user else 'no' }}" data-editor-page="{{ 'yes' if editor_page else 'no' }}">
+  <a class="cf-skip" href="#main">跳至主要内容</a>
+  {% if not editor_page %}{% include 'frontend/shell/header.html' %}{% endif %}
+  {% with notices = get_flashed_messages(with_categories=true) %}{% for category,notice in notices %}<div class="cf-flash cf-notice" data-tone="{{ category }}" role="status">{{ notice }}</div>{% endfor %}{% endwith %}
+  {% if admin_page %}<div class="cf-admin-layout">{% include 'frontend/shell/admin_nav.html' %}{% endif %}
+  <main id="main" class="{{ 'cf-editor-main' if editor_page else 'cf-admin-main' if admin_page else 'cf-main' }}">{% block content %}{% endblock %}</main>
+  {% if admin_page %}</div>{% endif %}
+  {% if not editor_page and not admin_page %}{% include 'frontend/shell/footer.html' %}{% endif %}
+  <div class="cf-toast" id="theme-feedback" role="status" aria-live="polite" hidden></div>
+  {% include 'frontend/shell/auth_dialog.html' %}
+  <script src="{{ url_for('static', filename='vendor/htmx.min.js') }}" defer></script>
+  <script src="{{ url_for('static', filename='vendor/alpine.min.js') }}" defer></script>
+  {% if request.endpoint == 'web.workspace' and current_view == 'resume-new' %}
+  <script src="{{ url_for('static', filename='js/frontend/resume-core.js', v='20261029-refactor') }}" defer></script><script src="{{ url_for('static', filename='js/frontend/resume-editor.js', v='20261029-refactor') }}" defer></script>
+  {% elif request.endpoint == 'web.workspace' and current_view == 'resume-template' %}
+  <script src="{{ url_for('static', filename='js/frontend/resume-core.js', v='20261029-refactor') }}" defer></script><script src="{{ url_for('static', filename='js/frontend/resume-templates.js', v='20261029-refactor') }}" defer></script>
+  {% elif request.endpoint == 'web.workspace' and current_view in ['resumes','optimize'] %}
+  <script src="{{ url_for('static', filename='js/frontend/resume-core.js', v='20261029-refactor') }}" defer></script><script src="{{ url_for('static', filename='js/frontend/resume-library.js', v='20261029-refactor') }}" defer></script>
+  {% elif (request.endpoint == 'web.workspace' and current_view == 'resume-import') or request.blueprint == 'imports' %}
+  <script src="{{ url_for('static', filename='js/frontend/resume-core.js', v='20261029-refactor') }}" defer></script><script src="{{ url_for('static', filename='js/frontend/resume-import.js', v='20261029-refactor') }}" defer></script>
+  {% endif %}
+  {% if request.blueprint == 'diagnosis' or request.endpoint == 'web.conversation' or (request.endpoint == 'web.workspace' and current_view in ['jobs','reports','history']) %}<script src="{{ url_for('static', filename='js/frontend/analysis.js', v='20261029-refactor') }}" defer></script><script src="{{ url_for('static', filename='js/frontend/analysis_review.js', v='20261029-refactor') }}" defer></script>{% endif %}
+  {% if admin_page %}<script src="{{ url_for('static', filename='js/frontend/admin.js', v='20261029-refactor') }}" defer></script>{% endif %}
+  {% block scripts %}{% endblock %}
+</body>
+</html>
