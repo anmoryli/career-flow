@@ -8,6 +8,7 @@ from app.models import AIOperation, JobTarget, Resume, ResumeVersion
 from app.resume_ai_schemas import ResumeAIQuote, ResumeComposeQuote
 from app.services import career, commerce, resume_ai
 from app.services.errors import BusinessError
+from app.services.model_runtime import public_ai_error
 from app.web.routes import input_data, login_required
 
 career_web = Blueprint("career", __name__)
@@ -139,7 +140,7 @@ def resume_operation_json(item):
         "charged": item.charged,
         "result": None if partial else item.result,
         "partial": partial,
-        "error": item.error,
+        "error": public_ai_error(item.error),
         "expires_at": item.expires_at.isoformat() + "Z",
     }
 

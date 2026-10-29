@@ -23,3 +23,16 @@ def provider_error(error):
             return error
         error = cause
     return error
+
+
+AI_PROVIDER_BILLING_MESSAGE = "AI 服务暂不可用，请联系管理员处理；你的会员权益不受影响。"
+
+
+def public_ai_error(message):
+    """Keep operator billing details out of member-facing current and historical errors."""
+    if message in {
+        "模型服务账户余额不足或未开通此模型，请检查服务商账户。",
+        "模型服务余额不足，请稍后重试。",
+    }:
+        return AI_PROVIDER_BILLING_MESSAGE
+    return message or ""

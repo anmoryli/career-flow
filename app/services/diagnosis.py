@@ -406,7 +406,7 @@ def run_operation(operation_id):
         if status in {401, 403}:
             failure = "模型服务认证失败，请检查 API Key 和模型访问权限。"
         elif status == 402:
-            failure = "模型服务账户余额不足或未开通此模型，请检查服务商账户。"
+            failure = "AI 服务暂不可用，请联系管理员处理；你的会员权益不受影响。"
         elif status == 404:
             failure = "模型接口或模型 ID 不存在，请检查 API 地址和模型 ID。"
         elif status == 429:

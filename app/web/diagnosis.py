@@ -8,7 +8,7 @@ from app.models import AIOperation, Diagnostic, DiagnosticAnswer, JobTarget, Res
 from app.services import diagnosis
 from app.services.career import owned
 from app.services.interactions import active_question
-from app.services.model_runtime import diagnosis_job_seconds
+from app.services.model_runtime import diagnosis_job_seconds, public_ai_error
 from app.web.routes import input_data, login_required
 
 diagnosis_web = Blueprint("diagnosis", __name__)
@@ -20,7 +20,7 @@ def operation_json(item):
         "state": item.state,
         "kind": item.kind,
         "charged": item.charged,
-        "error": item.error,
+        "error": public_ai_error(item.error),
         "result": item.result,
         "attempts": item.attempts,
     }

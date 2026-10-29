@@ -19,7 +19,7 @@
         <div class="report-meta">
           <time>{{ operation.created_at|datetime_cn }}</time>
           {% if active %}<span>任务会继续运行，稍后回来可接着查看。</span>
-          {% elif operation.state == 'failed' and operation.error %}<span>{{ operation.error }}</span>{% endif %}
+          {% elif operation.state == 'failed' and operation.error %}<span>{{ operation.error|ai_public_error }}</span>{% endif %}
         </div>
       </div>
       {% if operation.state == 'succeeded' and operation.result and operation.result.get('overall_score') is not none %}

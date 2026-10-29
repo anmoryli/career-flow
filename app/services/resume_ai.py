@@ -342,7 +342,7 @@ def run_operation(operation_id):
                 last_error = error
                 status_code = getattr(error, "status_code", None)
                 if status_code == 402:
-                    failure_message = "模型服务余额不足，请稍后重试。"
+                    failure_message = "AI 服务暂不可用，请联系管理员处理；你的会员权益不受影响。"
                 elif status_code == 401:
                     failure_message = "模型服务密钥无效，请联系管理员。"
                 elif status_code == 429:
