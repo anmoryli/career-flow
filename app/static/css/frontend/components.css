@@ -119,3 +119,24 @@ input[type=file]::file-selector-button {padding:7px 10px;margin-right:10px;borde
 .cf-step-path [aria-current=step]>span {background:var(--cf-accent);border-color:var(--cf-accent);color:var(--cf-surface);}
 :target {scroll-margin-top:calc(var(--cf-header-height) + 24px);}
 @media(pointer:coarse) {.cf-button,.cf-button.is-small,.cf-icon-button,.cf-tabs>button,.cf-tabs>a,.cf-dialog-close {min-height:44px}.cf-icon-button,.cf-dialog-close {min-width:44px}.cf-check,.cf-field {line-height:1.8}input:not([type=checkbox]):not([type=radio]):not([type=hidden]),select,textarea {font-size:16px;min-height:44px}.cf-check,.cf-account-confirm {min-height:44px;align-items:center}}
+/* Custom choices retain native fields only as invisible form sources. */
+.cf-select {position:relative;display:inline-grid;min-width:0;max-width:100%;vertical-align:middle;}
+select.cf-select-source {position:absolute!important;inset:0 auto auto 0!important;width:1px!important;height:1px!important;min-width:0!important;min-height:0!important;max-width:1px!important;padding:0!important;margin:0!important;border:0!important;opacity:0!important;clip-path:inset(50%)!important;pointer-events:none!important;}
+.cf-select-trigger {display:flex;align-items:center;justify-content:space-between;gap:14px;width:100%;min-width:0;min-height:42px;padding:10px 13px;border:1px solid var(--cf-strong-border);border-radius:var(--cf-radius);background:var(--cf-surface);color:var(--cf-text);text-align:left;font:500 var(--cf-text-sm)/1.5 var(--cf-font);transition:border-color var(--cf-duration-fast),background var(--cf-duration-fast);}
+.cf-select-trigger:hover:not(:disabled),.cf-select-trigger[aria-expanded=true] {border-color:var(--cf-accent);background:var(--cf-accent-soft);}
+.cf-select-value {min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.cf-select-chevron {flex-shrink:0;width:7px;height:7px;border:solid var(--cf-muted);border-width:0 1.5px 1.5px 0;rotate:45deg;translate:0 -2px;transition:rotate var(--cf-duration-fast);}
+[aria-expanded=true]>.cf-select-chevron {rotate:225deg;translate:0 2px;}
+.cf-select-popover {position:fixed;inset:auto;margin:0;z-index:180;min-width:0;max-height:300px;overflow:auto;overscroll-behavior:contain;padding:6px;border:1px solid var(--cf-strong-border);border-radius:11px;background:var(--cf-surface);color:var(--cf-text);box-shadow:var(--cf-shadow);font:400 var(--cf-text-sm)/1.6 var(--cf-font);}
+.cf-select-popover::backdrop {background:transparent;}
+.cf-select-option {position:relative;display:flex;align-items:center;min-height:39px;padding:9px 29px 9px 12px;border-radius:6px;cursor:pointer;overflow-wrap:anywhere;}
+.cf-select-option:is(:hover,[data-active=true]):not([aria-disabled=true]) {background:var(--cf-accent-soft);color:var(--cf-accent);}
+.cf-select-option[aria-selected=true] {font-weight:600;}
+.cf-select-option[aria-selected=true]::after {content:'✓';position:absolute;right:10px;color:var(--cf-accent);}
+.cf-select-option[aria-disabled=true] {color:var(--cf-subtle);cursor:not-allowed;}
+.cf-select-group {padding:8px 12px 4px;color:var(--cf-muted);font-size:12px;}
+.cf-field>.cf-select {width:100%;}
+.cf-theme>.cf-select {width:116px;}
+.cf-theme .cf-select-trigger {border:0;background:transparent;font-size:12px;gap:9px;padding-inline:7px;}
+@media(pointer:coarse) {.cf-select-trigger,.cf-select-option{min-height:44px}}
+@media(prefers-reduced-motion:no-preference) {.cf-select-popover:popover-open{animation:cf-dialog-in 140ms var(--cf-ease)}}

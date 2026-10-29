@@ -1,19 +1,53 @@
 {% extends 'frontend/base.html' %}
 {% from '_ui.html' import icon %}
-{% from 'frontend/analysis/_parts.html' import state_badge %}
 {% block title %}岗位分析 · 职序{% endblock %}
 {% block content %}
 <div class="cf-page cfa-job-page" data-analysis-page="jobs">
-<header class="cf-page-heading"><div><span class="cf-eyebrow">简历与岗位的对照工作台</span><h1>岗位匹配分析</h1><p>先选择简历，再粘贴完整岗位描述。分析后可逐段核对并修改。</p></div><a class="cf-button is-secondary is-small" href="{{ url_for('web.workspace',view='reports') }}">{{ icon('report') }} 分析记录</a></header>
-{% if active_jobs %}<section class="cfa-active-strip" aria-label="正在分析的岗位"><span class="cfa-live-dot" aria-hidden="true"></span><strong>{{ active_jobs|length }} 个任务正在运行</strong><div>{% for operation,diagnostic,job in active_jobs %}<a data-active-operation="{{ operation.id }}" data-active-job="{{ job.id }}" data-operation-state="{{ operation.state }}" href="{{ url_for('diagnosis.detail',job_id=job.id) }}">{{ job.title or '目标岗位' }} {{ icon('arrow') }}</a>{% endfor %}</div></section>{% endif %}
-<ol class="cfa-input-steps" aria-label="本次分析步骤"><li data-job-step="resume"><span>01</span><div><strong>选择简历</strong><small data-job-source-summary>使用保存的简历版本</small></div></li><li data-job-step="description"><span>02</span><div><strong>填写岗位</strong><small>完整职责与任职要求</small></div></li><li data-job-step="analysis"><span>03</span><div><strong>对照与修改</strong><small>核实证据后采用建议</small></div></li></ol>
-<div class="cfa-job-layout">
-<main><form class="cfa-job-editor" data-ui-form="job" data-job-form>
-<header><span class="cfa-label">01 / 用于本次分析的简历</span>{% if g.user and resumes %}<label class="cf-field"><span class="sr-only">用于本次分析</span><select id="analysis-resume" name="resume_id" required><option value="">选择一份简历</option>{% for item in resumes %}<option value="{{ item.id }}" data-revision="{{ item.revision }}" {% if current_resume and current_resume.id==item.id %}selected{% endif %}>{{ item.title }}</option>{% endfor %}</select></label><a class="cfa-inline-link" href="{{ url_for('web.workspace',view='resumes') }}">管理我的简历 {{ icon('arrow') }}</a>{% elif g.user %}<div class="cfa-resume-missing"><p>先准备一份简历，再来对照目标岗位。</p><a class="cf-button is-secondary is-small" href="{{ url_for('web.workspace',view='resume-new') }}">创建简历</a></div>{% else %}<label class="cfa-guest-upload" for="guest-resume-file">{{ icon('upload') }}<span>选择一份 PDF 简历<small>不超过 4 MB，开始分析前登录</small></span><input id="guest-resume-file" type="file" accept="application/pdf,.pdf"></label><p id="guest-resume-status" class="cf-feedback" role="status"></p>{% endif %}</header>
-<section class="cfa-job-description"><div class="cfa-section-heading"><span class="cfa-label">02 / 目标岗位描述</span><span class="cfa-meta" id="jd-character-count">0 字</span></div><label class="cf-field"><span class="sr-only">岗位描述</span><textarea id="job-description" name="description" rows="13" maxlength="20000" required placeholder="在这里粘贴岗位职责与任职要求…&#10;&#10;保留完整要求，有助于找到匹配依据。"></textarea></label><details class="cfa-job-details" open><summary>岗位信息 <span>选填</span></summary><div class="cf-field-grid"><label class="cf-field">岗位名称<input id="job-title" name="title" maxlength="160" placeholder="例如：产品经理"></label><label class="cf-field">公司名称<input id="job-company" name="company" maxlength="160" placeholder="公司名称"></label></div><label class="cf-field cfa-job-url">岗位链接<input id="job-url" name="url" type="url" maxlength="1000" placeholder="https://"></label></details></section>
-<footer><div class="cfa-job-submit-context"><p data-job-ready-hint role="status">选择简历并填写岗位描述后，即可开始分析。</p><label class="cfa-checkbox"><input type="checkbox" data-save-job-for-later checked><span>保存岗位，方便下次载入</span></label></div><button class="cf-button" type="button" data-save-job {% if g.user and not resumes %}disabled{% endif %}><span data-job-submit-label>开始岗位分析</span> {{ icon('arrow') }}</button></footer><p id="job-save-status" class="cf-feedback" role="status" tabindex="-1" aria-live="polite"></p>
-</form><p class="cfa-job-footnote">{{ icon('lock') }} 分析基于当前保存的简历快照。修改建议由你核实后采用。</p></main>
-<aside class="cfa-job-library" aria-labelledby="job-library-heading"><header><h2 id="job-library-heading">我的岗位</h2><span>{{ jobs|length }} 份</span></header><p>载入已保存的要求，或继续之前的分析。</p>{% if saved_jobs %}<label class="cf-field"><span class="sr-only">载入已保存岗位</span><select id="saved-job-select"><option value="">选择已保存岗位</option>{% for item in saved_jobs %}<option value="{{ item.id }}">{{ item.title or '未命名岗位' }}{% if item.company %} · {{ item.company }}{% endif %}</option>{% endfor %}</select></label><button type="button" class="cf-button is-secondary is-small" data-import-saved-job>载入岗位信息</button><p class="cf-feedback" data-import-job-status role="status"></p>{% endif %}
-<div class="cfa-saved-jobs">{% for item in jobs %}<article><a href="{{ url_for('diagnosis.detail',job_id=item.id) }}"><span class="cfa-record-icon">{{ icon('briefcase') }}</span><span><strong>{{ item.title or '未命名岗位' }}</strong><small>{{ item.company or '未填写公司' }} · {{ item.created_at|datetime_cn }}</small></span>{{ icon('chevron') }}</a><div><button type="button" data-load-job="{{ item.id }}">载入</button><button type="button" data-delete-job="{{ item.id }}" data-record-title="{{ item.title or '未命名岗位' }}" aria-label="删除岗位：{{ item.title or '未命名岗位' }}">删除</button></div></article>{% else %}<div class="cfa-library-empty">{{ icon('briefcase') }}<span>保存或分析过的岗位<br>会收在这里</span></div>{% endfor %}</div><p data-list-feedback class="cf-feedback" role="status"></p></aside>
-</div></div>
+  <header class="cfa-task-hero">
+    <span class="cf-eyebrow">岗位匹配分析</span>
+    <h1>让真实的经历，<br>回应你想去的岗位。</h1>
+    <p>带上一份简历和一段岗位描述。先看要求与证据，再决定哪里值得修改。</p>
+    <a class="cfa-text-link" href="{{ url_for('web.workspace',view='reports') }}">查看已有分析 {{ icon('arrow') }}</a>
+  </header>
+  {% if active_jobs %}
+  <section class="cfa-live-tasks" aria-label="正在分析的岗位">
+    <header><span class="cfa-live-dot" aria-hidden="true"></span><h2>{{ active_jobs|length }} 个任务正在进行</h2><p>离开页面后仍会继续。</p></header>
+    {% for operation,diagnostic,job in active_jobs %}<a data-active-operation="{{ operation.id }}" data-active-job="{{ job.id }}" data-operation-state="{{ operation.state }}" href="{{ url_for('diagnosis.detail',job_id=job.id) }}"><span>{{ job.title or '目标岗位' }}<small>{{ job.company or '未填写公司' }}</small></span><span>{{ '排队中' if operation.state=='queued' else '正在分析' }} {{ icon('arrow') }}</span></a>{% endfor %}
+  </section>
+  {% endif %}
+  <form class="cfa-job-editor" id="job-analysis-form" data-ui-form="job" data-job-form>
+    <section class="cfa-task-section">
+      <header class="cfa-task-section-heading" data-job-step="resume"><span>01</span><div><h2>先选一份简历。</h2><p data-job-source-summary>分析会使用保存的简历版本，保留你的基础内容。</p></div></header>
+      <div class="cfa-source-choice">
+        {% if g.user and resumes %}
+        <label class="cf-field"><span>用于本次分析</span><select id="analysis-resume" name="resume_id" required><option value="">选择一份简历</option>{% for item in resumes %}<option value="{{ item.id }}" data-revision="{{ item.revision }}" {% if current_resume and current_resume.id==item.id %}selected{% endif %}>{{ item.title }}</option>{% endfor %}</select></label>
+        <a class="cfa-text-link" href="{{ url_for('web.workspace',view='resumes') }}">管理简历 {{ icon('arrow') }}</a>
+        {% elif g.user %}
+        <div class="cfa-resume-missing"><p>还没有简历？先整理好真实经历，再来对照目标岗位。</p><a class="cf-button is-secondary" href="{{ url_for('web.workspace',view='resume-new') }}">创建第一份简历 {{ icon('arrow') }}</a></div>
+        {% else %}
+        <label class="cfa-guest-upload" for="guest-resume-file">{{ icon('upload') }}<span>选择已有 PDF 简历<small>不超过 4 MB，开始分析前登录</small></span><input id="guest-resume-file" type="file" accept="application/pdf,.pdf"></label>
+        <p id="guest-resume-status" class="cf-feedback" role="status"></p>
+        {% endif %}
+      </div>
+    </section>
+    <section class="cfa-task-section cfa-job-description">
+      <header class="cfa-task-section-heading" data-job-step="description"><span>02</span><div><h2>把目标岗位，完整地放进来。</h2><p>粘贴岗位职责与任职要求，越完整，越容易找到可追溯的对应依据。</p></div></header>
+      <label class="cf-field"><span class="sr-only">岗位描述</span><textarea id="job-description" name="description" rows="12" maxlength="20000" required placeholder="在这里粘贴岗位描述…&#10;&#10;岗位职责&#10;…&#10;&#10;任职要求&#10;…"></textarea></label>
+      <div class="cfa-description-footnote"><span>支持 Markdown 文本</span><span id="jd-character-count">0 / 20,000 字</span></div>
+      <details class="cfa-job-details" open><summary>给这个机会起个名字 <span>选填</span>{{ icon('chevron') }}</summary><div class="cf-field-grid"><label class="cf-field">岗位名称<input id="job-title" name="title" maxlength="160" placeholder="例如：产品经理"></label><label class="cf-field">公司名称<input id="job-company" name="company" maxlength="160" placeholder="公司名称"></label><label class="cf-field">岗位链接<input id="job-url" name="url" type="url" maxlength="1000" placeholder="https://"></label></div></details>
+    </section>
+    <section class="cfa-task-section cfa-submit-section">
+      <header class="cfa-task-section-heading" data-job-step="analysis"><span>03</span><div><h2>准备好，就开始对照。</h2><p>已有证据、待补充信息和修改方向，会分别呈现。</p></div></header>
+      <footer><div class="cfa-job-submit-context"><p data-job-ready-hint role="status">选择简历并填写岗位描述后，即可开始分析。</p><label class="cfa-checkbox"><input type="checkbox" data-save-job-for-later checked><span>保存岗位，方便下次载入</span></label></div><button class="cf-button" type="button" data-save-job {% if g.user and not resumes %}disabled{% endif %}><span data-job-submit-label>开始岗位分析</span> {{ icon('arrow') }}</button></footer>
+      <p id="job-save-status" class="cf-feedback" role="status" tabindex="-1" aria-live="polite"></p>
+      <p class="cfa-job-footnote">{{ icon('lock') }} 使用当前保存的简历快照；修改建议由你核实后采用。</p>
+    </section>
+  </form>
+  <section class="cfa-job-library" aria-labelledby="job-library-heading">
+    <header class="cfa-directory-heading"><div><span class="cf-eyebrow">不必每次从头开始</span><h2 id="job-library-heading">继续之前的准备。</h2><p>回到已有岗位查看结果，或载入要求做一次新的分析。</p></div><span>{{ jobs|length }} 份岗位</span></header>
+    {% if saved_jobs %}<div class="cfa-load-job-row"><label class="cf-field"><span class="sr-only">载入已保存岗位</span><select id="saved-job-select"><option value="">选择已保存岗位</option>{% for item in saved_jobs %}<option value="{{ item.id }}">{{ item.title or '未命名岗位' }}{% if item.company %} · {{ item.company }}{% endif %}</option>{% endfor %}</select></label><button type="button" class="cf-button is-secondary" data-import-saved-job>载入到上方</button><p class="cf-feedback" data-import-job-status role="status"></p></div>{% endif %}
+    <div class="cfa-saved-jobs">{% for item in jobs %}<article><span class="cfa-directory-index">{{ '%02d'|format(loop.index) }}</span><a href="{{ url_for('diagnosis.detail',job_id=item.id) }}"><strong>{{ item.title or '未命名岗位' }}</strong><small>{{ item.company or '未填写公司' }} <i>·</i> {{ item.created_at|datetime_cn }}</small></a><div><button type="button" class="cf-button is-quiet is-small" data-load-job="{{ item.id }}">载入岗位</button><a class="cf-button is-quiet is-small" href="{{ url_for('diagnosis.detail',job_id=item.id) }}">查看分析 {{ icon('arrow') }}</a><button type="button" class="cfa-delete-link" data-delete-job="{{ item.id }}" data-record-title="{{ item.title or '未命名岗位' }}" aria-label="删除岗位：{{ item.title or '未命名岗位' }}">删除</button></div></article>{% else %}<div class="cfa-library-empty"><h3>第一份岗位，会从这里开始积累。</h3><p>完成上方分析后，岗位与结果会留在这里。</p></div>{% endfor %}</div>
+    <p data-list-feedback class="cf-feedback" role="status"></p>
+  </section>
+</div>
 {% endblock %}

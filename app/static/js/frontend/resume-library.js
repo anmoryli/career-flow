@@ -8,13 +8,13 @@
     let count=0;const q=search?.value.trim().toLocaleLowerCase()||'';
     items.forEach(item=>{item.hidden=!item.dataset.documentTitle.toLocaleLowerCase().includes(q);if(!item.hidden)count++;});
     if(empty)empty.hidden=count>0;
-    const create=root.querySelector('.cf-document-new');if(create)create.hidden=!!q;
+    const featured=root.querySelector('[data-library-featured]');if(featured)featured.hidden=!!q;
     const counter=root.querySelector('[data-library-visible-count]');if(counter)counter.textContent=q?`${count} / ${items.length} 份`:`${items.length} 份简历`;
   };
   search?.addEventListener('input',filterDocuments);
   search?.addEventListener('keydown',event=>{if(event.key==='Escape'){event.preventDefault();search.value='';filterDocuments();}});
   root.querySelector('[data-library-reset-search]')?.addEventListener('click',()=>{search.value='';filterDocuments();search.focus();});
-  root.querySelector('[data-library-sort]')?.addEventListener('change',event=>{items.sort((a,b)=>event.target.value==='name'?a.dataset.documentTitle.localeCompare(b.dataset.documentTitle,'zh-CN'):Number(a.dataset.documentOrder)-Number(b.dataset.documentOrder));const grid=root.querySelector('.cf-document-grid');items.forEach(item=>grid.insertBefore(item,grid.querySelector('.cf-document-new')));});
+  root.querySelector('[data-library-sort]')?.addEventListener('change',event=>{items.sort((a,b)=>event.target.value==='name'?a.dataset.documentTitle.localeCompare(b.dataset.documentTitle,'zh-CN'):Number(a.dataset.documentOrder)-Number(b.dataset.documentOrder));const directory=root.querySelector('[data-resume-directory]');items.forEach(item=>directory.append(item));});
   document.addEventListener('click',event=>{if(!event.target.closest('.cf-document-menu'))root.querySelectorAll('.cf-document-menu').forEach(menu=>{menu.open=false;});});
   root.querySelectorAll('.cf-document-menu').forEach(menu=>{menu.addEventListener('toggle',()=>{if(menu.open)root.querySelectorAll('.cf-document-menu').forEach(other=>{if(other!==menu)other.open=false;});});menu.addEventListener('keydown',event=>{if(event.key==='Escape'){menu.open=false;menu.querySelector('summary').focus();}});});
   const create=document.querySelector('[data-create-dialog]'),createForm=create.querySelector('form');let mode='blank';

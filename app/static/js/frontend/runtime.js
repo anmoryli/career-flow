@@ -77,13 +77,13 @@
     const opener=event.target.closest('[data-dialog-open]');if(opener){event.preventDefault();window.cfOpenDialog(opener.dataset.dialogOpen);}
     const closer=event.target.closest('[data-dialog-close]');if(closer){event.preventDefault();window.cfCloseDialog(closer.closest('dialog'));}
     if(event.target instanceof HTMLDialogElement){const r=event.target.getBoundingClientRect();if(event.clientX<r.left||event.clientX>r.right||event.clientY<r.top||event.clientY>r.bottom)event.target.dispatchEvent(new Event('cancel',{cancelable:true}));}
-    document.querySelectorAll('.cf-account-menu[open]').forEach(menu=>{if(!menu.contains(event.target))menu.open=false;});
+    document.querySelectorAll('.cf-account-menu[open],.cf-task-menu[open]').forEach(menu=>{if(!menu.contains(event.target))menu.open=false;});
   });
   document.querySelectorAll('dialog').forEach(dialog=>{
     dialog.addEventListener('close',()=>{const trigger=openers.get(dialog);if(trigger?.isConnected)trigger.focus();});
     dialog.addEventListener('cancel',event=>{queueMicrotask(()=>{if(!event.defaultPrevented)window.cfCloseDialog(dialog);});});
   });
-  document.addEventListener('keydown',event=>{if(event.key==='Escape')document.querySelectorAll('.cf-account-menu[open]').forEach(menu=>{menu.open=false;menu.querySelector('summary').focus();});});
+  document.addEventListener('keydown',event=>{if(event.key==='Escape')document.querySelectorAll('.cf-account-menu[open],.cf-task-menu[open]').forEach(menu=>{menu.open=false;menu.querySelector('summary').focus();});});
   document.addEventListener('htmx:configRequest',event=>{event.detail.headers['X-CSRFToken']=csrf();});
   // Disable only ordinary server forms after all page listeners had a chance to cancel submission.
   document.addEventListener('submit',event=>{const form=event.target;if(form.matches('[data-ui-form]'))return;queueMicrotask(()=>{if(event.defaultPrevented)return;form.querySelectorAll('button[type="submit"]').forEach(button=>{button.disabled=true;button.setAttribute('aria-busy','true');});});});
@@ -109,6 +109,6 @@
   // Filter only the rows already rendered for this user; no external search service.
   document.querySelectorAll('[data-filter-target]').forEach(input=>input.addEventListener('input',()=>{
     const query=input.value.trim().toLocaleLowerCase();
-    document.querySelectorAll(input.dataset.filterTarget).forEach(row=>{row.hidden=!row.textContent.toLocaleLowerCase().includes(query);});
+    let matches=0;document.querySelectorAll(input.dataset.filterTarget).forEach(row=>{row.hidden=!row.textContent.toLocaleLowerCase().includes(query);if(!row.hidden)matches++;});document.querySelectorAll('[data-filter-empty-for]').forEach(node=>{if(node.dataset.filterEmptyFor===input.dataset.filterTarget)node.hidden=matches>0;});
   }));
 })();

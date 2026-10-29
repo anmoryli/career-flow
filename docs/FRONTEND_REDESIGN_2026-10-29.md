@@ -1,5 +1,7 @@
 # CareerFlow V1 前端体验设计（2026-10-29）
 
+> 历史阶段记录：当前入口与任务架构已进一步重构，请以 [Landing 架构](FRONTEND_LANDING_ARCHITECTURE.md) 为准。
+
 当前设计以 dc2a2e0 的活动前端为基础继续调整。完整逐页问题与验收清单见 [前端体验审计](FRONTEND_EXPERIENCE_AUDIT_2026-10-29.md)，模块职责见 [前端架构](FRONTEND_ARCHITECTURE.md)。原有 `interface.css` 和旧工作台脚本不再参与活动页面。
 
 ## 统一方向

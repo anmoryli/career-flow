@@ -1,5 +1,7 @@
 # V1 前端体验审计与实施清单
 
+> 历史阶段记录：当前入口与任务架构已进一步重构，请以 [Landing 架构](FRONTEND_LANDING_ARCHITECTURE.md) 为准。
+
 本轮基线：dc2a2e0。先检查 AGENTS、当前路由映射、活动模板、共享样式/脚本、依赖、现有浏览器测试和上轮截图。原有未提交修改另存忽略目录 output/experience-baseline，保留在原处。本轮不修改后端业务或新增依赖。
 
 活动入口为 frontend/base.html；workspace_template 映射 11 个工作空间视图，公共、后台、诊断及导入路由直接指向 frontend。旧 interface.css 等不再活动；先前设计文档中的旧入口需更新。

@@ -13,7 +13,7 @@ test('all user and admin pages remain readable in light, dark and system themes'
  for(const preference of ['light','dark','system']){
   await page.emulateMedia({colorScheme:'dark',reducedMotion:'reduce'});
   for(const route of routes){
-   const response=await page.goto(route);expect(response.status(),route).toBe(200);
+   const response=await page.goto(route,{timeout:15000});expect(response.status(),route).toBe(200);
    await page.evaluate(preference=>window.cfTheme(preference),preference);
    await expect(page.locator('html')).toHaveAttribute('data-theme',preference==='light'?'light':'dark');
    expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),`${route}: ${preference} overflow`).toBeTruthy();
@@ -23,7 +23,7 @@ test('all user and admin pages remain readable in light, dark and system themes'
     await expect(page.locator('h1').first()).toBeVisible();
     expect(await page.locator('h1').first().evaluate(node=>parseFloat(getComputedStyle(node).fontSize)),route).toBeGreaterThanOrEqual(23);
    }
-   await page.screenshot({path:`output/experience-${route.replaceAll(/[^a-zA-Z0-9]/g,'-')}-${test.info().project.name}-${preference}.png`,fullPage:!route.includes('resume-new'),animations:'disabled'});
+   await page.screenshot({path:`output/experience-${route.replaceAll(/[^a-zA-Z0-9]/g,'-')}-${test.info().project.name}-${preference}.png`,fullPage:!route.includes('resume-new'),animations:'disabled',timeout:10000});
   }
  }
  expect(errors).toEqual([]);
@@ -32,12 +32,12 @@ test('all user and admin pages remain readable in light, dark and system themes'
 test('overview preparation path reflects saved work and supports keyboard navigation',async({page})=>{
  await page.goto('/workspace');
  await expect(page.locator('[data-dashboard-path] [aria-current=step]')).toHaveCount(1);
- await expect(page.locator('[data-dashboard-path] [aria-current=step]')).toContainText('整理真实经历');
+ await expect(page.locator('[data-dashboard-path] [aria-current=step]')).toContainText('开始编辑');
  await page.keyboard.press('Tab');await expect(page.locator('.cf-skip')).toBeFocused();
  const created=await page.request.post('/api/resumes',{headers:await headers(page),data:{request_key:randomUUID(),revision:0,title:'路径核对简历',document:{name:'真实姓名',summary:'实际负责过的工作'}}});expect(created.ok()).toBeTruthy();
  await page.reload();
- await expect(page.locator('[data-dashboard-path] [aria-current=step]')).toContainText('对照目标岗位');
- await expect(page.locator('[data-dashboard-path]')).toContainText('路径核对简历');
+ await expect(page.locator('[data-dashboard-path] [aria-current=step]')).toContainText('开始岗位准备');
+ await expect(page.locator('.cf-landing-continue')).toContainText('路径核对简历');
  await page.emulateMedia({reducedMotion:'reduce'});
  expect(await page.locator('[data-dashboard-path]').evaluate(node=>node.getAnimations({subtree:true}).some(animation=>animation.playState==='running'))).toBeFalsy();
 });
@@ -92,6 +92,6 @@ test('touch editing keeps primary controls reachable without horizontal overflow
   }
   expect(await touch.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBeTruthy();
   await touch.locator('[data-studio-tab=design]').tap();
-  await touch.screenshot({path:`output/experience-touch-editor-${test.info().project.name}.png`,animations:'disabled'});
+  await touch.screenshot({path:`output/experience-touch-editor-${test.info().project.name}.png`,animations:'disabled',timeout:10000});
  }finally{await context.close();}
 });

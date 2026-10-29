@@ -259,3 +259,6 @@
   .cf-public-hero-copy,.cf-public-workbench,.cf-public-auth {animation:none;}
   .cf-public-process-steps>details>summary>.icon {transition:none;}
 }
+/* Account entry is an open product chapter rather than a console sign-in card. */
+.cf-public-auth{max-width:1100px;border:0;border-radius:0;box-shadow:none;background:transparent;gap:65px;margin-block:60px}.cf-public-auth-aside{background:transparent;border:0;padding:35px 0}.cf-public-auth-main{padding:35px 0}.cf-public-auth-main h1{font-size:42px}.cf-public-recovery-step{background:transparent;border-radius:0;border:0;border-top:1px solid var(--cf-border);padding-inline:0}.cf-public-recovery-grid{gap:55px}
+@media(max-width:700px){.cf-public-auth{display:block;margin:25px 18px 45px}.cf-public-auth-aside{display:none}.cf-public-auth-main{padding:20px 0}.cf-public-auth-main h1{font-size:32px}.cf-public-recovery-grid{grid-template-columns:1fr;gap:28px}}
