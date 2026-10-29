@@ -2,7 +2,7 @@ const {test,expect}=require('@playwright/test');
 const {randomUUID}=require('node:crypto');
 test('document workspace creation, search, responsive themes and editor',async({page})=>{
  await page.goto('/');
- await expect(page.getByRole('heading',{name:/写好你的经历/ })).toBeVisible();
+ await expect(page.getByRole('heading',{name:/把经历写清楚/ })).toBeVisible();
  await page.getByRole('link',{name:'开始创建简历'}).click();
  await expect(page.locator('[data-save-resume]')).toBeVisible();
  await page.goto('/login');
@@ -23,7 +23,7 @@ test('document workspace creation, search, responsive themes and editor',async({
    await page.locator('#theme-select').selectOption(theme);
    await expect(page.locator('html')).toHaveAttribute('data-theme',theme);
    expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBeTruthy();
-   await page.screenshot({path:`output/redesign-library-${test.info().project.name}-${theme}.png`,fullPage:true});
+   await page.screenshot({path:`output/redesign-library-${test.info().project.name}-${theme}.png`,fullPage:true,animations:'disabled'});
   }
   await page.locator('.document-info h2 a').first().click();
   await expect(page.locator('#resume-name')).toHaveValue('测试姓名');
@@ -55,13 +55,13 @@ test('job input leads to analysis, filterable evidence and paragraph review',asy
   await expect(page.locator('[data-evidence-category="hard"]')).toBeHidden();
   await page.locator('[data-evidence-filter="all"]').click();
   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBeTruthy();
-  await page.screenshot({path:`output/redesign-analysis-${test.info().project.name}.png`,fullPage:true});
+  await page.screenshot({path:`output/redesign-analysis-${test.info().project.name}.png`,fullPage:true,animations:'disabled'});
   await page.getByRole('link',{name:'审阅并修改简历'}).click();
   await expect(page.locator('[data-review-path]')).toHaveCount(1);
   for(const view of ['reports','history','settings','billing','resume-template']){
    await page.goto(`/workspace?view=${view}`);
    expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBeTruthy();
-   await page.screenshot({path:`output/redesign-${view}-${test.info().project.name}.png`,fullPage:true});
+   await page.screenshot({path:`output/redesign-${view}-${test.info().project.name}.png`,fullPage:true,animations:'disabled'});
   }
   await page.goto('/workspace?view=reports');
   await page.locator('[data-report-filter="active"]').click();

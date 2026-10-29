@@ -350,7 +350,7 @@
       }
     } catch (_) {}
   }
-  const startTemplate = editor.querySelector('[data-start-template]');
+  const startTemplate = document.querySelector('[data-start-template]');
   const quickTemplate = document.querySelector('#resume-template-quick');
   if (startTemplate && quickTemplate) {
     startTemplate.value = quickTemplate.value;
@@ -452,15 +452,22 @@
   });
   function activateSection(key) {
     activeSection = key;
+    const design = key === 'template';
+    editor.dataset.studioMode = design ? 'design' : 'content';
     editor.querySelectorAll('.resume-fields > .editor-section, .resume-fields > .resume-photo-editor').forEach(section => {
-      section.hidden = section.dataset.editorSection ? section.dataset.editorSection !== key
-        : section.id !== (key === 'photo' ? 'resume-photo-section' : `resume-${key}`);
+      section.hidden = design ? section.id !== 'resume-template' : section.id === 'resume-template';
+      section.classList.toggle('is-active-section', section.dataset.editorSection === key || section.id === (sectionTargets[key] || ''));
     });
     tabs.querySelectorAll('[data-section-tab]').forEach(button => {
       const selected = button.dataset.sectionTab === key;
       button.classList.toggle('is-active', selected);
       button.setAttribute('aria-current', selected ? 'step' : 'false');
     });
+    document.querySelectorAll('[data-studio-tab]').forEach(button => button.setAttribute('aria-pressed', String(button.dataset.studioTab === (design ? 'design' : 'content'))));
+    const target = editor.querySelector('#' + (sectionTargets[key] || `custom-section-${key.slice('custom:'.length)}`));
+    if (key === 'photo' && target) target.open = true;
+    if (target && document.activeElement?.matches('[data-section-tab]')) target.scrollIntoView({ block:'start', behavior:matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth' });
+    editor.dispatchEvent(new CustomEvent('cf:section-activate', { detail:{key} }));
   }
   function moveSection(key, offset) {
     const from = sectionOrder.indexOf(key);
@@ -516,6 +523,15 @@
           if (!sectionOrder.includes(source) || source === key) return;
           moveSection(source, sectionOrder.indexOf(key) - sectionOrder.indexOf(source));
         });
+      }
+      const target = editor.querySelector('#' + (sectionTargets[key] || `custom-section-${key.slice('custom:'.length)}`));
+      if (target && reorderable) {
+        target.querySelector('[data-section-options]')?.remove();
+        const options = document.createElement('details'); options.className = 'studio-section-options'; options.dataset.sectionOptions = '';
+        const summary = document.createElement('summary'); summary.textContent = '···'; summary.setAttribute('aria-label', `${label}的板块设置`);
+        const actions = document.createElement('div');
+        [...item.children].slice(1).forEach(action => actions.append(action));
+        options.append(summary, actions); target.querySelector('.work-section-heading')?.append(options);
       }
       tabs.append(item);
     };

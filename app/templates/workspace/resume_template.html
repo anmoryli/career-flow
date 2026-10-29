@@ -1,30 +1,9 @@
 {% from 'resume/_document.html' import resume_document %}
+{% from 'resume/_sample.html' import sample %}
 {% from '_ui.html' import icon %}
-{% set template_preview = {
-  'name':'示例姓名','role':'目标岗位','phone':'138 0000 0000','email':'name@example.com','city':'杭州',
-  'website':'','github':'','linkedin':'','summary':'这里展示个人简介的排版。','photo':'',
-  'experiences':[{'company':'示例公司','role':'产品经理','period':'2022.06 — 至今','location':'杭州','bullets':['负责需求梳理与产品迭代']}],
-  'projects':[{'name':'产品项目','role':'项目负责人','period':'2023','tech':'用户研究 · 产品设计','description':'展示项目内容与成果的排版。','link':''}],
-  'education':[{'school':'示例大学','degree':'本科 · 信息管理','period':'2018 — 2022','detail':''}],
-  'skills':[{'label':'产品能力','items':['需求分析','产品规划','用户研究']}],
-  'certificates':[],'languages':[],'custom_sections':[],'hidden_sections':[],
-  'section_order':['summary','experiences','projects','education','skills','certificates','languages']
-} %}
-<section class="business-page-heading resume-template-heading">
-  <div><h1>从模板创建</h1><p>选择一款简历模板，接着填写内容。</p></div>
-  <a class="subtle-link" href="{{ url_for('web.workspace', view='resumes') }}">返回我的简历</a>
-</section>
-<nav class="resume-template-grid" aria-label="选择简历模板">
-  {% for key, title, audience, description in [
-    ('classic','经典商务','金融 · 咨询 · 行政 · 管理','清晰稳重的商务排版'),
-    ('technical','技术项目','研发 · 算法 · 数据 · 产品','突出项目与技术能力'),
-    ('modern','简约现代','产品 · 设计 · 市场 · 内容','简洁轻盈的内容布局')
-  ] %}
-  <a class="template-choice resume-template-choice" data-template-choice="{{ key }}"
-     href="{{ url_for('web.workspace', view='resume-new', create='1', template=key) }}">
-    <span class="template-choice-preview"><span class="template-thumb">{{ resume_document(key, template_preview, true) }}</span><span class="template-sample-badge">示例预览</span></span>
-    <span class="template-choice-copy"><strong>{{ title }}</strong><small>{{ audience }}</small><em>{{ description }}</em></span>
-    <span class="template-choice-action">选择此模板 {{ icon('arrow') }}</span>
-  </a>
-  {% endfor %}
-</nav>
+<section class="business-page-heading resume-template-heading"><div><span class="page-kicker">内容不变，换一种清晰的表达</span><h1>选择简历模板</h1><p>先选喜欢的版式，进入工作台后仍可随时切换。</p></div><a class="subtle-link" href="{{ url_for('web.workspace', view='resumes') }}">返回我的简历 {{ icon('arrow') }}</a></section>
+<div class="evidence-controls" role="group" aria-label="模板分类"><button type="button" data-template-filter="all" aria-pressed="true">全部模板</button><button type="button" data-template-filter="classic" aria-pressed="false">经典商务</button><button type="button" data-template-filter="technical" aria-pressed="false">技术项目</button><button type="button" data-template-filter="modern" aria-pressed="false">简约现代</button></div>
+<section class="studio-template-gallery" aria-label="选择简历模板">{% for key,title,audience in [('classic','经典商务','金融 · 咨询 · 行政 · 管理'),('technical','技术项目','研发 · 算法 · 数据 · 产品'),('modern','简约现代','产品 · 设计 · 市场 · 内容')] %}
+<article class="studio-gallery-card" data-template-kind="{{ key }}"><a class="studio-gallery-cover" data-document-thumbnail href="{{ url_for('web.workspace', view='resume-new', template=key) }}" aria-label="使用{{ title }}模板">{{ resume_document(key, sample, true) }}</a><header><h2>{{ title }}</h2><button class="button-quiet" type="button" data-template-preview="{{ key }}">{{ icon('eye') }} 预览</button></header><p>{{ audience }}</p><a class="button secondary small" href="{{ url_for('web.workspace', view='resume-new', template=key) }}">使用这个模板 {{ icon('arrow') }}</a></article>
+<dialog class="studio-dialog studio-template-preview" data-template-preview-dialog="{{ key }}" aria-labelledby="template-title-{{ key }}"><button class="studio-dialog-close" type="button" data-studio-close aria-label="关闭">×</button><header><span class="page-kicker">模板预览 · 示例内容</span><h2 id="template-title-{{ key }}">{{ title }}</h2></header><div class="studio-template-full" data-document-thumbnail>{{ resume_document(key, sample, true) }}</div><footer><span class="muted small-text">进入编辑器后，填写你的真实经历</span><a class="button small" href="{{ url_for('web.workspace', view='resume-new', template=key) }}">使用这个模板 {{ icon('arrow') }}</a></footer></dialog>
+{% endfor %}</section>

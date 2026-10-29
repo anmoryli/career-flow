@@ -12,30 +12,33 @@
   <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css', v='20261029-workspace-redesign') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/overview.css', v='20261029-intelligence-v2') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/review.css', v='20261029-paragraph-review') }}">
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/interface.css', v='20261029-workspace-redesign') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/interface.css', v='20261029-studio') }}">
   <script src="{{ url_for('static', filename='js/interface.js') }}" defer></script>
   <script src="{{ url_for('static', filename='js/suggestion_review.js', v='20261029-paragraph-review') }}" defer></script>
   <script src="{{ url_for('static', filename='vendor/htmx.min.js') }}" defer></script>
   <script src="{{ url_for('static', filename='js/app.js', v='20261027-saved-job-import') }}" defer></script>
   <script src="{{ url_for('static', filename='js/resume_print.js') }}" defer></script>
-  <script src="{{ url_for('static', filename='js/career.js', v='20261029-workspace-redesign') }}" defer></script>
-  <script src="{{ url_for('static', filename='js/resume_ai.js', v='20261026-model-fallback') }}" defer></script>
-  <script src="{{ url_for('static', filename='js/resume_compose.js') }}" defer></script>
+  <script src="{{ url_for('static', filename='js/career.js', v='20261029-studio') }}" defer></script>
+  <script src="{{ url_for('static', filename='js/resume_ai.js', v='20261029-studio') }}" defer></script>
+  <script src="{{ url_for('static', filename='js/resume_compose.js', v='20261029-studio') }}" defer></script>
+  <script src="{{ url_for('static', filename='js/studio.js', v='20261029-studio') }}" defer></script>
   <script src="{{ url_for('static', filename='js/diagnosis.js', v='20261029-paragraph-review') }}" defer></script>
   <script src="{{ url_for('static', filename='js/auth.js') }}" defer></script>
-  <script src="{{ url_for('static', filename='js/imports.js') }}" defer></script>
+  <script src="{{ url_for('static', filename='js/imports.js', v='20261029-studio') }}" defer></script>
   <script src="{{ url_for('static', filename='js/admin.js', v='20261026-model-fallback') }}" defer></script>
   <script src="{{ url_for('static', filename='js/landing_motion.js', v='20261027-editorial-motion') }}" defer></script>
   <script src="{{ url_for('static', filename='vendor/alpine.min.js') }}" defer></script>
 </head>
 {% from '_ui.html' import icon %}
-{% set current_view = request.args.get('view', 'dashboard') if request.endpoint == 'web.workspace' else 'jobs' if request.blueprint == 'diagnosis' else 'history' %}
+{% set current_view = request.args.get('view', 'dashboard') if request.endpoint == 'web.workspace' else 'jobs' if request.blueprint == 'diagnosis' else 'resumes' if request.blueprint == 'imports' else '' %}
+{% set studio_edit = request.endpoint == 'web.workspace' and current_view == 'resume-new' %}
 {% set admin_mode = request.blueprint == 'admin' %}
 {% set navigation = [('dashboard','工作台','grid'),('resumes','我的简历','file'),('jobs','岗位分析','briefcase'),('reports','诊断与报告','report'),('history','历史记录','history'),('billing','会员方案','wallet'),('settings','设置','settings')] %}
 {% set admin_navigation = [('dashboard','运营概览','grid'),('users','用户','file'),('orders','订单','wallet'),('settings','服务配置','settings'),('audit','操作记录','history')] %}
-<body class="{{ 'workbench-body admin-body' if g.user and admin_mode else 'workspace-body' if g.user else 'guest-workspace-body' if request.endpoint == 'web.workspace' else 'public-body' }}" x-data="shell" data-authenticated="{{ 'yes' if g.user else 'no' }}">
+<body class="{{ 'workbench-body admin-body' if g.user and admin_mode else 'workspace-body' if g.user else 'guest-workspace-body' if request.endpoint == 'web.workspace' else 'public-body' }}" data-studio-editor="{{ 'yes' if studio_edit else 'no' }}" x-data="shell" data-authenticated="{{ 'yes' if g.user else 'no' }}">
   <a class="skip-link" href="#main">跳至主要内容</a>
-  {% if g.user and not admin_mode %}
+  {% if studio_edit %}{% include 'studio/header.html' %}
+  {% elif g.user and not admin_mode %}
   <header class="workspace-header">
     <a class="workspace-brand" href="{{ url_for('web.workspace') }}" aria-label="职序工作空间首页"><span class="brand-mark">序</span><span><strong>职序</strong><small>CAREERFLOW</small></span></a>
     <nav class="workspace-nav" aria-label="求职导航">
@@ -83,13 +86,13 @@
   {% else %}
   <header class="site-header">
     <a class="brand" href="{{ url_for('web.home') }}" aria-label="职序首页"><span class="brand-mark">序</span><strong>职序</strong><span class="brand-en">CareerFlow</span></a>
-    <nav class="header-actions" aria-label="主导航"><label class="theme-label"><span class="sr-only">外观主题</span><select id="theme-select" aria-label="外观主题" @change="changeTheme"><option value="system">跟随系统</option><option value="light">浅色</option><option value="dark">深色</option></select></label><a class="nav-link" href="{{ url_for('web.login') }}">登录</a><a class="button small" href="{{ url_for('web.register') }}">开始使用 {{ icon('arrow') }}</a></nav>
+    <nav class="public-product-nav" aria-label="产品导航"><a href="{{ url_for('web.workspace', view='resume-template') }}">简历模板</a><a href="{{ url_for('web.workspace', view='resumes') }}">我的简历</a><a href="{{ url_for('web.workspace', view='jobs') }}">岗位分析</a></nav><nav class="header-actions" aria-label="主导航"><label class="theme-label"><span class="sr-only">外观主题</span><select id="theme-select" aria-label="外观主题" @change="changeTheme"><option value="system">跟随系统</option><option value="light">浅色</option><option value="dark">深色</option></select></label><a class="nav-link" href="{{ url_for('web.login') }}">登录</a><a class="button small" href="{{ url_for('web.register') }}">开始使用 {{ icon('arrow') }}</a></nav>
   </header>
   {% endif %}
   <div id="theme-feedback" role="status" class="toast" hidden></div>
   {% with notices = get_flashed_messages(with_categories=true) %}{% for category, notice in notices %}<div class="notice {{ 'workspace-notice' if g.user and not admin_mode else 'container' }}" role="status">{{ notice }}</div>{% endfor %}{% endwith %}
   <main id="main" class="{{ 'workbench-content workspace-content' if g.user and not admin_mode else 'workbench-content' if g.user else 'guest-workspace-content' if request.endpoint == 'web.workspace' else 'container' }}">{% block content %}{% endblock %}</main>
-  {% if admin_mode %}</div>{% elif not g.user %}<footer class="site-footer"><span>职序 CareerFlow</span><span>把经历理清，让下一步更清晰。</span><a href="{{ url_for('web.login') }}">登录你的工作空间</a></footer>{% endif %}
+  {% if admin_mode %}</div>{% elif not g.user and not studio_edit %}<footer class="site-footer"><span>职序 CareerFlow</span><span>把经历理清，让下一步更清晰。</span><a href="{{ url_for('web.login') }}">登录你的工作空间</a></footer>{% endif %}
 {% if not g.user %}
 <dialog class="auth-dialog" id="auth-dialog" aria-labelledby="auth-dialog-title">
   <button class="auth-dialog-close" type="button" data-auth-close aria-label="关闭">×</button>

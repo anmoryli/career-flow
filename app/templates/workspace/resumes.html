@@ -1,14 +1,7 @@
 {% from '_ui.html' import icon, pending %}
 {% from 'resume/_document.html' import resume_document %}
 {% if view == 'resumes' %}
-<section class="business-page-heading resume-library-heading"><div><span class="page-kicker">你的求职文档</span><h1>我的简历</h1><p>{{ entitlements.resume_count }} 份已保存 · 最多 {{ entitlements.resume_limit if entitlements.is_member else entitlements.free_resume_limit }} 份</p></div>
-{% if entitlements.can_create_resume %}<div class="page-actions"><a class="button secondary" href="{{ url_for('web.workspace', view='resume-import') }}">{{ icon('upload') }} 导入 PDF</a><a class="button secondary" href="{{ url_for('web.workspace', view='resume-new', start='paste') }}">粘贴文字</a><a class="button" href="{{ url_for('web.workspace', view='resume-new') }}">{{ icon('plus') }} 新建简历</a></div>{% endif %}</section>
-<div class="library-tools"><label class="library-search">{{ icon('search') }}<input type="search" data-library-search placeholder="搜索简历名称" aria-label="搜索简历"></label><a class="subtle-link" href="{{ url_for('web.workspace', view='resume-template') }}">浏览简历模板 →</a></div>
-{% if resumes %}<section class="document-library" aria-label="已保存的简历">
-{% for item in resumes %}<article class="document-tile" data-library-document data-document-title="{{ item.title }}"><a class="document-cover" href="{{ url_for('web.workspace', view='resume-new', resume_id=item.id) }}" aria-label="编辑 {{ item.title }}"><div class="document-sheet" aria-hidden="true"><b>{{ item.title }}</b><span>个人简介</span><i></i><i></i><span>工作与项目经历</span><i></i><i></i><i></i><span>教育与技能</span><i></i></div><span class="document-open">打开编辑器 {{ icon('arrow') }}</span></a><div class="document-info"><h2><a href="{{ url_for('web.workspace', view='resume-new', resume_id=item.id) }}">{{ item.title }}</a></h2><p>{{ item.updated_at|datetime_cn }} 更新</p><div class="document-actions"><a href="{{ url_for('web.workspace', view='jobs', resume_id=item.id) }}">分析目标岗位 →</a><button class="resume-delete" type="button" data-delete-resume="{{ item.id }}" aria-label="删除简历：{{ item.title }}">删除</button></div></div></article>{% endfor %}
-</section><p data-library-empty hidden role="status">没有找到匹配的简历，试试其他名称。</p><p data-list-feedback role="status"></p>
-{% else %}<section class="library-empty"><span class="library-empty-icon">{{ icon('file') }}</span><h2>从一份简历开始</h2><p>已有内容可以直接导入，也可以选择模板，逐项填写真实经历。</p><div class="page-actions"><a class="button" href="{{ url_for('web.workspace', view='resume-template') }}">从模板创建</a><a class="button secondary" href="{{ url_for('web.workspace', view='resume-new', start='paste') }}">粘贴已有简历</a></div></section>{% endif %}
-{% if not entitlements.can_create_resume %}<p class="form-feedback">已达到当前方案的简历数量上限。<a href="{{ url_for('web.workspace', view='billing') }}">查看会员方案</a>，或删除不再需要的简历。</p>{% endif %}
+{% include 'studio/library.html' %}
 
 {% elif view == 'resume-import' %}
 <section class="business-page-heading"><div><h1>导入简历</h1><p>选择已有的 PDF，准备整理为可编辑的结构化简历。</p></div><a class="subtle-link" href="{{ url_for('web.workspace', view='resumes') }}">返回我的简历</a></section>
@@ -40,40 +33,15 @@
   ],
   'certificates':[], 'languages':[]
 } %}
-{% set sample = {
-  'name':'林澄', 'role':'高级产品经理', 'phone':'138 0000 0000', 'email':'lincheng@example.com', 'city':'杭州',
-  'website':'lincheng.example.com', 'github':'github.com/lincheng', 'linkedin':'linkedin.com/in/lincheng',
-  'summary':'6 年企业服务与数据产品经验，负责从需求洞察、方案设计到上线验证的完整链路。擅长把复杂业务流程整理为可衡量的产品方案。',
-  'photo':'',
-  'experiences':[
-    {'company':'示例科技','role':'高级产品经理','period':'2021.06 — 至今','location':'杭州','bullets':['负责企业协作产品的需求规划与迭代，服务 2.3 万家企业客户。','主导权限与审批模块重构，核心流程完成时长下降 28%。','建立用户访谈与迭代复盘机制，协同设计、研发与客户成功团队交付产品。']},
-    {'company':'示范网络','role':'产品经理','period':'2018.07 — 2021.05','location':'上海','bullets':['从 0 到 1 搭建数据分析看板，覆盖 12 个业务团队。','梳理指标口径与埋点方案，完成需求评审、验收与上线培训。']}
-  ],
-  'projects':[
-    {'name':'企业数据看板','role':'产品负责人','period':'2023','tech':'SQL · Tableau · Figma','description':'整合多源业务数据，提供自助分析能力；上线后周活跃使用率提升 41%。','link':'example.com/dashboard'},
-    {'name':'企业协作与审批平台','role':'产品负责人','period':'2022.03 — 2022.12','tech':'流程建模 · 权限设计 · 用户研究','description':'梳理跨部门审批场景，设计角色权限与可配置流程；通过灰度验证与使用反馈持续迭代。','link':'example.com/workflow'}
-  ],
-  'education':[{'school':'示例大学','degree':'信息管理 · 本科','period':'2014 — 2018','detail':'主修数据库、统计分析与管理信息系统；参与校园信息服务项目，获校级优秀毕业生。'}],
-  'skills':[
-    {'label':'产品能力','items':['需求分析','产品规划','用户研究']},
-    {'label':'设计与协作','items':['Figma','流程建模','跨团队沟通']},
-    {'label':'数据分析','items':['SQL','Tableau','指标体系']},
-    {'label':'交付方法','items':['敏捷迭代','需求评审','可用性测试']}
-  ],
-  'certificates':['PMP 项目管理专业人士','数据分析专项课程结业'],
-  'languages':['中文（母语）','英语（工作沟通）']
-} %}
+{% from 'resume/_sample.html' import sample %}
 {% set requested_template = request.args.get('template') %}
 {% set selected_template = current_resume.template if current_resume else (requested_template if requested_template in ['classic', 'technical', 'modern'] else 'classic') %}
-<section class="business-page-heading editor-heading"><div><h1>{{ '编辑简历' if current_resume else '创建简历' }}</h1><p><span id="resume-draft-status">未保存</span></p></div><div class="page-actions"><button class="button secondary" type="button" data-clear-sample>清空填写</button><button class="button secondary" type="button" data-editor-preview>{{ icon('eye') }} 预览</button>{% if entitlements.can_export_resume %}<button class="button secondary" type="button" data-print-resume>{{ icon('download') }} 导出 PDF</button>{% else %}<a class="subtle-link" href="{{ url_for('web.workspace', view='billing') }}">开通会员后可导出 PDF</a>{% endif %}<button class="button" type="button" data-save-resume {% if not current_resume and not entitlements.can_create_resume %}disabled{% endif %}>保存</button></div></section>
-{% if not current_resume and not entitlements.can_create_resume %}<p class="form-feedback" role="status">{% if entitlements.resume_count >= entitlements.resume_limit %}已达到 10 份简历上限，请先删除一份。{% else %}免费版最多保存 2 份简历，<a href="{{ url_for('web.workspace', view='billing') }}">开通会员</a>可扩展至 10 份。{% endif %}</p>{% endif %}
-<details class="resume-paste-source" {% if request.args.get('start') == 'paste' %}open{% endif %}><summary>粘贴已有经历或简历文字</summary><p>选择简历模板，AI 会整理成待核对草稿。</p><label>简历模板<select data-start-template aria-label="AI 整理后使用的简历模板"><option value="classic">经典商务</option><option value="technical">技术项目</option><option value="modern">简约现代</option></select></label><textarea id="resume-source-text" rows="8" maxlength="12000" placeholder="粘贴你的真实经历、教育、项目或已有简历文字"></textarea><div class="page-actions"><button type="button" class="button" data-compose-resume {% if not current_resume and not entitlements.can_create_resume %}disabled{% endif %}>{% if not current_resume %}保存并开始 AI 整理{% else %}AI 整理成草稿{% endif %}</button><button type="button" class="button secondary small" data-extract-contact>提取联系方式</button></div><p id="resume-source-feedback" class="small-text" role="status"></p></details>
-<div id="editor-availability"><label>简历名称<input id="resume-title" maxlength="120" value="未命名简历"></label><button type="button" data-version-history>版本历史</button><div id="version-history" hidden></div></div>
+{% include 'studio/editor_toolbar.html' %}
 
-<div class="resume-editor" data-resume-editor data-editor-view="edit" data-saved='{{ (current_resume or none)|tojson }}'>
+<div class="resume-editor studio-editor" data-studio-mode="content" data-resume-editor data-editor-view="edit" data-saved='{{ (current_resume or none)|tojson }}'>
   <div class="editor-mobile-tabs" role="group" aria-label="简历视图"><button type="button" class="is-active" data-editor-tab="edit" aria-pressed="true">编辑</button><button type="button" data-editor-tab="preview" aria-pressed="false">预览</button></div>
-  <aside class="resume-section-sidebar"><p class="resume-section-help">按住“拖动”手柄可调整顺序；点击“隐藏”或“加入”控制显示。</p><nav class="resume-section-tabs" data-resume-section-tabs aria-label="简历板块"></nav><button type="button" class="button secondary" data-add-custom-section>＋ 添加自定义板块</button></aside>
-  <section class="resume-fields" aria-label="简历板块编辑">
+  <aside class="resume-section-sidebar"><nav class="resume-section-tabs" data-resume-section-tabs aria-label="简历板块"></nav><button type="button" class="button secondary" data-add-custom-section>＋ 添加自定义板块</button></aside>
+  <section class="resume-fields" aria-label="简历板块编辑"><div class="studio-content-intro"><span>内容编辑</span><small>填写后自动保存 · 右侧同步预览</small></div>
     <details id="resume-photo-section" class="resume-photo-editor" aria-labelledby="photo-editor-heading"><summary>个人照片（选填）</summary>
       <div class="photo-editor-heading"><div><h2 id="photo-editor-heading">个人照片</h2><p>三套模板均有专属照片位，选择后立即同步。</p></div><span class="photo-local-tag">随简历保存</span></div>
       <div class="photo-editor-body">
@@ -175,7 +143,8 @@
 
     <section id="resume-template" class="editor-section">
       <div class="work-section-heading"><h2>简历模板</h2><span>09</span></div>
-      <fieldset class="template-picker">
+      {% include 'studio/design_controls.html' %}
+      <fieldset class="template-picker" data-design-panel="templates">
         <legend class="sr-only">选择简历模板</legend>
         <label class="template-choice" data-template-card="classic">
           <input type="radio" name="resume-template" value="classic" {% if selected_template == 'classic' %}checked{% endif %}>
@@ -197,13 +166,7 @@
   </section>
 
   <section class="resume-preview-panel" aria-label="简历实时预览">
-    <div class="preview-toolbar">
-      <label class="preview-control">预览<select id="resume-preview-mode" aria-label="预览内容"><option value="sample">模板示例</option><option value="draft">我的简历</option></select></label>
-      <span class="preview-controls"><label class="preview-control">模板<select id="resume-template-quick" aria-label="快速切换简历模板"><option value="classic">经典商务</option><option value="technical">技术项目</option><option value="modern">简约现代</option></select></label><button type="button" class="preview-expand" data-preview-expand aria-pressed="false">放大预览</button>
-        <label class="preview-control">字号<select id="resume-size" aria-label="预览字号"><option value="compact">紧凑</option><option value="standard" selected>标准</option><option value="large">宽松</option></select></label>
-        <span class="accent-picker" role="group" aria-label="主题色"><button type="button" class="accent-dot accent-green" data-accent-choice="green" aria-label="深绿" aria-pressed="false"></button><button type="button" class="accent-dot accent-navy" data-accent-choice="navy" aria-label="深蓝" aria-pressed="false"></button><button type="button" class="accent-dot accent-graphite" data-accent-choice="graphite" aria-label="石墨灰" aria-pressed="false"></button></span>
-      </span>
-    </div>
+    {% include 'studio/preview_toolbar.html' %}
     <div class="resume-stage" data-resume-stage data-example="{{ sample|tojson|forceescape }}" data-preview-mode="sample" data-active-template="classic" data-size="standard">
       <div class="resume-panel" data-resume-panel="classic">{{ resume_document('classic', sample) }}</div>
       <div class="resume-panel" data-resume-panel="technical" hidden>{{ resume_document('technical', sample) }}</div>
@@ -213,5 +176,6 @@
     <p class="preview-footnote">预览与打印使用同一套模板；打印时请选择 A4 纸张并关闭页眉页脚。</p>
   </section>
 </div>
+{% include 'studio/editor_dialogs.html' %}
 <dialog class="resume-ai-dialog" data-resume-compose-dialog aria-labelledby="resume-compose-title"><div class="resume-ai-dialog-body"><h2 id="resume-compose-title">AI 整理简历</h2><p data-compose-status role="status"></p><div data-compose-review hidden><p data-compose-reason></p><dl class="account-details"><div><dt>姓名 / 岗位</dt><dd data-compose-name></dd></div><div><dt>个人简介</dt><dd data-compose-summary></dd></div><div><dt>内容</dt><dd data-compose-counts></dd></div></dl><div class="compose-review-sections" data-compose-sections></div><p class="small-text muted">应用后仍可逐板块修改；请核对每一项是否真实。</p></div><div class="resume-ai-dialog-actions"><button type="button" class="button secondary" data-compose-reject>保留当前简历</button><button type="button" class="button" data-compose-accept hidden>应用草稿</button></div></div></dialog>
 {% endif %}

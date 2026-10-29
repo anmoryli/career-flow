@@ -188,6 +188,7 @@ def workspace():
         JobTarget,
         Membership,
         Resume,
+        ResumeVersion,
     )
     from app.services import commerce
     from app.services.career import owned, serialize_resume
@@ -208,7 +209,7 @@ def workspace():
             "workspace.html", conversations=[], count=0, resumes=[], jobs=[], saved_jobs=[],
             current_resume=None, reports=[], completed_reports=[], active_jobs=[],
             active_job_ids=set(), inactive_saved_jobs=[], recent_only_jobs=[],
-            entitlements=guest_entitlements,
+            entitlements=guest_entitlements, resume_previews={},
             membership=None, orders=[], commerce_plans={}, mock_payment_enabled=False,
             uuid4=uuid4, now=utcnow(),
         )
@@ -219,6 +220,14 @@ def workspace():
         .order_by(Resume.updated_at.desc())
         .limit(100)
     ).all()
+    resume_previews = {}
+    if view in {"dashboard", "resumes"} and resumes:
+        versions = db.session.scalars(
+            select(ResumeVersion)
+            .join(Resume, ResumeVersion.resume_id == Resume.id)
+            .where(Resume.user_id == g.user.id, ResumeVersion.revision == Resume.revision)
+        ).all()
+        resume_previews = {version.resume_id: version for version in versions}
     jobs = db.session.scalars(
         select(JobTarget)
         .where(JobTarget.user_id == g.user.id)
@@ -300,6 +309,7 @@ def workspace():
         inactive_saved_jobs=inactive_saved_jobs,
         recent_only_jobs=recent_only_jobs,
         current_resume=current_resume,
+        resume_previews=resume_previews,
         reports=reports,
         completed_reports=completed_reports,
         entitlements=entitlements,

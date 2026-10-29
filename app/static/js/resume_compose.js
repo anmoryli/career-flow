@@ -39,7 +39,8 @@
     if (source.value.trim().length < 20) { feedback.textContent = '\u8bf7\u81f3\u5c11\u7c98\u8d34 20 \u5b57\u771f\u5b9e\u7ecf\u5386\u3002'; return; }
     button.disabled = true; feedback.textContent = '';
     running = true; review.hidden = true; accept.hidden = true;
-    status.textContent = '\u6b63\u5728\u51c6\u5907 AI \u8349\u7a3f\u2026'; dialog.showModal();
+    document.querySelector('[data-studio-dialog="source"]')?.close();
+    status.textContent = '正在准备 AI 草稿…'; dialog.showModal();
     try {
       await ensureSaved();
       const started = await window.cfApi(`/api/resumes/${editor.dataset.resumeId}/ai/compose/start`, {
@@ -47,7 +48,7 @@
       });
       status.textContent = '\u6b63\u5728\u6574\u7406\uff0c\u5b8c\u6210\u540e\u8bf7\u6838\u5bf9\u771f\u5b9e\u4fe1\u606f\u3002';
       const finished = await waitForResult(started.id);
-      if (finished.state !== 'succeeded') throw new Error(finished.error || '\u6574\u7406\u5931\u8d25\uff0c\u672c\u6b21\u672a\u6263\u9664\u79ef\u5206\u3002');
+      if (finished.state !== 'succeeded') throw new Error(finished.error || '整理未完成，本次不消耗 AI 优化次数。');
       proposed = finished.result.document;
       dialog.querySelector('[data-compose-reason]').textContent = finished.result.reason;
       dialog.querySelector('[data-compose-name]').textContent = [proposed.name, proposed.role].filter(Boolean).join(' \u00b7 ') || '\u5f85\u586b\u5199';

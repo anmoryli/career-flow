@@ -2,10 +2,18 @@
   const fileInput = document.querySelector('#resume-file');
   const upload = document.querySelector('[data-upload-pdf]');
   let uploadKey = crypto.randomUUID();
-  fileInput?.addEventListener('change', () => { uploadKey = crypto.randomUUID(); });
-  upload?.addEventListener('click', async () => {
+  fileInput?.addEventListener('change', () => {
+    uploadKey = crypto.randomUUID();
+    const status = document.querySelector('#file-selection');
+    if (!status) return;
+    status.hidden = false;
+    const file = fileInput.files[0];
+    status.textContent = file ? `${file.name} · ${(file.size / 1024 / 1024).toFixed(2)} MB` : '尚未选择文件';
+  });
+  const submitUpload = async () => {
     const status = document.querySelector('#file-selection'); status.hidden = false;
     const file = fileInput.files[0];
+    if (file && !file.name.toLowerCase().endsWith('.pdf')) { status.textContent = '请选择 PDF 格式的简历文件'; return; }
     if (!file || file.size > 4 * 1024 * 1024) { status.textContent = '请选择不超过 4 MB 的 PDF'; return; }
     upload.disabled = true;
     const payload = new FormData(); payload.set('file', file); payload.set('request_key', uploadKey);
@@ -19,6 +27,14 @@
       if (resumeId) query.set('resume_id', resumeId);
       location.href = `/imports/${result.id}?${query}`;
     } catch (error) { status.textContent = error.message; upload.disabled = false; }
+  };
+  upload?.addEventListener('click', () => {
+    if (document.body.dataset.authenticated !== 'yes' && window.cfRequireAuth) {
+      if (!fileInput.files[0]) { const status = document.querySelector('#file-selection'); status.hidden = false; status.textContent = '请先选择一份 PDF 简历'; return; }
+      window.cfRequireAuth(submitUpload);
+      return;
+    }
+    submitUpload();
   });
   const root = document.querySelector('[data-import-id]');
   if (!root) return;

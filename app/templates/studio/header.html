@@ -1,0 +1,5 @@
+<header class="studio-globalbar">
+  <a class="studio-brand" href="{{ url_for('web.workspace', view='resumes') }}" aria-label="返回我的简历"><span class="brand-mark">序</span><strong>职序简历</strong></a>
+  <span class="studio-header-divider" aria-hidden="true"></span><a class="studio-back" href="{{ url_for('web.workspace', view='resumes') }}">我的简历 {{ icon('chevron') }}</a>
+  <div class="studio-global-actions"><button class="button-quiet studio-analyze" type="button" data-editor-analyze>{{ icon('briefcase') }} 岗位匹配分析</button><button class="button-quiet" type="button" data-studio-open="help">{{ icon('info') }} <span>使用指引</span></button><label class="studio-theme"><span class="sr-only">外观主题</span><select id="theme-select" aria-label="外观主题" @change="changeTheme"><option value="system">跟随系统</option><option value="light">浅色</option><option value="dark">深色</option></select></label>{% if g.user %}<a class="studio-user" href="{{ url_for('web.workspace', view='settings') }}" aria-label="个人中心">{{ g.user.display_name[:1] }}</a>{% else %}<a class="button secondary small" href="{{ url_for('web.login') }}" data-studio-login>登录</a>{% endif %}</div>
+</header>

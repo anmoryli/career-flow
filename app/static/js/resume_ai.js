@@ -63,10 +63,10 @@
     const ready = Boolean(editor.dataset.resumeId && Number(editor.dataset.resumeRevision) && editor.dataset.dirty === 'false');
     const hasText = Boolean(selectedText(panel) || panel.input.dataset.rfField === 'summary');
     panel.buttons.forEach(button => {
-      button.disabled = !ready || !hasText || running;
+      button.disabled = !hasText || running;
       button.textContent = `AI ${button.dataset.modeLabel}`;
     });
-    if (!ready) panel.info.textContent = '\u7b80\u5386\u4fdd\u5b58\u540e\u53ef\u4f7f\u7528 AI \u5efa\u8bae\u3002';
+    if (!ready) panel.info.textContent = '点击改写时会先保存当前内容，再生成建议。';
     else if (!hasText) panel.info.textContent = '\u8bf7\u5148\u586b\u5199\u8fd9\u4e00\u6761\u771f\u5b9e\u5185\u5bb9\u3002';
     else panel.info.textContent = '\u5efa\u8bae\u4f1a\u5728\u672c\u6a21\u5757\u65c1\u8fb9\u9010\u6bb5\u663e\u793a\u3002';
   };
@@ -92,15 +92,12 @@
 
   const run = async (panel, button) => {
     if (button.disabled || running) return;
-    if (editor.dataset.dirty === 'true') {
-      panel.info.textContent = '\u8bf7\u5148\u7b49\u5f85\u7b80\u5386\u4fdd\u5b58\u5b8c\u6210\u3002';
-      return;
-    }
     const lines = panel.input.dataset.rfField.endsWith('.bullets')
       ? panel.input.value.split('\n').map(line => line.trim()).filter(Boolean) : null;
     const index = lines ? Number(panel.selected || 0) : null;
     const path = lines ? panel.input.dataset.rfField.replace(/\.bullets$/, `.bullets.${index}`) : panel.input.dataset.rfField;
     running = true;
+    panel.suggestion.dataset.generating = 'true';
     panels.forEach(refreshPanel);
     panel.details.open = true;
     showSuggestion(panel);
@@ -112,6 +109,7 @@
     panel.reject.hidden = false;
     panel.result = null;
     try {
+      await window.cfEnsureResumeSaved();
       const started = await api(`/api/resumes/${editor.dataset.resumeId}/ai/start`, {
         request_key:crypto.randomUUID(), revision:Number(editor.dataset.resumeRevision), path,
         mode:button.dataset.resumeAiMode,
@@ -128,13 +126,14 @@
       panel.status.textContent = error.message;
     } finally {
       running = false;
+      panel.suggestion.dataset.generating = 'false';
       panels.forEach(refreshPanel);
     }
   };
 
   const setup = input => {
     if (panels.has(input)) return;
-    const details = document.createElement('details'); details.className = 'resume-ai-panel';
+    const details = document.createElement('details'); details.className = 'resume-ai-panel'; details.open = true;
     const summary = document.createElement('summary'); summary.textContent = '\u9010\u6761 AI \u5efa\u8bae'; details.append(summary);
     const tabs = document.createElement('div'); tabs.className = 'resume-ai-tabs'; details.append(tabs);
     const actions = document.createElement('div'); actions.className = 'resume-ai-actions'; details.append(actions);
