@@ -21,6 +21,22 @@ def wrapped_timeout():
 
 
 def sse_output(output):
+    if output.get("findings") and "requirement" in output["findings"][0]:
+        output = output | {
+            "findings": [
+                {
+                    "requirement_id": "J0",
+                    "evidence_id": "E0",
+                    "category": item["category"],
+                    "explanation": item["explanation"],
+                }
+                for item in output["findings"]
+            ],
+            "suggestions": [
+                {"target_id": "T0", "proposed": item["proposed"], "reason": item["reason"]}
+                for item in output["suggestions"]
+            ],
+        }
     content = json.dumps(output, ensure_ascii=False)
     events = []
     for offset in range(0, len(content), 45):

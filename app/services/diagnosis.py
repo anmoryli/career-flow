@@ -145,6 +145,7 @@ def quote(user_id, diagnostic_id, data):
         "prompt_version": (
             f"career-diagnosis-{prompt['version']}" if prompt["revision_id"] else PROMPT_VERSION
         ),
+        "output_contract_version": "diagnosis-references-1",
         "prompt_revision_id": prompt["revision_id"],
         "prompt_instructions": prompt["instructions"],
         "model": route["model_id"],

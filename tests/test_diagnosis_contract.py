@@ -2,7 +2,7 @@ import pytest
 from pydantic import ValidationError
 
 from app.diagnosis_schemas import DiagnosisOutput
-from app.services.model_provider import INSTRUCTIONS
+from app.services.diagnosis_references import REFERENCE_INSTRUCTIONS as INSTRUCTIONS
 from app.services.model_runtime import AI_PROVIDER_BILLING_MESSAGE, public_ai_error
 from tests.integration.test_career import valid_output
 

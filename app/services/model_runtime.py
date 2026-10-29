@@ -1,5 +1,7 @@
 """Bounded diagnosis transport and safe provider exception inspection."""
 
+from urllib.parse import urlsplit
+
 DIAGNOSIS_ATTEMPT_SECONDS = 90
 DIAGNOSIS_READ_SECONDS = 45
 DIAGNOSIS_FINALIZE_SECONDS = 30
@@ -36,3 +38,10 @@ def public_ai_error(message):
     }:
         return AI_PROVIDER_BILLING_MESSAGE
     return message or ""
+
+
+def stream_usage_settings(base_url):
+    """SiliconFlow reports cumulative counters in every streamed chunk."""
+    if urlsplit(base_url).hostname in {"api.siliconflow.cn", "api.siliconflow.com"}:
+        return {"openai_continuous_usage_stats": True}
+    return {}
