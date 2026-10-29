@@ -3,7 +3,7 @@ from urllib.parse import urlsplit
 from uuid import uuid4
 
 from flask import Blueprint, flash, g, jsonify, redirect, render_template, request, session, url_for
-from sqlalchemy import and_, delete, func, or_, select
+from sqlalchemy import delete, func, select
 
 from app.extensions import db
 from app.models import Conversation, ConversationMemory, ConversationMessage, utcnow
@@ -253,15 +253,8 @@ def workspace():
         .join(JobTarget, Diagnostic.job_id == JobTarget.id)
         .where(
             AIOperation.user_id == g.user.id,
-            or_(
-                and_(
-                    AIOperation.kind == "report",
-                    AIOperation.state.in_(
-                        ["queued", "running", "succeeded", "failed", "cancelled"]
-                    ),
-                ),
-                AIOperation.state.in_(["queued", "running"]),
-            ),
+            AIOperation.kind.in_(["analysis", "report"]),
+            AIOperation.state.in_(["queued", "running", "succeeded", "failed", "cancelled"]),
         )
         .order_by(AIOperation.id.desc())
         .limit(100)

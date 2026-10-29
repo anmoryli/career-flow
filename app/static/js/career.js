@@ -11,7 +11,6 @@
   }
   window.cfApi = api;
   const saveJob = document.querySelector('[data-save-job]');
-  const jobSaveDialog = document.querySelector('#job-save-dialog');
   let jobKey = crypto.randomUUID();
   let guestResume = null;
   const guestFile = document.querySelector('#guest-resume-file');
@@ -62,11 +61,13 @@
     finally { button.disabled = false; }
   });
   saveJob?.addEventListener('click', () => {
+    const form = document.querySelector('[data-ui-form="job"]');
+    if (form && !form.reportValidity()) return;
     const select = document.querySelector('#analysis-resume');
     const status = document.querySelector('#job-save-status');
     if (!select && !guestResume) { status.textContent = '\u8bf7\u5148\u4e0a\u4f20\u4e00\u4efd PDF \u7b80\u5386'; guestFile?.focus(); return; }
     if (select && !select.value) { status.textContent = '\u8bf7\u5148\u9009\u62e9\u4e00\u4efd\u7b80\u5386'; select.focus(); return; }
-    jobSaveDialog?.showModal();
+    startJobAnalysis(document.querySelector('[data-save-job-for-later]')?.checked ?? true);
   });
   const startJobAnalysis = async saveForLater => {
     const select = document.querySelector('#analysis-resume');
@@ -98,16 +99,7 @@
       status.textContent = error.message; button.disabled = false;
     }
   };
-  jobSaveDialog?.querySelectorAll('[data-job-save-choice]').forEach(choice => {
-    choice.addEventListener('click', async () => {
-      jobSaveDialog.close();
-      await startJobAnalysis(choice.dataset.jobSaveChoice === 'yes');
-    });
-  });
-  jobSaveDialog?.querySelector('[data-job-save-cancel]')?.addEventListener('click', () => jobSaveDialog.close());
-  document.querySelector('[data-ui-form="job"]')?.addEventListener('input', () => {
-    jobKey = crypto.randomUUID(); document.querySelector('#job-review').hidden = true;
-  });
+  document.querySelector('[data-ui-form="job"]')?.addEventListener('input', () => { jobKey = crypto.randomUUID(); });
   const feedback = document.querySelector('[data-list-feedback]');
   document.querySelectorAll('[data-copy-resume]').forEach(button => button.addEventListener('click', async () => {
     const title = window.prompt('新版本名称', '岗位版本');

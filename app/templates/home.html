@@ -1,59 +1,10 @@
 {% extends 'base.html' %}
 {% from '_ui.html' import icon %}
-{% block title %}职序 CareerFlow · 让经历更有方向{% endblock %}
+{% block title %}职序 CareerFlow · 从简历到下一份机会{% endblock %}
 {% block content %}
-{% set landing_cta_url = url_for('web.workspace') if g.user else url_for('web.register') %}
-<main class="landing-page">
-  <section class="landing-hero" aria-labelledby="landing-title">
-    <div class="landing-hero-copy">
-      <span class="landing-eyebrow"><i aria-hidden="true"></i> 给每一段经历，一个清晰的下一步</span>
-      <h1 id="landing-title">把经历写清楚。<br><em>把机会看明白。</em></h1>
-      <p>从你的真实经历出发，整理简历、对照目标岗位，再逐项核对建议。求职准备不必一次做完，下一步可以很具体。</p>
-      <div class="landing-actions"><a class="button landing-primary" href="{{ landing_cta_url }}">{{ '进入工作空间' if g.user else '开始整理简历' }} {{ icon('arrow') }}</a>{% if not g.user %}<a class="landing-login" href="{{ url_for('web.login') }}">已有账号？登录</a>{% endif %}</div>
-      <div class="landing-trust"><span>{{ icon('check') }} 每项修改由你决定</span><span>{{ icon('upload') }} 支持 PDF 导入</span><span>{{ icon('file') }} 内容随时可编辑</span></div>
-      <div class="landing-proofline"><span class="landing-proof-dash"></span><span>简历 · 岗位 · 下一步行动</span></div>
-    </div>
-
-    <div class="landing-stage" aria-hidden="true">
-      <div class="landing-stage-halo"></div>
-      <div class="landing-stage-ring landing-stage-ring-a"></div><div class="landing-stage-ring landing-stage-ring-b"></div>
-      <div class="landing-paper-shadow"></div>
-      <article class="landing-paper">
-        <div class="landing-paper-top"><span>CAREER STORY</span><span class="landing-paper-dot"></span></div>
-        <div class="landing-paper-heading"><span class="landing-paper-avatar"></span><div><i class="landing-paper-name"></i><i class="landing-paper-title"></i></div></div>
-        <div class="landing-paper-section"><b>工作经历</b><span class="landing-paper-line w92"></span><span class="landing-paper-line w84"></span><span class="landing-paper-line w73"></span><span class="landing-paper-highlight"></span></div>
-        <div class="landing-paper-section"><b>项目经验</b><span class="landing-paper-line w88"></span><span class="landing-paper-line w78"></span><span class="landing-paper-line w65"></span></div>
-        <div class="landing-paper-section landing-paper-last"><b>专业技能</b><span class="landing-paper-tags"><i></i><i></i><i></i></span></div>
-        <span class="landing-paper-stamp">可继续编辑</span>
-      </article>
-      <div class="landing-note landing-note-edit"><span class="landing-note-icon">✳</span><span><small>简历打磨</small><strong>逐段确认，再应用</strong></span><span class="landing-note-arrow">↗</span></div>
-      <div class="landing-note landing-note-match"><span class="landing-match-mark"><i></i><i></i><i></i></span><span><small>岗位对照</small><strong>要求 · 证据 · 建议</strong></span></div>
-      <span class="landing-stage-spark landing-stage-spark-a">✳</span><span class="landing-stage-spark landing-stage-spark-b">✦</span>
-      <div class="landing-stage-caption"><span>01</span><span>YOUR NEXT CHAPTER</span><i></i></div>
-    </div>
-    <div class="landing-scroll-cue"><span></span> 向下，看看怎么开始</div>
-  </section>
-
-  <section class="landing-manifesto" data-reveal aria-labelledby="landing-intro-title">
-    <div class="landing-section-label"><span>01 / 从哪里开始</span><span>CAREERFLOW</span></div>
-    <div class="landing-manifesto-main"><h2 id="landing-intro-title">不是把所有事<br>一次想完。<br><em>先走好下一步。</em></h2><div class="landing-manifesto-side"><span class="landing-manifesto-mark">“</span><p>一份真实的简历，是求职准备的起点。把已有经历整理出来，再带着目标岗位逐项核对。</p><span class="landing-manifesto-rule"></span><small>按自己的节奏，持续完善</small></div></div>
-    <div class="landing-manifesto-bottom"><span>从真实内容开始</span><span class="landing-manifesto-track"><i></i></span><span>走向明确行动</span></div>
-  </section>
-
-  <section class="landing-process" id="workflow" aria-labelledby="landing-process-title" data-reveal>
-    <div class="landing-process-head"><div><span class="landing-eyebrow"><i aria-hidden="true"></i> 一步一步，始终有你掌握</span><h2 id="landing-process-title">把求职准备<br><em>变成可继续的过程。</em></h2></div><p>每个环节都能回头修改。建议只是参考，是否采纳由你决定。</p></div>
-    <div class="landing-process-list">
-      <article class="landing-process-step"><span class="landing-process-no">01</span><div class="landing-process-icon landing-icon-paper"><i></i><i></i><i></i></div><div class="landing-process-copy"><h3>整理一份简历</h3><p>粘贴文字、导入 PDF，或从模板开始。所有方式都进入同一个编辑流程。</p></div><span class="landing-process-word">BUILD</span></article>
-      <article class="landing-process-step"><span class="landing-process-no">02</span><div class="landing-process-icon landing-icon-spark">✳</div><div class="landing-process-copy"><h3>打磨真实表达</h3><p>在对应板块查看 AI 润色建议，比较修改前后，再决定是否应用。</p></div><span class="landing-process-word">REFINE</span></article>
-      <article class="landing-process-step"><span class="landing-process-no">03</span><div class="landing-process-icon landing-icon-target"><i></i><i></i></div><div class="landing-process-copy"><h3>对照目标岗位</h3><p>查看岗位要求与简历内容的对应依据，逐项整理差距与行动方向。</p></div><span class="landing-process-word">FOCUS</span></article>
-    </div>
-  </section>
-
-  <section class="landing-editorial" id="features" data-reveal>
-    <div class="landing-editorial-art" aria-hidden="true"><span class="landing-editorial-circle"></span><span class="landing-editorial-orbit"></span><span class="landing-editorial-spark">✳</span><div class="landing-editorial-note"><span>YOUR STORY</span><strong>真实经历<br>清晰表达</strong><i></i><small>每一段，都有价值</small></div><span class="landing-editorial-index">02</span></div>
-    <div class="landing-editorial-copy"><span class="landing-section-kicker">为真实求职过程设计</span><h2>简历不只是<br><em>一份文件。</em></h2><p>它会随着目标和经历持续完善。职序把简历编辑、AI 建议与岗位分析连在一起，让每一次修改都能接上下一步。</p><div class="landing-editorial-points"><article><span>01</span><div><strong>始终编辑同一份简历</strong><small>导入、模板和手动填写汇入同一处</small></div></article><article><span>02</span><div><strong>建议就在内容旁边</strong><small>逐段核对依据，再选择是否应用</small></div></article><article><span>03</span><div><strong>岗位要求有迹可循</strong><small>要求、简历证据和建议对应查看</small></div></article></div><a class="landing-inline-link" href="{{ landing_cta_url }}">{{ '进入工作空间' if g.user else '开始使用职序' }} {{ icon('arrow') }}</a></div>
-  </section>
-
-  <section class="landing-final-cta" data-reveal><div class="landing-cta-index">03 <span>START HERE</span></div><div class="landing-cta-copy"><span class="landing-section-kicker">你的下一步，从这里开始</span><h2>让经历，<em>带你走向下一程。</em></h2><p>建立求职工作空间，整理简历并开始准备目标岗位。</p></div><a class="button landing-primary" href="{{ landing_cta_url }}">{{ '进入工作空间' if g.user else '创建工作空间' }} {{ icon('arrow') }}</a><span class="landing-cta-decoration" aria-hidden="true">序</span></section>
-</main>
+<div class="product-home">
+<section class="product-intro"><span class="page-kicker">简历管理 · AI 改写 · 岗位分析</span><h1>写好你的经历，<br>走向下一份机会。</h1><p>把内容、排版和岗位准备放进同一个工作空间。<br>从真实经历出发，每一处修改由你决定。</p><div class="page-actions"><a class="button" href="{{ url_for('web.workspace', view='resume-new') }}">开始创建简历 {{ icon('arrow') }}</a><a class="button secondary" href="{{ url_for('web.workspace', view='resume-import') }}">导入已有 PDF</a></div><small>先体验编辑 · 保存与 AI 功能需登录</small></section>
+<section class="product-demo" aria-label="使用流程示意"><div class="demo-title"><span>我的求职工作空间</span><span>内容编辑与预览</span></div><div class="demo-workspace"><nav aria-label="流程示意"><b>简历内容</b><span>基本信息</span><span class="active">工作经历</span><span>项目经验</span><span>教育背景</span></nav><div class="demo-edit"><span class="page-kicker">示例 · 工作经历</span><h2>把做过的事，写得更清楚</h2><div class="demo-text">梳理业务需求，协调设计与研发推进产品迭代，跟踪上线反馈并持续优化。</div><span class="demo-ai">✦ AI 改写 → 比较 → 采用</span><p>保留原文，确认后再更新。</p></div><div class="demo-paper"><b>你的姓名</b><small>目标职位 · 联系方式</small><hr><strong>个人简介</strong><i></i><i></i><strong>工作经历</strong><i></i><i></i><i></i><strong>项目经验</strong><i></i><i></i></div></div></section>
+<section class="product-flow"><article><span>01 / 整理内容</span><h2>导入、粘贴，或从空白开始</h2><p>统一管理简历，编辑时即时查看排版，按需要调整板块与模板。</p><a href="{{ url_for('web.workspace', view='resume-template') }}">浏览模板 →</a></article><article><span>02 / 对照岗位</span><h2>要求和经历，放在一起看</h2><p>选择简历并粘贴岗位描述，查看匹配依据、待补充信息与修改方向。</p><a href="{{ url_for('web.workspace', view='jobs') }}">分析岗位 →</a></article><article><span>03 / 审阅并保存</span><h2>逐段修改，保留基础简历</h2><p>对照原文审阅 AI 建议，也可以直接改写，确认后保存岗位版本。</p><a href="{{ url_for('web.workspace', view='resumes') }}">进入简历库 →</a></article></section>
+</div>
 {% endblock %}

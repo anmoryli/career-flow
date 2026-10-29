@@ -1,8 +1,10 @@
 <section class="business-page-heading">
-  <div><h1>诊断与报告</h1><p>处理中、已完成或需要重试的岗位诊断都可以从这里继续查看。</p></div>
+  <div><span class="page-kicker">分析结果与下一步</span><h1>诊断与报告</h1><p>回到正在进行的任务，或审阅已完成的岗位分析。</p></div>
   <a class="button" href="{{ url_for('web.workspace', view='jobs') }}">分析目标岗位</a>
 </section>
 
+<div class="report-filters evidence-controls" role="group" aria-label="筛选报告"><button type="button" data-report-filter="all" aria-pressed="true">全部记录</button><button type="button" data-report-filter="active" aria-pressed="false">进行中</button><button type="button" data-report-filter="succeeded" aria-pressed="false">已完成</button><button type="button" data-report-filter="failed" aria-pressed="false">需处理</button></div>
+<p data-report-filter-empty hidden role="status">当前分类没有记录。</p>
 <section class="report-list" data-report-list aria-label="岗位诊断记录">
   {% for operation, diagnostic, job in reports %}
     {% set active = operation.state in ['queued', 'running'] %}

@@ -2,14 +2,14 @@
 {% block title %}{{ job.title or '岗位诊断' }} · 职序{% endblock %}
 {% macro result_panel(op, title) %}
   {% if op and op.result %}
-  <section class="diagnosis-result diagnosis-result-modern" data-operation="{{ op.id }}" data-operation-state="{{ op.state }}">
+  <section id="match-result" class="diagnosis-result diagnosis-result-modern" data-operation="{{ op.id }}" data-operation-state="{{ op.state }}">
     <div class="diagnosis-section-heading"><div><span class="diagnosis-eyebrow">{{ title }}</span><h2>{{ '匹配结果' if op.kind == 'analysis' else '岗位诊断报告' }}</h2></div><span class="diagnosis-score-chip">{{ op.result.overall_score|int }}<small> / 100</small></span></div>
     <p class="diagnosis-summary">{{ op.result.summary }}</p>
     <div class="diagnosis-dimensions" aria-label="五项匹配度">
       {% for dimension in op.result.dimensions %}<article class="diagnosis-dimension"><div><strong>{{ dimension.name }}</strong><b>{{ dimension.score }}<small> / 100</small></b></div><div class="diagnosis-meter" role="img" aria-label="{{ dimension.name }} {{ dimension.score }} 分"><span class="{{ 'is-high' if dimension.score >= 75 else 'is-mid' if dimension.score >= 50 else 'is-low' }}" style="width:{{ dimension.score }}%"></span></div><p>{{ dimension.reason }}</p></article>{% endfor %}
     </div>
-    <div class="diagnosis-findings-heading"><div><span class="diagnosis-eyebrow">逐项核对</span><h3>岗位要求与简历证据</h3></div><p>“简历未体现”表示当前版本没有找到证据，不代表你没有这项能力。</p></div>
-    <div class="diagnosis-findings">{% for finding in op.result.findings %}<article class="diagnosis-finding diagnosis-finding-{{ finding.category }}"><div class="diagnosis-finding-top"><span>{{ {'hard':'岗位要求','bonus':'加分项','missing':'待补充'}[finding.category] }}</span><strong>{{ finding.requirement }}</strong></div>{% if finding.evidence %}<blockquote>{{ finding.evidence }}</blockquote>{% else %}<p class="diagnosis-no-evidence">当前简历没有找到对应内容</p>{% endif %}<p>{{ finding.explanation }}</p></article>{% endfor %}</div>
+    <div class="evidence-controls" role="group" aria-label="筛选岗位证据"><button type="button" data-evidence-filter="all" aria-pressed="true">全部证据</button><button type="button" data-evidence-filter="hard" aria-pressed="false">岗位要求</button><button type="button" data-evidence-filter="bonus" aria-pressed="false">加分项</button><button type="button" data-evidence-filter="missing" aria-pressed="false">待补充</button></div><div id="evidence-details" class="diagnosis-findings-heading"><div><span class="diagnosis-eyebrow">逐项核对</span><h3>岗位要求与简历证据</h3></div><p>“简历未体现”表示当前版本没有找到证据，不代表你没有这项能力。</p></div>
+    <div class="diagnosis-findings">{% for finding in op.result.findings %}<article data-evidence-category="{{ finding.category }}" class="diagnosis-finding diagnosis-finding-{{ finding.category }}"><div class="diagnosis-finding-top"><span>{{ {'hard':'岗位要求','bonus':'加分项','missing':'待补充'}[finding.category] }}</span><strong>{{ finding.requirement }}</strong></div>{% if finding.evidence %}<blockquote>{{ finding.evidence }}</blockquote>{% else %}<p class="diagnosis-no-evidence">当前简历没有找到对应内容</p>{% endif %}<p>{{ finding.explanation }}</p></article>{% endfor %}</div>
   </section>
   {% endif %}
 {% endmacro %}
@@ -47,6 +47,7 @@
     <li class="{{ 'is-complete' if latest_report else '' }}"><span>4</span><div><strong>报告与修改</strong><small>{{ '已完成' if latest_report else '核实后再采纳' }}</small></div></li>
   </ol>
 
+  {% if latest_analysis or latest_report %}<nav class="result-navigation" aria-label="分析结果导航"><a href="#match-result">匹配总览</a><a href="#evidence-details">岗位证据</a>{% if suggestion_operation %}<a class="button small" href="{{ url_for('diagnosis.suggestions', job_id=job.id, operation_id=suggestion_operation.id) }}">审阅并修改简历 →</a>{% endif %}</nav>{% endif %}
   <div class="diagnosis-layout">
     <main class="diagnosis-main-column">
       {% if not configured %}<div class="diagnosis-notice" role="status"><strong>AI 服务暂不可用</strong><p>当前无法启动新的分析。已有岗位和报告仍可查看。</p></div>{% endif %}
