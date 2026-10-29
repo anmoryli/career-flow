@@ -3,9 +3,9 @@
 <span class="cf-badge cfa-state cfa-state-{{ state }}">{{ {'queued':'排队中','running':'正在分析','succeeded':'已完成','failed':'需要重试','cancelled':'已取消'}.get(state,'待开始') }}</span>
 {%- endmacro %}
 {% macro operation_running(operation=none) -%}
-<section class="cfa-running" data-operation="{{ operation.id if operation else '' }}" data-operation-kind="{{ operation.kind if operation else 'analysis' }}" data-operation-state="{{ operation.state if operation else 'queued' }}" aria-live="polite" aria-busy="true">
+<section class="cfa-running" data-operation="{{ operation.id if operation else '' }}" data-operation-kind="{{ operation.kind if operation else 'analysis' }}" data-operation-state="{{ operation.state if operation else 'starting' }}" aria-live="polite" aria-busy="true">
   <div class="cfa-running-visual" aria-hidden="true"><div class="cfa-running-orbit"></div><span>✦</span></div>
-  <div class="cfa-running-copy"><span class="cf-eyebrow">{{ '正在排队' if not operation or operation.state == 'queued' else '正在核对岗位与简历' }}</span><h2>{{ '分析已加入队列' if not operation or operation.state == 'queued' else '让每一项匹配都有依据' }}</h2><p>提取岗位要求、查找简历证据，再整理待补充内容。你可以离开，任务会继续运行。</p><div class="cfa-running-scope"><span>{{ icon('briefcase') }} 岗位要求</span><span>{{ icon('file') }} 真实经历</span><span>{{ icon('check') }} 修改方向</span></div></div>
+  <div class="cfa-running-copy"><span class="cf-eyebrow">{{ '正在提交分析请求' if not operation else '正在排队' if operation.state == 'queued' else '正在核对岗位与简历' }}</span><h2>{{ '正在准备分析任务' if not operation else '分析已加入队列' if operation.state == 'queued' else '让每一项匹配都有依据' }}</h2><p>提取岗位要求、查找简历证据，再整理待补充内容。你可以离开，任务会继续运行。</p><div class="cfa-running-scope"><span>{{ icon('briefcase') }} 岗位要求</span><span>{{ icon('file') }} 真实经历</span><span>{{ icon('check') }} 修改方向</span></div></div>
   {% if operation %}<button class="cf-button is-quiet is-small" type="button" data-cancel-operation="{{ operation.id }}">取消本次任务</button>{% endif %}
 </section>
 {%- endmacro %}

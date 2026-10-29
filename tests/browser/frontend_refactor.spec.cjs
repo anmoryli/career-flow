@@ -1,6 +1,14 @@
 const {test,expect}=require('@playwright/test');
 const {randomUUID}=require('node:crypto');
 let userId;
+async function captureThemes(page,name){
+ for(const theme of ['light','dark','system']){
+  await page.emulateMedia({colorScheme:'dark',reducedMotion:'reduce'});await page.evaluate(theme=>window.cfTheme(theme),theme);
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),`${name} ${theme}`).toBeTruthy();
+  await page.screenshot({path:`output/experience-${name}-${test.info().project.name}-${theme}.png`,fullPage:true,animations:'disabled'});
+ }
+}
+
 const headers=async p=>({'X-CSRFToken':await p.locator('meta[name="csrf-token"]').getAttribute('content')});
 async function member(p){await p.goto('/workspace?view=billing');await p.locator('[data-membership-plan="membership_quarterly"] button[type=submit]').click();await p.waitForLoadState('networkidle');}
 async function create(p){const r=await p.request.post('/api/resumes',{headers:await headers(p),data:{request_key:randomUUID(),revision:0,title:'真实基础简历',document:{name:'真实姓名',email:'candidate@example.com',role:'产品经理',summary:'负责用户访谈与产品需求分析',experiences:[{company:'测试企业',role:'产品经理',bullets:['梳理业务需求并跟进上线']}],projects:[{name:'测试项目',description:'整理用户反馈'}]}}});expect(r.ok()).toBeTruthy();return r.json();}
@@ -40,8 +48,8 @@ test('new resume library and editor persist real edits and design',async({page})
 test('new analysis and paragraph review preserve the original resume',async({page})=>{
  await member(page);const resume=await create(page);await page.goto(`/workspace?view=jobs&resume_id=${resume.id}`);
  await page.locator('#job-title').fill('产品经理');await page.locator('#job-description').fill('需要产品规划与业务需求分析经验。');await page.locator('[data-save-job]').click();await expect(page).toHaveURL(/\/jobs\/\d+/);
- await expect(page.locator('[data-evidence-category]').first()).toBeVisible({timeout:20000});await page.locator('[data-evidence-filter="missing"]').click();await expect(page.locator('[data-evidence-filter="missing"]')).toHaveAttribute('aria-pressed','true');
- const review=page.locator('a[href*="/suggestions"]').first();await review.click();await expect(page.locator('[data-review-path]')).toHaveCount(3);
+ await expect(page.locator('[data-evidence-category]').first()).toBeVisible({timeout:20000});await captureThemes(page,'diagnostic');await page.locator('[data-evidence-filter="missing"]').click();await expect(page.locator('[data-evidence-filter="missing"]')).toHaveAttribute('aria-pressed','true');
+ const review=page.locator('a[href*="/suggestions"]').first();await review.click();await expect(page.locator('[data-review-path]')).toHaveCount(3);await captureThemes(page,'paragraph-review');
  const row=page.locator('[data-review-path="projects.0.description"]');await row.locator('textarea').fill('整理并核对用户反馈。');await page.locator('[name="confirmed"]').check();await page.locator('[data-apply-suggestions] button[type=submit]').click();await expect(page).toHaveURL(/resume_id=/);
  const copiedId=new URL(page.url()).searchParams.get('resume_id');expect(Number(copiedId)).not.toBe(resume.id);const original=await (await page.request.get(`/api/resumes/${resume.id}`)).json();expect(original.document.projects[0].description).toBe('整理用户反馈');
 });

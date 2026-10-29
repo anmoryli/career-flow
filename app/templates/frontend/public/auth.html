@@ -12,7 +12,7 @@
       {% if mode != 'register' %}<a class="cf-public-forgot" href="{{ url_for('web.password_reset_page') }}">忘记密码？</a>{% endif %}
       <button class="cf-button" type="submit">{{ '验证并创建账号' if mode == 'register' else '登录工作空间' }} {{ icon('arrow') }}</button>
     </form>
-    <p class="cf-public-auth-note">你的简历和历史记录会保存在账号中。</p>
+    <p class="cf-public-auth-note">登录后，可在「我的简历」中继续编辑与管理文档。</p>
   </div>
   <aside class="cf-public-auth-aside"><span class="cf-public-auth-symbol" aria-hidden="true">序</span><div><span class="cf-eyebrow">CAREERFLOW</span><h2>把经历理清，<br>把下一步走稳。</h2><p>简历内容、岗位分析与修改记录，<br>在同一个地方慢慢完成。</p></div><ul><li>{{ icon('file') }} 统一管理简历文档</li><li>{{ icon('spark') }} 核对后再采用 AI 建议</li><li>{{ icon('history') }} 保留每次保存的版本</li></ul></aside>
 </section>

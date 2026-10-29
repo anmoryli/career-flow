@@ -42,7 +42,7 @@
       if(continuation&&form.hasAttribute('data-auth-modal-form')){
         await window.cfRefreshCSRF();document.body.dataset.authenticated='yes';dialog.close();const callback=continuation;continuation=null;await callback();
       }else location.assign(result.next||'/workspace');
-    }catch(error){show(form,error.message);form.querySelectorAll('[data-field-error]').forEach(node=>node.remove());form.querySelectorAll('[aria-invalid]').forEach(input=>input.removeAttribute('aria-invalid'));for(const [name,message] of Object.entries(error.fields||{})){const input=form.elements[name];if(!input)continue;input.setAttribute('aria-invalid','true');const hint=document.createElement('small');hint.dataset.fieldError=name;hint.textContent=message;input.after(hint);}}
+    }catch(error){show(form,error.message);window.cfFieldErrors(form,error);}
     finally{button.disabled=false;}
   }));
   const params=new URLSearchParams(location.search);

@@ -2,6 +2,14 @@ const {test,expect}=require('@playwright/test');
 const {randomUUID}=require('node:crypto');
 const fs=require('node:fs'),path=require('node:path'),os=require('node:os'),{execFileSync}=require('node:child_process');
 let uid,email;
+async function captureThemes(page,name){
+ for(const theme of ['light','dark','system']){
+  await page.emulateMedia({colorScheme:'dark',reducedMotion:'reduce'});await page.evaluate(theme=>window.cfTheme(theme),theme);
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),`${name} ${theme}`).toBeTruthy();
+  await page.screenshot({path:`output/experience-${name}-${test.info().project.name}-${theme}.png`,fullPage:true,animations:'disabled'});
+ }
+}
+
 const testPassword='Browser-refactor-test-123!';
 const headers=async p=>({'X-CSRFToken':await p.locator('meta[name="csrf-token"]').getAttribute('content')});
 async function member(p){await p.goto('/workspace?view=billing');await p.locator('[data-membership-plan="membership_quarterly"] button[type=submit]').click();await p.waitForLoadState('networkidle');}
@@ -33,7 +41,7 @@ test('inline AI, repeat fields, custom sections, photo and history preserve docu
 });
 test('PDF import and actual export produce a clean printable resume',async({page})=>{
  const source=await page.context().newPage();await source.setContent('<h1>Resume Candidate</h1><p>candidate@example.com</p><p>Verified product experience.</p>');const pdf=await source.pdf();await source.close();
- await member(page);await page.goto('/workspace?view=resume-import');await page.locator('#resume-file').setInputFiles({name:'candidate.pdf',mimeType:'application/pdf',buffer:pdf});await page.locator('[data-upload-pdf]').click();await expect(page.locator('[data-import-confirm]')).toBeVisible({timeout:20000});await page.locator('[name=name]').fill('核对姓名');await page.locator('[name=confirmed]').check();await page.locator('[data-import-confirm] button[type=submit]').click();await expect(page.locator('#resume-name')).toHaveValue('核对姓名');
+ await member(page);await page.goto('/workspace?view=resume-import');await page.locator('#resume-file').setInputFiles({name:'candidate.pdf',mimeType:'application/pdf',buffer:pdf});await page.locator('[data-upload-pdf]').click();await expect(page.locator('[data-import-confirm]')).toBeVisible({timeout:20000});await captureThemes(page,'import-review');await page.locator('[name=name]').fill('核对姓名');await page.locator('[name=confirmed]').check();await page.locator('[data-import-confirm] button[type=submit]').click();await expect(page.locator('#resume-name')).toHaveValue('核对姓名');
  const sourceDialog=page.locator('#cf-resume-source');if(await sourceDialog.isVisible())await page.keyboard.press('Escape');await page.evaluate(()=>window.prepareResumePrint());await page.emulateMedia({media:'print'});await expect(page.locator('.cf-editor-topbar')).toBeHidden();const exported=await page.pdf({format:'A4',printBackground:true});const dir=fs.mkdtempSync(path.join(os.tmpdir(),'cf-refactor-'));const file=path.join(dir,'resume.pdf');
  try{fs.writeFileSync(file,exported);const local=path.join(process.cwd(),'.venv','Scripts','python.exe'),python=process.env.CF_TEST_PYTHON||(fs.existsSync(local)?local:'python');const result=JSON.parse(execFileSync(python,['-c','import sys,json,pdfplumber; r=pdfplumber.open(sys.argv[1]); print(json.dumps({"pages":len(r.pages),"text":"".join(p.extract_text() or "" for p in r.pages)},ensure_ascii=True))',file],{encoding:'utf8'}));expect(result.pages).toBe(1);expect(result.text).toContain('核对姓名');expect(result.text).not.toContain('岗位匹配分析');}finally{fs.rmSync(dir,{recursive:true,force:true});}
 });

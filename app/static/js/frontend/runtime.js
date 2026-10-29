@@ -28,6 +28,29 @@
     document.querySelector('meta[name="csrf-token"]').content=token;
     document.querySelectorAll('input[name="csrf_token"]').forEach(input=>{input.value=token;});
   };
+  // Error summaries remain visible while every server-reported field gets a linked hint.
+  const clearFieldError=input=>{
+    const id=input.dataset.cfErrorId;
+    if(!id)return;
+    document.getElementById(id)?.remove();
+    const described=(input.getAttribute('aria-describedby')||'').split(/\s+/).filter(value=>value&&value!==id);
+    if(described.length)input.setAttribute('aria-describedby',described.join(' '));else input.removeAttribute('aria-describedby');
+    input.removeAttribute('aria-invalid');delete input.dataset.cfErrorId;
+  };
+  let errorIndex=0;
+  window.cfFieldErrors=(form,error)=>{
+    form.querySelectorAll('[data-cf-error-id]').forEach(clearFieldError);
+    let first;
+    for(const [name,message] of Object.entries(error?.fields||{})){
+      const input=form.elements.namedItem(name);
+      if(!(input instanceof HTMLElement))continue;
+      const hint=document.createElement('small');hint.id=`cf-field-error-${++errorIndex}`;hint.dataset.fieldError=name;hint.textContent=String(message);
+      input.dataset.cfErrorId=hint.id;input.setAttribute('aria-invalid','true');
+      input.setAttribute('aria-describedby',[input.getAttribute('aria-describedby'),hint.id].filter(Boolean).join(' '));input.after(hint);first||=input;
+    }
+    first?.focus();
+  };
+  document.addEventListener('input',event=>{if(event.target instanceof HTMLElement)clearFieldError(event.target);});
   let toastTimer;
   window.cfToast=message=>{const toast=document.querySelector('#theme-feedback');if(!toast)return;clearTimeout(toastTimer);toast.textContent=message;toast.hidden=false;toastTimer=setTimeout(()=>{toast.hidden=true;},3200);};
   const themeSelector=document.querySelector('#theme-select');
@@ -71,6 +94,18 @@
     doc.style.zoom=String(width/794);
   }));
   document.querySelectorAll('[data-document-thumbnail]').forEach(element=>resize.observe(element));
+  // Progressive enhancement: no CSS starts content hidden, and failed JS cannot hide it.
+  const motion=matchMedia('(prefers-reduced-motion: reduce)');
+  const entrants=document.querySelectorAll('[data-reveal]');
+  if('IntersectionObserver' in window){
+    const observer=new IntersectionObserver(entries=>entries.forEach(entry=>{
+      if(!entry.isIntersecting)return;
+      observer.unobserve(entry.target);
+      if(!motion.matches)entry.target.animate([{opacity:.65,transform:'translateY(12px)'},{opacity:1,transform:'translateY(0)'}],{duration:420,easing:'cubic-bezier(.2,.7,.2,1)'});
+    }),{threshold:.08});
+    entrants.forEach(node=>observer.observe(node));
+    motion.addEventListener('change',()=>{if(motion.matches)entrants.forEach(node=>node.getAnimations().forEach(animation=>animation.cancel()));});
+  }
   // Filter only the rows already rendered for this user; no external search service.
   document.querySelectorAll('[data-filter-target]').forEach(input=>input.addEventListener('input',()=>{
     const query=input.value.trim().toLocaleLowerCase();

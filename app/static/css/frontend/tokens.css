@@ -1,16 +1,20 @@
 :root {
   color-scheme:light;
   --cf-bg:#fafafa; --cf-surface:#fff; --cf-muted-bg:#f4f4f5;
-  --cf-text:#202322; --cf-muted:#777e79; --cf-subtle:#a0a6a1;
+  --cf-text:#202322; --cf-muted:#626c65; --cf-subtle:#737d76;
   --cf-border:#e5e7e6; --cf-strong-border:#d2d7d3;
-  --cf-accent:#4f7059; --cf-accent-soft:#edf3ee; --cf-danger:#a34f4c;
+  --cf-accent:#466951; --cf-accent-soft:#edf3ee; --cf-danger:#a34f4c;
   --cf-warning:#9b783f; --cf-warning-soft:#f8f3e9;
   --cf-primary:#242826; --cf-primary-text:#fff;
   --cf-font:Inter,"Microsoft YaHei","PingFang SC","Noto Sans CJK SC",system-ui,sans-serif;
   --cf-mono:"Cascadia Code",Consolas,monospace;
-  --cf-radius:9px; --cf-radius-lg:14px; --cf-header-height:56px;
+  --cf-radius:9px; --cf-radius-lg:14px; --cf-header-height:64px;
   --cf-content-width:1160px; --cf-shadow:0 12px 40px rgb(24 32 26 / 6%);
   --cf-space-1:4px; --cf-space-2:8px; --cf-space-3:12px; --cf-space-4:16px;
+  --cf-text-xs:12px; --cf-text-sm:13px; --cf-text-base:15px; --cf-text-lg:18px;
+  --cf-title:clamp(28px,3vw,36px); --cf-display:clamp(38px,4.5vw,60px);
+  --cf-duration-fast:140ms; --cf-duration-base:240ms; --cf-duration-enter:420ms;
+  --cf-ease:cubic-bezier(.2,.7,.2,1); --cf-focus:0 0 0 3px var(--cf-accent-soft);
   --cf-space-5:24px; --cf-space-6:32px; --cf-space-7:48px; --cf-space-8:72px;
 }
 :root[data-theme=dark] {

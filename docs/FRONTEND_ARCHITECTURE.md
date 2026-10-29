@@ -28,3 +28,11 @@
 浏览器入口验收：`tests/browser/frontend_refactor.spec.cjs`、`frontend_workflows.spec.cjs`。检查全页路由、新资产独占、桌面/平板/手机、主题、弹窗、文档变更、AI 核对、PDF 与真实测试账号登录。模型与支付使用明确测试提供器；真实账户登录和 CSRF 流程仍走既有后端。
 
 服务端验收：`tests/test_frontend_manifest.py` 防止活动路由或共享壳重新依赖旧 UI；相关权限、段落审阅、会员失败和基础测试使用 MySQL 测试库。
+
+## 体验层补充（2026-10-29）
+
+共享 Token 统一文字层级、动效时长与触控区域；`runtime.js` 提供渐进增强的 `[data-reveal]` 入场及 `cfFieldErrors(form,error)` 字段提示/焦点，减少动效偏好改变时取消入场。默认内容可见，不依赖动画才显示。
+
+总览使用真实已有工作推导下一步；首页三步说明使用原生 details，未引入额外脚本；编辑器的示例标识、预览焦点，以及岗位/审阅/记录的就绪与筛选状态留在所属 feature 控制器中。
+
+本轮设计及逐页审计见 `FRONTEND_REDESIGN_2026-10-29.md` 和 `FRONTEND_EXPERIENCE_AUDIT_2026-10-29.md`。新增 `tests/browser/frontend_experience.spec.cjs` 覆盖三种尺寸下逐页浅/深/系统主题、准备路径、键盘、减少动效、示例与真实内容边界及无效上传。
