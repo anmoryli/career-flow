@@ -32,25 +32,14 @@ def test_pydantic_ai_adapter_contract_without_external_request(app, monkeypatch)
         data = json.loads(request.content)
         seen.append(data)
         assert "tools" not in data
+        from tests.test_model_runtime import sse_output
+
+        assert data["stream"] is True
+        assert data["stream_options"]["include_usage"] is True
         return httpx.Response(
             200,
-            json={
-                "id": "test-id",
-                "object": "chat.completion",
-                "created": 1,
-                "model": "test-model",
-                "choices": [
-                    {
-                        "index": 0,
-                        "message": {
-                            "role": "assistant",
-                            "content": json.dumps(valid_output(snapshot()), ensure_ascii=False),
-                        },
-                        "finish_reason": "stop",
-                    }
-                ],
-                "usage": {"prompt_tokens": 100, "completion_tokens": 200, "total_tokens": 300},
-            },
+            headers={"content-type": "text/event-stream"},
+            content=sse_output(valid_output(snapshot())),
         )
 
     def client(**kwargs):

@@ -8,6 +8,7 @@ from app.models import AIOperation, Diagnostic, DiagnosticAnswer, JobTarget, Res
 from app.services import diagnosis
 from app.services.career import owned
 from app.services.interactions import active_question
+from app.services.model_runtime import diagnosis_job_seconds
 from app.web.routes import input_data, login_required
 
 diagnosis_web = Blueprint("diagnosis", __name__)
@@ -141,7 +142,7 @@ def start(item_id):
             Queue("careerflow", connection=current_app.extensions["redis"]).enqueue(
                 "app.jobs.diagnosis_job",
                 item.id,
-                job_timeout=120,
+                job_timeout=diagnosis_job_seconds(item.input_snapshot),
                 job_id=f"diagnosis-{item.id}",
             )
         except Exception:
@@ -159,7 +160,7 @@ def confirm(item_id):
             Queue("careerflow", connection=current_app.extensions["redis"]).enqueue(
                 "app.jobs.diagnosis_job",
                 item.id,
-                job_timeout=120,
+                job_timeout=diagnosis_job_seconds(item.input_snapshot),
                 job_id=f"diagnosis-{item.id}",
             )
         except Exception:

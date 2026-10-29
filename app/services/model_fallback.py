@@ -12,6 +12,9 @@ def candidates(snapshot):
 
 def model_unavailable(error):
     """Fail over for unusable model output or provider errors, not account auth/billing."""
+    from app.services.model_runtime import provider_error
+
+    error = provider_error(error)
     status = getattr(error, "status_code", None)
     if status in {401, 402}:
         return False

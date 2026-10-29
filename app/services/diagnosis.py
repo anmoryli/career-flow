@@ -1,5 +1,6 @@
 import copy
 import json
+import time
 from datetime import timedelta
 
 from flask import current_app
@@ -358,12 +359,15 @@ def run_operation(operation_id):
     attempts = 0
     from app.services.model_fallback import candidates, model_unavailable
     from app.services.model_provider import generate
+    from app.services.model_runtime import provider_error
 
     provider = current_app.extensions.get("diagnosis_provider") if current_app.testing else None
     stop_fallback = False
-    for model_id in candidates(snapshot):
+    last_error = None
+    for model_index, model_id in enumerate(candidates(snapshot)):
         for retry in range(2):
             attempts += 1
+            attempt_started = time.monotonic()
             try:
                 raw, usage = (provider or generate)(snapshot | {"model": model_id})
                 if not isinstance(usage, int) or not 0 < usage <= 2000000:
@@ -372,9 +376,18 @@ def run_operation(operation_id):
                 result = validate_output(raw, snapshot)
                 break
             except Exception as error:
+                last_error = provider_error(error)
                 # Never persist provider exception strings (may contain credentials/documents).
                 current_app.logger.warning(
-                    "ai_attempt_failed operation=%s type=%s", operation_id, type(error).__name__
+                    "ai_attempt_failed operation=%s model_index=%s type=%s status=%s "
+                    "cause=%s attempt=%s elapsed_seconds=%.3f",
+                    operation_id,
+                    model_index,
+                    type(error).__name__,
+                    getattr(last_error, "status_code", None),
+                    type(last_error).__name__,
+                    retry + 1,
+                    time.monotonic() - attempt_started,
                 )
                 if retry == 1 and not model_unavailable(error):
                     stop_fallback = True
@@ -389,7 +402,26 @@ def run_operation(operation_id):
     item.attempts = attempts
     item.tokens = tokens
     if result is None:
-        release(item, "failed", "模型超时或输出无效，请稍后重试。")
+        status = getattr(last_error, "status_code", None)
+        if status in {401, 403}:
+            failure = "模型服务认证失败，请检查 API Key 和模型访问权限。"
+        elif status == 402:
+            failure = "模型服务账户余额不足或未开通此模型，请检查服务商账户。"
+        elif status == 404:
+            failure = "模型接口或模型 ID 不存在，请检查 API 地址和模型 ID。"
+        elif status == 429:
+            failure = "模型服务请求频率受限，请稍后重试或检查服务商额度。"
+        elif isinstance(last_error, (TimeoutError,)) or type(last_error).__name__ in {
+            "APITimeoutError",
+            "ReadTimeout",
+            "ConnectTimeout",
+        }:
+            failure = "连接模型服务超时，请检查服务商状态和网络后重试。"
+        elif isinstance(last_error, ValueError) or type(last_error).__name__ == "ValidationError":
+            failure = "模型返回内容不符合诊断格式，请检查模型配置后重试。"
+        else:
+            failure = "模型服务暂时不可用，请稍后重试。"
+        release(item, "failed", failure)
     else:
         item.result = result
         item.ceiling = 0
@@ -455,8 +487,10 @@ def apply_suggestions(user_id, operation_id, data):
 
 def recover_stale_tasks():
     from app.models import ResumeImport
+    from app.services.model_runtime import diagnosis_job_seconds
 
-    cutoff = utcnow() - timedelta(minutes=5)
+    now = utcnow()
+    cutoff = now - timedelta(minutes=5)
     ids = db.session.scalars(
         select(AIOperation.id).where(
             or_(
@@ -470,8 +504,13 @@ def recover_stale_tasks():
         record = db.session.get(AIOperation, operation_id)
         owner_lock(record.user_id)
         item = owned(AIOperation, record.user_id, operation_id, True)
+        running_cutoff = (
+            now - timedelta(seconds=diagnosis_job_seconds(item.input_snapshot) + 30)
+            if item.diagnostic_id is not None
+            else cutoff
+        )
         stale = (item.state == "queued" and item.created_at < cutoff) or (
-            item.state == "running" and (item.started_at or item.created_at) < cutoff
+            item.state == "running" and (item.started_at or item.created_at) < running_cutoff
         )
         if stale:
             release(item, "failed", "后台任务中断或超时，请重试。")
