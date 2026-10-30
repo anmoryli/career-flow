@@ -161,7 +161,7 @@
     }));
     const answer=page.querySelector('#diagnostic-answer');let answerKey=crypto.randomUUID(),answering=false;
     answer?.addEventListener('input',()=>{answerKey=crypto.randomUUID();answer.setCustomValidity('');});
-    answer?.addEventListener('keydown',event=>{if((event.ctrlKey||event.metaKey)&&event.key==='Enter'){event.preventDefault();page.querySelector('[data-answer="answer"]')?.click();}});
+    answer?.addEventListener('keydown',event=>{if((event.ctrlKey||event.metaKey)&&event.key==='Enter'){if(window.cfImeGuard?.(event))return;event.preventDefault();page.querySelector('[data-answer="answer"]')?.click();}});
     page.querySelectorAll('[data-answer]').forEach(button=>button.addEventListener('click',async()=>{
       if(answering)return;const skipped=button.dataset.answer==='skip';
       if(!skipped&&!answer.value.trim()){answer.setCustomValidity('请补充真实经历，或跳过本轮。');answer.reportValidity();return;}

@@ -1,6 +1,7 @@
 /* Paragraph review owns selection, local edits, candidates and version creation. */
 (() => {
   'use strict';
+  const streamText=(node,text,complete=false)=>{if(window.cfStreamText)window.cfStreamText(node,text,complete);else node.textContent=text;};
   const form=document.querySelector('[data-review-workbench]');
   if(!form)return;
   class ParagraphReview {
@@ -86,12 +87,12 @@
         while(Date.now()<deadline&&!this.aborted){
           const response=await fetch(`/api/resume-ai/${started.id}`,{credentials:'same-origin',redirect:'error',signal:this.controller.signal});
           const result=await response.json();if(!response.ok)throw new Error(result.error||'暂时无法读取改写结果。');
-          if(result.partial?.proposed){row.querySelector('[data-review-candidate-text]').textContent=result.partial.proposed;row.querySelector('[data-review-candidate-reason]').textContent='正在生成，完整结果尚未校验。';candidate.hidden=false;}
+          if(result.partial?.proposed){streamText(row.querySelector('[data-review-candidate-text]'),result.partial.proposed);row.querySelector('[data-review-candidate-reason]').textContent='正在生成，完整结果尚未校验。';candidate.hidden=false;}
           if(result.state==='succeeded'){
             const output=result.result;
             if(!output?.proposed||output.original!==this.original(row))throw new Error('原文版本已变化，请打开完整编辑器核对。');
             if(output.proposed.length>this.text(row).maxLength)throw new Error('建议超过本段长度上限，请在完整编辑器中精简。');
-            row.querySelector('[data-review-candidate-text]').textContent=output.proposed;row.querySelector('[data-review-candidate-reason]').textContent=output.reason||'';
+            streamText(row.querySelector('[data-review-candidate-text]'),output.proposed,true);row.querySelector('[data-review-candidate-reason]').textContent=output.reason||'';
             candidate.dataset.state='succeeded';row.querySelector('[data-review-candidate-state]').textContent='✦ 已完成校验';candidate.hidden=false;adopt.disabled=false;this.status(row,'改写已完成。先比较，再决定是否采用。');return;
           }
           if(['failed','cancelled'].includes(result.state))throw new Error(result.error||'这次改写未完成，请重试。');

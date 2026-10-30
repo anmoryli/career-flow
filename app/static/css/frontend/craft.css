@@ -1,0 +1,25 @@
+/* Final shared contracts: these are component states, not page-specific overrides. */
+:root .cf-body :is(input,textarea,select,.cf-select-trigger):focus {outline:none!important;box-shadow:var(--cf-focus)!important;}
+:root .cf-body :is(input,textarea,.cf-select-trigger) {border-color:transparent;}
+.cf-body :is(b,strong){font-weight:var(--cf-weight-600);}
+.cf-body .icon{vertical-align:-0.125em;}
+.cf-body :is(.cf-panel,.cf-edit-section,.cfa-job-editor,.cfa-review-paragraph,.cf-account-plan,.cf-preview-context){border:0;box-shadow:none;background:var(--cf-surface);}
+.cf-body :is(.cf-select-popover,.cf-dialog,.cf-resume-dialog){border:0;}
+.cf-body .cf-select-option[data-active=true]{background:var(--cf-surface-3);}
+.cf-body :is(input:not([type=checkbox]):not([type=radio]),textarea){background:var(--cf-surface-2);}
+.cf-copy-button{min-width:96px;justify-content:center;font-variant-numeric:tabular-nums;}
+.cf-copy-button[data-copied=true]{color:var(--cf-accent);}
+.cf-stream-glyph{animation:cf-glyph-clear var(--cf-stream-duration) var(--cf-ease) both;}
+@keyframes cf-glyph-clear{from{filter:blur(6px);opacity:0}to{filter:blur(0);opacity:1}}
+/* Native details keeps keyboard semantics. Grid interpolates without measuring height. */
+@supports selector(details::details-content){
+ details[data-cf-fold]::details-content{content-visibility:visible;}
+ details[data-cf-fold]>.cf-fold{display:grid;grid-template-rows:0fr;transition:grid-template-rows var(--cf-duration-base) var(--cf-ease);padding:0!important;margin:0!important;}
+ details[data-cf-fold][open]>.cf-fold{grid-template-rows:1fr;}
+ .cf-fold-content{min-height:0;overflow:hidden;}
+}
+.cf-fold-content>p{margin:12px 0;}
+.cf-body .cf-footer{padding-bottom:max(24px,env(safe-area-inset-bottom));}
+@media(prefers-reduced-motion:reduce){.cf-stream-glyph{animation:none;filter:none;opacity:1}.cf-fold{transition:none!important}}
+@media print{.cf-copy-button{display:none!important}.cf-stream-glyph{animation:none;filter:none;opacity:1}}
+@media(forced-colors:active){:root .cf-body :is(input,textarea,.cf-select-trigger):focus{border:2px solid Highlight!important;outline:none!important;box-shadow:none!important}}

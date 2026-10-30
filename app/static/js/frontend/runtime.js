@@ -52,7 +52,7 @@
   };
   document.addEventListener('input',event=>{if(event.target instanceof HTMLElement)clearFieldError(event.target);});
   let toastTimer;
-  window.cfToast=message=>{const toast=document.querySelector('#theme-feedback');if(!toast)return;clearTimeout(toastTimer);toast.textContent=message;toast.hidden=false;toastTimer=setTimeout(()=>{toast.hidden=true;},3200);};
+  window.cfToast=message=>{const toast=document.querySelector('#theme-feedback');if(!toast)return;clearTimeout(toastTimer);toast.textContent=message;toast.hidden=false;toastTimer=setTimeout(()=>{toast.hidden=true;},2500);};
   const themeSelector=document.querySelector('#theme-select');
   const syncThemeChoices=()=>{
     const preference=document.documentElement.dataset.preference;
@@ -76,7 +76,7 @@
   document.addEventListener('click',event=>{
     const opener=event.target.closest('[data-dialog-open]');if(opener){event.preventDefault();window.cfOpenDialog(opener.dataset.dialogOpen);}
     const closer=event.target.closest('[data-dialog-close]');if(closer){event.preventDefault();window.cfCloseDialog(closer.closest('dialog'));}
-    if(event.target instanceof HTMLDialogElement){const r=event.target.getBoundingClientRect();if(event.clientX<r.left||event.clientX>r.right||event.clientY<r.top||event.clientY>r.bottom)event.target.dispatchEvent(new Event('cancel',{cancelable:true}));}
+    if(event.target instanceof HTMLDialogElement){const r=event.target.getBoundingClientRect();if(!event.target.querySelector('form')&&(event.clientX<r.left||event.clientX>r.right||event.clientY<r.top||event.clientY>r.bottom))event.target.dispatchEvent(new Event('cancel',{cancelable:true}));}
     document.querySelectorAll('.cf-account-menu[open],.cf-task-menu[open]').forEach(menu=>{if(!menu.contains(event.target))menu.open=false;});
   });
   document.querySelectorAll('dialog').forEach(dialog=>{
