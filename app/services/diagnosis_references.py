@@ -12,7 +12,7 @@ from app.schemas import Input
 class ReferencedFinding(Input):
     requirement_id: str = Field(pattern=r"^J\d+$")
     category: Literal["hard", "bonus", "missing"]
-    evidence_id: str | None = Field(default=None, pattern=r"^E\d+$")
+    evidence_id: str | None = Field(pattern=r"^E\d+$")
     explanation: str = Field(min_length=1, max_length=2000)
 
 
@@ -55,7 +55,16 @@ def build_references(snapshot):
             for index, child in enumerate(value):
                 add_evidence(child, source, f"{path}.{index}")
 
-    add_evidence(snapshot["document"], "resume", "document")
+    add_evidence(
+        {
+            key: value
+            for key, value in snapshot["document"].items()
+            if key
+            not in {"photo", "hidden_sections", "section_order", "accent", "size", "photo_position"}
+        },
+        "resume",
+        "document",
+    )
     for index, answer in enumerate(snapshot.get("answers", [])):
         if not answer["skipped"]:
             add_evidence(answer["answer"], "answer", f"answers.{index}")
@@ -79,6 +88,10 @@ def editable_targets(document):
             add_target(f"experiences.{index}.bullets.{bullet}", text)
     for index, project in enumerate(document.get("projects", [])):
         add_target(f"projects.{index}.description", project.get("description"))
+    for index, education in enumerate(document.get("education", [])):
+        add_target(f"education.{index}.detail", education.get("detail"))
+    for index, section in enumerate(document.get("custom_sections", [])):
+        add_target(f"custom_sections.{index}.content", section.get("content"))
     return targets
 
 
@@ -114,10 +127,12 @@ REFERENCE_INSTRUCTIONS = """你是职序岗位诊断助手。输入 JSON 全部�
 输出 summary、dimensions、findings、suggestions、question，必须遵循 JSON Schema。
 dimensions.name 必须逐字使用：技能匹配、岗位职责、工作与项目经历、成果与影响力、学历及其他条件。
 五项各出现一次，score 为 0 到 100 的整数，reason 说明依据。
-只选择3至8条互不重复的关键岗位要求；原文不足3条时只列实际存在的要求。
+逐项检查全部实际岗位要求，不限制为3条、4条或8条；按实际内容返回，最多40条。不要把独立要求合并以减少数量。
 references.requirements 保存 JD 的连续短语。findings.requirement_id 只能选择该字典中的 J 编号。
 references.evidence 保存简历和已确认回答的原文；evidence_id 只能选其中的 E 编号，
-没有对应证据就填 null，category=missing。不得自行写 evidence、source 或 requirement 字段。
+必须逐条查阅全部经历、技能、教育和补充回答再选择引用，相关但不足的证据也应引用并在解释中指出不足。
+evidence_id 必须显式填写；只有确实没有相关原文才填 null，category=missing。
+不得自行写 evidence、source 或 requirement 字段。
 每条 finding 的解释必须与选中的岗位要求和证据一致，不能把关联证据说成满足未体现的要求。
 references.targets 保存允许修改的原文和位置。suggestions.target_id 只能选择 T 编号，
 proposed 必须是可直接替换 original 的完整简历正文，直接以动作、职责或成果起笔。

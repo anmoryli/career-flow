@@ -41,7 +41,7 @@ class Dimension(Input):
 
 class Suggestion(Input):
     path: str = Field(
-        pattern=r"^(summary|experiences\.[0-9]{1,2}\.bullets\.[0-9]{1,2}|projects\.[0-9]{1,2}\.description)$"
+        pattern=r"^(summary|experiences\.[0-9]{1,2}\.bullets\.[0-9]{1,2}|projects\.[0-9]{1,2}\.description|education\.[0-9]{1,2}\.detail|custom_sections\.[0-9]\.content)$"
     )
     original: str = Field(min_length=1, max_length=3000)
     proposed: str = Field(min_length=1, max_length=3000)
@@ -80,15 +80,19 @@ class ApplySuggestion(Input):
         Annotated[
             str,
             Field(
-                pattern=r"^(summary|experiences\.[0-9]{1,2}\.bullets\.[0-9]{1,2}|projects\.[0-9]{1,2}\.description)$"
+                pattern=r"^(summary|experiences\.[0-9]{1,2}\.bullets\.[0-9]{1,2}|projects\.[0-9]{1,2}\.description|education\.[0-9]{1,2}\.detail|custom_sections\.[0-9]\.content)$"
             ),
         ],
         Annotated[str, Field(min_length=1, max_length=3000)],
     ] = Field(default_factory=dict, max_length=30)
 
+    additions: list[Annotated[str, Field(min_length=1, max_length=2000)]] = Field(
+        default_factory=list, max_length=10
+    )
+
     @model_validator(mode="after")
     def changes_required(self):
-        if not self.indices and not self.paragraph_edits:
+        if not self.indices and not self.paragraph_edits and not self.additions:
             raise ValueError("请至少选择一段修改")
         if len(set(self.indices)) + len(self.paragraph_edits) > 30:
             raise ValueError("一次最多保存 30 段")

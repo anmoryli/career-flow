@@ -20,3 +20,9 @@ WORKSPACE_PAGES = {
 
 def workspace_template(view):
     return WORKSPACE_PAGES.get(view, WORKSPACE_PAGES["dashboard"])
+
+
+def register_evidence_filter(app):
+    from app.services.diagnosis_evidence import evidence_rows, resume_passages
+    app.jinja_env.filters["evidence_rows"] = evidence_rows
+    app.jinja_env.filters["resume_passages"] = resume_passages

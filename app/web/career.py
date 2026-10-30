@@ -235,3 +235,9 @@ def resume_ai_status(item_id):
     if item.resume_id is None:
         raise BusinessError("任务类型不匹配。", 404)
     return resume_operation_json(item)
+
+
+@career_web.record_once
+def register_evidence_ui(state):
+    from app.web.frontend import register_evidence_filter
+    register_evidence_filter(state.app)

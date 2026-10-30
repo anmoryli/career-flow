@@ -486,6 +486,18 @@ def apply_suggestions(user_id, operation_id, data):
         parent = get_path(document, ".".join(parts[:-1])) if len(parts) > 1 else document
         key = int(parts[-1]) if isinstance(parent, list) else parts[-1]
         parent[key] = text
+    if data.additions:
+        from uuid import NAMESPACE_URL, uuid5
+
+        sections = document.setdefault("custom_sections", [])
+        if len(sections) + len(data.additions) > 10:
+            raise BusinessError("补充板块最多10个，请在编辑器中合并后再保存。", 422)
+        for index, content in enumerate(data.additions):
+            section_id = str(
+                uuid5(NAMESPACE_URL, f"careerflow:{user_id}:{data.request_key}:{index}")
+            )
+            sections.append({"id": section_id, "title": "岗位相关补充", "content": content})
+            document.setdefault("section_order", []).append(f"custom:{section_id}")
     document["photo"] = version.document.get("photo", "")
     return save_resume(
         user_id,

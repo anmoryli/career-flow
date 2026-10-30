@@ -53,3 +53,14 @@ test('new analysis and paragraph review preserve the original resume',async({pag
  const row=page.locator('[data-review-path="projects.0.description"]');await row.locator('textarea').fill('整理并核对用户反馈。');await page.locator('[name="confirmed"]').check();await page.locator('[data-apply-suggestions] button[type=submit]').click();await expect(page).toHaveURL(/resume_id=/);
  const copiedId=new URL(page.url()).searchParams.get('resume_id');expect(Number(copiedId)).not.toBe(resume.id);const original=await (await page.request.get(`/api/resumes/${resume.id}`)).json();expect(original.document.projects[0].description).toBe('整理用户反馈');
 });
+
+test('missing evidence offers grounded supplementation saved as a separate version',async({page})=>{
+ await member(page);const resume=await create(page);await page.goto(`/workspace?view=jobs&resume_id=${resume.id}`);
+ await page.locator('#job-title').fill('产品经理');await page.locator('#job-description').fill('需要产品需求分析和跨团队协作经验。');await page.locator('[data-save-job]').click();await expect(page).toHaveURL(/\/jobs\/\d+/);
+ await expect(page.locator('[data-evidence-category]').first()).toBeVisible({timeout:20000});
+ await expect(page.locator('[data-evidence-category] .cf-link').first()).toBeVisible();
+ await page.locator('a[href*="/suggestions"]').first().click();await page.locator('[data-supplement-facts]').fill('真实负责用户访谈与需求分析，协调研发推进功能上线。');await page.locator('[data-supplement-generate]').click();await expect(page.locator('[data-supplement-text]')).not.toHaveValue('',{timeout:20000});
+ const text=await page.locator('[data-supplement-text]').inputValue();await page.locator('[name=confirmed]').check();await page.locator('[data-apply-suggestions] button[type=submit]').click();await expect(page).toHaveURL(/resume_id=/);
+ const id=new URL(page.url()).searchParams.get('resume_id');expect(Number(id)).not.toBe(resume.id);const stored=await(await page.request.get(`/api/resumes/${id}`)).json();expect(stored.document.custom_sections.at(-1).content).toBe(text);
+ const original=await(await page.request.get(`/api/resumes/${resume.id}`)).json();expect(original.document.custom_sections).toEqual([]);
+});

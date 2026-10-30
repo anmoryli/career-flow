@@ -120,6 +120,8 @@ def quote(user_id, resume_id, data):
             previous.diagnostic_revision,
         ) != (resume_id, data.mode, data.path, data.revision):
             raise BusinessError("重复请求内容不一致。", 409)
+        if snapshot.get("source_facts", "") != data.source_facts.strip():
+            raise BusinessError("重复请求内容不一致。", 409)
         db.session.commit()
         return previous
     from app.services.commerce import ensure_resume_ai_capacity
@@ -141,6 +143,10 @@ def quote(user_id, resume_id, data):
         context = field_context(version.document, data.path)
     except (KeyError, IndexError, ValueError, TypeError):
         raise BusinessError("简历条目不存在，请刷新页面。", 422) from None
+    if data.source_facts.strip():
+        original = data.source_facts.strip()
+        context = {"confirmed_facts": original,
+                   "boundary": "岗位要求不是用户事实，只整理已提供的经历，不添加技能、指标或经历。"}
     if not isinstance(original, str):
         raise BusinessError("只能改写单条文字。", 422)
     if not original.strip() and (
@@ -156,6 +162,7 @@ def quote(user_id, resume_id, data):
     )
     snapshot = {
         "path": data.path,
+        "source_facts": data.source_facts.strip(),
         "original": original,
         "context": context,
         "mode": data.mode,

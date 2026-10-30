@@ -15,6 +15,8 @@ RewriteMode = Literal["optimize", "expand", "generate", "professional", "concise
 class ResumeAIQuote(Input):
     request_key: UUID
     revision: int = Field(gt=0)
+    source_facts: str = Field(default="", max_length=2000)
+    requirement: str = Field(default="", max_length=1000)
     mode: RewriteMode
     path: str = Field(
         pattern=r"^(summary|experiences\.[0-9]{1,2}\.bullets\.[0-9]{1,2}|projects\.[0-9]{1,2}\.description|education\.[0-9]{1,2}\.detail|custom_sections\.[0-9]\.content)$"
