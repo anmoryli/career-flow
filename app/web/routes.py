@@ -96,6 +96,8 @@ def ready():
 
 @web.get("/")
 def home():
+    if g.user:
+        return redirect(url_for("web.workspace"), code=303)
     return render_template("frontend/public/home.html")
 
 
