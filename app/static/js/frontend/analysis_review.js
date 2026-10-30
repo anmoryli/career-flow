@@ -28,6 +28,7 @@
         count.textContent=`${field.value.length} / ${field.maxLength} 字`;
       });
       this.form.querySelector('[data-review-save-count]').textContent=(selected.length||extra)?`已选择 ${selected.length} 段${extra?' + 1段补充':''}`:'尚未选择段落';
+      const quick=this.form.querySelector('[data-review-quick-count]');if(quick)quick.textContent=(selected.length||extra)?`将保存 ${selected.length} 段修改${extra?'和1段补充':''}`:'选择要保留的修改，再核实保存';
       this.applyFilter();
     }
     applyFilter(){

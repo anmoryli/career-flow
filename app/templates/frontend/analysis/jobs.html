@@ -5,7 +5,7 @@
 <div class="cf-page cfa-job-page" data-analysis-page="jobs">
   <header class="cfa-task-hero">
     <span class="cf-eyebrow">岗位匹配分析</span>
-    <h1>让真实的经历，<br>回应你想去的岗位。</h1>
+    <h1>岗位分析</h1>
     <p>带上一份简历和一段岗位描述。先看要求与证据，再决定哪里值得修改。</p>
     <a class="cfa-text-link" href="{{ url_for('web.workspace',view='reports') }}">查看已有分析 {{ icon('arrow') }}</a>
   </header>
@@ -38,10 +38,10 @@
     </section>
     <section class="cfa-task-section cfa-submit-section">
       <header class="cfa-task-section-heading" data-job-step="analysis"><span>03</span><div><h2>准备好，就开始对照。</h2><p>已有证据、待补充信息和修改方向，会分别呈现。</p></div></header>
-      <footer><div class="cfa-job-submit-context"><p data-job-ready-hint role="status">选择简历并填写岗位描述后，即可开始分析。</p><label class="cfa-checkbox"><input type="checkbox" data-save-job-for-later checked><span>保存岗位，方便下次载入</span></label></div><button class="cf-button" type="button" data-save-job {% if g.user and not resumes %}disabled{% endif %}><span data-job-submit-label>开始岗位分析</span> {{ icon('arrow') }}</button></footer>
       <p id="job-save-status" class="cf-feedback" role="status" tabindex="-1" aria-live="polite"></p>
       <p class="cfa-job-footnote">{{ icon('lock') }} 使用当前保存的简历快照；修改建议由你核实后采用。</p>
     </section>
+    <footer><div class="cfa-job-submit-context"><p data-job-ready-hint role="status">选择简历并填写岗位描述后，即可开始分析。</p><label class="cfa-checkbox"><input type="checkbox" data-save-job-for-later checked><span>保存岗位，方便下次载入</span></label></div><button class="cf-button" type="button" data-save-job {% if g.user and not resumes %}disabled{% endif %}><span data-job-submit-label>开始岗位分析</span> {{ icon('arrow') }}</button></footer>
   </form>
   <section class="cfa-job-library" aria-labelledby="job-library-heading">
     <header class="cfa-directory-heading"><div><span class="cf-eyebrow">不必每次从头开始</span><h2 id="job-library-heading">继续之前的准备。</h2><p>回到已有岗位查看结果，或载入要求做一次新的分析。</p></div><span>{{ jobs|length }} 份岗位</span></header>
