@@ -10,8 +10,13 @@ from sqlalchemy import create_engine, text
 from sqlalchemy.engine import make_url
 
 root = Path(__file__).resolve().parents[1]
-config = dotenv_values(root / ".env")
-url = make_url(os.getenv("TEST_DATABASE_URL") or config["DATABASE_URL"]).set(
+config = dotenv_values(root / ".env") if (root / ".env").exists() else {}
+database_url = os.getenv("TEST_DATABASE_URL") or os.getenv("DATABASE_URL") or config.get(
+    "DATABASE_URL"
+)
+if not database_url:
+    raise SystemExit("TEST_DATABASE_URL / DATABASE_URL / .env DATABASE_URL 至少提供一个")
+url = make_url(database_url).set(
     database="careerflow_test"
 )
 if url.host not in {"localhost", "127.0.0.1"}:

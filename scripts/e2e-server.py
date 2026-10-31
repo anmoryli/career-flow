@@ -1,5 +1,6 @@
 """Isolated browser fixture server. Never import this module from application code."""
 
+import os
 import sys
 import threading
 from pathlib import Path
@@ -18,9 +19,16 @@ from app.models import ActiveConfig, AdminAudit, CommerceOrder, ConfigRevision, 
 from app.services import auth, diagnosis
 
 root = Path(__file__).resolve().parents[1]
-values = dotenv_values(root / ".env")
-url = make_url(values["DATABASE_URL"]).set(database="careerflow_test")
-assert url.host == "127.0.0.1" and url.database == "careerflow_test"
+# 本地从 .env 读取；CI 直接用环境变量注入（.env 不入库，容器/流水线里没有这个文件）。
+values = dotenv_values(root / ".env") if (root / ".env").exists() else {}
+database_url = os.getenv("E2E_DATABASE_URL") or os.getenv("TEST_DATABASE_URL") or values.get(
+    "DATABASE_URL"
+)
+if not database_url:
+    raise SystemExit("E2E_DATABASE_URL / TEST_DATABASE_URL / .env DATABASE_URL 至少提供一个")
+url = make_url(database_url).set(database="careerflow_test")
+assert url.database == "careerflow_test", "浏览器用例只能连接 careerflow_test"
+redis_url = os.getenv("E2E_REDIS_URL") or os.getenv("TEST_REDIS_URL", "redis://127.0.0.1:6390/15")
 app = create_app(
     {
         "APP_ENV": "testing",
@@ -28,7 +36,7 @@ app = create_app(
         "SECRET_KEY": "e2e-only-" + "a" * 40,
         "SESSION_ENCRYPTION_KEY": "e2e-hmac-" + "b" * 40,
         "SQLALCHEMY_DATABASE_URI": url.render_as_string(hide_password=False),
-        "REDIS_URL": "redis://127.0.0.1:6390/15",
+        "REDIS_URL": redis_url,
         "ADMIN_CONFIG_KEY": "browser-only-admin-key-" + "c" * 48,
         "MOCK_PAYMENT_ENABLED": True,
         "RATE_LIMIT_NAMESPACE": f"careerflow:e2e:{uuid4().hex}",

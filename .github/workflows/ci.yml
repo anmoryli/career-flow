@@ -1,0 +1,295 @@
+name: CI
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  PYTHON_VERSION: "3.12"
+  NODE_VERSION: "22"
+  # 仅用于测试进程的固定密钥；生产密钥由部署环境注入，绝不写入仓库。
+  SECRET_KEY: ci-test-secret-key-0123456789abcdef
+  SESSION_ENCRYPTION_KEY: ci-test-session-key-fedcba9876543210
+  ADMIN_CONFIG_KEY: ci-test-admin-key-0123456789abcdef
+  APP_ENV: testing
+
+jobs:
+  lint:
+    name: 静态检查
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+      - run: uv sync --frozen --group dev
+      - name: ruff
+        run: uv run ruff check app tests scripts
+      - name: 空白与冲突标记
+        run: git diff --check
+
+  unit:
+    name: 单元测试
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+      - run: uv sync --frozen --group dev
+      - name: pytest（不依赖数据库）
+        run: uv run pytest tests -q --ignore=tests/integration --junitxml=output/pytest-unit.xml
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: pytest-unit
+          path: output/pytest-unit.xml
+          if-no-files-found: ignore
+
+  integration:
+    name: 集成测试（MySQL 8.4 + Redis）
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    services:
+      mysql:
+        image: mysql:8.4
+        env:
+          MYSQL_ROOT_PASSWORD: careerflow
+          MYSQL_DATABASE: careerflow_test
+        ports:
+          - 3310:3306
+        options: >-
+          --health-cmd "mysqladmin ping -h 127.0.0.1 -uroot -pcareerflow --silent"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 40
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6390:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 20
+    env:
+      DATABASE_URL: mysql+pymysql://root:careerflow@127.0.0.1:3310/careerflow_test?charset=utf8mb4
+      TEST_DATABASE_URL: mysql+pymysql://root:careerflow@127.0.0.1:3310/careerflow_test?charset=utf8mb4
+      TEST_REDIS_URL: redis://127.0.0.1:6390/15
+      REDIS_URL: redis://127.0.0.1:6390/15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+      - run: uv sync --frozen --group dev
+      - name: 迁移、schema 漂移检查与全量 pytest
+        run: uv run python scripts/test-integration.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: coverage-report
+          path: |
+            output/pytest-native.xml
+            output/coverage.json
+          if-no-files-found: ignore
+
+  browser:
+    name: 浏览器交互与性能预算
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    services:
+      mysql:
+        image: mysql:8.4
+        env:
+          MYSQL_ROOT_PASSWORD: careerflow
+          MYSQL_DATABASE: careerflow_test
+        ports:
+          - 3310:3306
+        options: >-
+          --health-cmd "mysqladmin ping -h 127.0.0.1 -uroot -pcareerflow --silent"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 40
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6390:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 20
+    env:
+      DATABASE_URL: mysql+pymysql://root:careerflow@127.0.0.1:3310/careerflow_test?charset=utf8mb4
+      TEST_DATABASE_URL: mysql+pymysql://root:careerflow@127.0.0.1:3310/careerflow_test?charset=utf8mb4
+      E2E_DATABASE_URL: mysql+pymysql://root:careerflow@127.0.0.1:3310/careerflow_test?charset=utf8mb4
+      TEST_REDIS_URL: redis://127.0.0.1:6390/15
+      REDIS_URL: redis://127.0.0.1:6390/15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+      - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+      - run: uv sync --frozen --group dev
+      - run: npm ci
+      - name: 构建前端资源
+        run: npm run build
+      - name: 安装 Chromium
+        run: npx playwright install --with-deps chromium
+      - name: 升级测试库
+        run: uv run flask --app wsgi db upgrade
+      - name: 浏览器用例（三视口，含性能预算）
+        run: >-
+          npx playwright test
+          craft discoverability editor_drag editor_sections frontend_assets
+          frontend_experience frontend_refactor frontend_workflows landing
+          product_completion job_description performance
+          --reporter=list
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-report
+          path: |
+            output/browser-report
+            output/browser
+            output/perf
+          if-no-files-found: ignore
+
+  performance:
+    name: 后端压测（HTTP 冒烟）
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    services:
+      mysql:
+        image: mysql:8.4
+        env:
+          MYSQL_ROOT_PASSWORD: careerflow
+          MYSQL_DATABASE: careerflow_test
+        ports:
+          - 3310:3306
+        options: >-
+          --health-cmd "mysqladmin ping -h 127.0.0.1 -uroot -pcareerflow --silent"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 40
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6390:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 20
+    env:
+      DATABASE_URL: mysql+pymysql://root:careerflow@127.0.0.1:3310/careerflow_test?charset=utf8mb4
+      TEST_DATABASE_URL: mysql+pymysql://root:careerflow@127.0.0.1:3310/careerflow_test?charset=utf8mb4
+      REDIS_URL: redis://127.0.0.1:6390/15
+      PERF_P95_HTML_MS: "800"
+      PERF_P95_STATIC_MS: "300"
+      PERF_P95_READY_MS: "1500"
+      PERF_MIN_RPS: "5"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+      - run: uv sync --frozen --group dev
+      - run: uv run flask --app wsgi db upgrade
+      - name: 启动 gunicorn
+        run: |
+          uv run gunicorn --config docker/gunicorn.conf.py --bind 127.0.0.1:8020 --workers 2 --threads 4 wsgi:app &
+          for _ in $(seq 1 60); do
+            curl -fsS http://127.0.0.1:8020/health/live && exit 0
+            sleep 1
+          done
+          echo "gunicorn 未在 60 秒内就绪" >&2
+          exit 1
+      - name: HTTP 压测
+        run: uv run python scripts/perf-smoke.py --base-url http://127.0.0.1:8020 --duration 8 --concurrency 8
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: perf-report
+          path: output/perf/report.json
+          if-no-files-found: ignore
+
+  image:
+    name: 构建并发布镜像
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    needs: [lint, unit, integration, browser, performance]
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - name: 登录 GHCR
+        if: github.event_name != 'pull_request'
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ github.repository }}
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=semver,pattern={{version}}
+            type=sha,format=long
+            type=raw,value=latest,enable={{is_default_branch}}
+      - name: 构建镜像（main 上同时推送 GHCR）
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          target: runtime
+          platforms: linux/amd64
+          load: true
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+      - name: 镜像自检（启动 + 存活探针）
+        run: |
+          image=$(docker images --format '{{.Repository}}:{{.Tag}}' | grep -m1 '^ghcr.io/')
+          echo "自检镜像：$image"
+          docker run -d --name careerflow-smoke -p 8000:8000 \
+            -e APP_ENV=development \
+            -e RUN_MIGRATIONS=false \
+            -e MOCK_PAYMENT_ENABLED=false \
+            -e SECRET_KEY=smoke-secret-key-0123456789abcdef \
+            -e SESSION_ENCRYPTION_KEY=smoke-session-key-0123456789abcdef \
+            "$image"
+          for _ in $(seq 1 40); do
+            if curl -fsS http://127.0.0.1:8000/health/live; then
+              echo "镜像存活探针通过"
+              exit 0
+            fi
+            sleep 1
+          done
+          docker logs careerflow-smoke
+          exit 1
+      - name: 清理自检容器
+        if: always()
+        run: docker rm -f careerflow-smoke 2>/dev/null || true
