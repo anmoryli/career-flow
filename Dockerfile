@@ -7,6 +7,8 @@ COPY package.json package-lock.json ./
 RUN npm ci --no-audit --no-fund
 COPY scripts/build-assets.cjs scripts/build-frontend.cjs ./scripts/
 COPY app/static ./app/static
+# Tailwind input.css 通过 source(../../../templates/frontend) 扫描模板里的类名
+COPY app/templates ./app/templates
 RUN node scripts/build-frontend.cjs
 
 
