@@ -1,0 +1,112 @@
+# 本地/预发的完整栈：应用 + RQ worker + MySQL 8.4 + Redis + Mailpit + Nginx。
+# 生产请改用受管 MySQL（开启 TLS）、受管 Redis，并把密钥注入 SECRET_KEY /
+# SESSION_ENCRYPTION_KEY；下面的默认值只用于本机演示，绝不能用于公网。
+name: careerflow
+
+x-app-env: &app-env
+  DATABASE_URL: mysql+pymysql://careerflow:${MYSQL_PASSWORD:-careerflow-local}@mysql:3306/careerflow?charset=utf8mb4
+  REDIS_URL: redis://redis:6379/0
+  MAIL_SERVER: mailpit
+  MAIL_PORT: "1025"
+  MAIL_DEFAULT_SENDER: noreply@careerflow.local
+  APP_ENV: ${APP_ENV:-development}
+  COOKIE_SECURE: ${COOKIE_SECURE:-false}
+  MOCK_PAYMENT_ENABLED: ${MOCK_PAYMENT_ENABLED:-false}
+  SECRET_KEY: ${SECRET_KEY:-local-only-secret-key-0123456789abcdef}
+  SESSION_ENCRYPTION_KEY: ${SESSION_ENCRYPTION_KEY:-local-only-session-key-fedcba9876543210}
+  ADMIN_CONFIG_KEY: ${ADMIN_CONFIG_KEY:-local-only-admin-key-0123456789abcdef}
+  AI_ENABLED: ${AI_ENABLED:-false}
+  AI_MODEL: ${AI_MODEL:-}
+  AI_API_KEY: ${AI_API_KEY:-}
+  AI_BASE_URL: ${AI_BASE_URL:-https://api.openai.com/v1}
+  MYSQL_POOL_SIZE: "10"
+
+services:
+  mysql:
+    image: mysql:8.4
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_0900_ai_ci
+      - --default-time-zone=+00:00
+    environment:
+      MYSQL_DATABASE: careerflow
+      MYSQL_USER: careerflow
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-careerflow-local}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root-local}
+    volumes:
+      - mysql-data:/var/lib/mysql
+    ports:
+      - "3310:3306"
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -u root -p$$MYSQL_ROOT_PASSWORD --silent"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+      start_period: 30s
+
+  redis:
+    image: redis:7-alpine
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redis-data:/data
+    ports:
+      - "6390:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  mailpit:
+    image: axllent/mailpit:v1.20
+    ports:
+      - "8026:8025"
+      - "1026:1025"
+
+  app:
+    build:
+      context: .
+      target: runtime
+    image: careerflow:local
+    environment:
+      <<: *app-env
+      PORT: "8000"
+      GUNICORN_WORKERS: ${GUNICORN_WORKERS:-3}
+      RUN_MIGRATIONS: "true"
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    ports:
+      - "8000:8000"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8000/health/live', timeout=3).status == 200 else 1)"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 40s
+
+  worker:
+    image: careerflow:local
+    command: ["python", "-m", "app.worker"]
+    environment:
+      <<: *app-env
+      RUN_MIGRATIONS: "false"
+    depends_on:
+      app:
+        condition: service_healthy
+
+  nginx:
+    image: nginx:1.27-alpine
+    volumes:
+      - ./docker/nginx.conf:/etc/nginx/nginx.conf:ro
+    ports:
+      - "8080:80"
+    depends_on:
+      app:
+        condition: service_healthy
+
+volumes:
+  mysql-data:
+  redis-data:
