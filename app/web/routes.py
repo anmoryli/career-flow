@@ -24,7 +24,7 @@ from app.services import auth
 from app.services.conversations import append_message, owned_conversation, save_memory
 from app.services.errors import BusinessError
 from app.services.infrastructure import rate_limit, readiness
-from app.web.frontend import workspace_template
+from app.web.frontend import workspace_page
 
 web = Blueprint("web", __name__)
 
@@ -192,9 +192,10 @@ def workspace():
     from app.services import commerce
     from app.services.career import owned, serialize_resume
 
-    view = request.args.get("view", "dashboard")
+    page = workspace_page(request.args.get("view", "dashboard"))
+    view = page.current_view
     if g.user is None:
-        if view not in {"resume-new", "resume-template", "resume-import", "jobs"}:
+        if not page.guest:
             return redirect(url_for("web.home", auth="login", next=request.full_path.rstrip("?")))
         from types import SimpleNamespace
 
@@ -205,7 +206,7 @@ def workspace():
             resume_ai_remaining=5,
         )
         return render_template(
-            workspace_template(view), conversations=[], count=0, resumes=[], jobs=[], saved_jobs=[],
+            page.template, conversations=[], count=0, resumes=[], jobs=[], saved_jobs=[],
             current_resume=None, reports=[], completed_reports=[], active_jobs=[],
             active_job_ids=set(), inactive_saved_jobs=[], recent_only_jobs=[],
             entitlements=guest_entitlements, resume_previews={},
@@ -297,7 +298,7 @@ def workspace():
         )
     )
     return render_template(
-        workspace_template(view),
+        page.template,
         conversations=conversations,
         count=count,
         resumes=resumes,

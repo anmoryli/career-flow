@@ -368,3 +368,7 @@
 
 .cfa-job-editor>footer{display:flex;align-items:center;justify-content:space-between;gap:20px}.cf-body .cfa-task-hero>div>h1{font-size:clamp(28px,3vw,36px)}
 @media(max-width:700px){.cfa-job-editor>footer{flex-direction:column;align-items:stretch;gap:12px}.cfa-job-editor>footer>.cf-button{width:100%}}
+
+/* A keyboard-operable custom trigger keeps native browser upload chrome out of the page. */
+.cfa-source-choice:has(.cfa-guest-upload){flex-wrap:wrap}.cfa-guest-upload{flex:0 0 100%;background:var(--cf-surface-2);cursor:default;flex-wrap:wrap}.cfa-guest-upload>span{flex:1;min-width:0}.cfa-guest-upload>span>small{overflow-wrap:anywhere}.cfa-guest-upload>.cf-button{min-height:44px;margin-left:auto}.cfa-guest-upload>.icon{color:var(--cf-accent)}
+@media(max-width:700px){.cfa-guest-upload{display:grid;grid-template-columns:17px minmax(0,1fr) auto;padding:16px;gap:12px}.cfa-guest-upload>.cf-button{width:auto;margin:0;padding:8px 12px;font-size:12px}.cfa-job-editor{padding-bottom:calc(88px + env(safe-area-inset-bottom))}.cfa-job-editor :is(input,textarea,.cf-select-trigger){scroll-margin-bottom:190px}.cfa-submit-section{padding-bottom:32px}}

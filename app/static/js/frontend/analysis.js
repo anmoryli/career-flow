@@ -50,17 +50,20 @@
     const changed=()=>{requestKey=crypto.randomUUID();syncReadiness();};
     jobForm.addEventListener('invalid',event=>{const messages={'analysis-resume':'请选择用于本次分析的简历。','job-description':'请粘贴岗位职责与任职要求。','job-url':'请填写有效的岗位链接，或留空。'};feedback(messages[event.target.id]||'请检查表单中的必填内容。','error');},true);
     jobForm.addEventListener('input', changed); changed();
+    const chooseGuest=page.querySelector('[data-choose-guest-resume]');
+    chooseGuest?.addEventListener('click',()=>guestInput?.click());
     guestInput?.addEventListener('change', async () => {
       guestResume = null; guestReading=false; resumeRequestKey = crypto.randomUUID(); const generation = ++uploadGeneration;
       const file = guestInput.files[0], feedback = page.querySelector('#guest-resume-status');
-      if (!file) { text(feedback,'');syncReadiness(); return; }
-      if (file.size > 4*1024*1024 || !file.name.toLowerCase().endsWith('.pdf')) {text(feedback,'请选择不超过 4 MB 的 PDF 简历。');syncReadiness();return;}
-      guestReading=true;syncReadiness();text(feedback,'正在提取简历内容…'); const data = new FormData(); data.set('file',file);
+      text(page.querySelector('[data-guest-file-name]'),file?.name||'尚未选择文件');text(chooseGuest,file?'更换 PDF':'选择 PDF 文件');
+      if (!file) { text(feedback,'');feedback.dataset.tone='info';syncReadiness(); return; }
+      if (file.size > 4*1024*1024 || !file.name.toLowerCase().endsWith('.pdf')) {feedback.dataset.tone='error';text(feedback,'请选择不超过 4 MB 的 PDF 简历。');syncReadiness();return;}
+      guestReading=true;syncReadiness();feedback.dataset.tone='info';text(feedback,'正在提取简历内容…'); const data = new FormData(); data.set('file',file);
       try {
         const result = await read('/api/guest/resume/parse',{method:'POST',body:data,headers:{'X-CSRFToken':csrf()}});
         if (generation !== uploadGeneration) return;
-        guestResume = result;guestReading=false;syncReadiness();text(feedback,`已读取「${result.title || file.name}」，开始分析时登录。`);
-      } catch(error) { if(generation===uploadGeneration){guestReading=false;syncReadiness();text(feedback,error.message);} }
+        guestResume = result;guestReading=false;syncReadiness();feedback.dataset.tone='success';text(feedback,`已读取「${result.title || file.name}」，开始分析时登录。`);
+      } catch(error) { if(generation===uploadGeneration){guestReading=false;syncReadiness();feedback.dataset.tone='error';text(feedback,error.message);} }
     });
     const loadJob = async (id, button) => {
       const feedback = page.querySelector('[data-import-job-status]') || status;

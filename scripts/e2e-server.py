@@ -31,6 +31,7 @@ app = create_app(
         "REDIS_URL": "redis://127.0.0.1:6390/15",
         "ADMIN_CONFIG_KEY": "browser-only-admin-key-" + "c" * 48,
         "MOCK_PAYMENT_ENABLED": True,
+        "RATE_LIMIT_NAMESPACE": f"careerflow:e2e:{uuid4().hex}",
     }
 )
 created = set()

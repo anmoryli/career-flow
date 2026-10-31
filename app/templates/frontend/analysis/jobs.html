@@ -25,7 +25,7 @@
         {% elif g.user %}
         <div class="cfa-resume-missing"><p>还没有简历？先整理好真实经历，再来对照目标岗位。</p><a class="cf-button is-secondary" href="{{ url_for('web.workspace',view='resume-new') }}">创建第一份简历 {{ icon('arrow') }}</a></div>
         {% else %}
-        <label class="cfa-guest-upload" for="guest-resume-file">{{ icon('upload') }}<span>选择已有 PDF 简历<small>不超过 4 MB，开始分析前登录</small></span><input id="guest-resume-file" type="file" accept="application/pdf,.pdf"></label>
+        <div class="cfa-guest-upload">{{ icon('upload') }}<span>选择已有 PDF 简历<small id="guest-resume-file-help">不超过 4 MB，开始分析前登录</small><small data-guest-file-name role="status">尚未选择文件</small></span><button class="cf-button is-secondary" type="button" data-choose-guest-resume aria-describedby="guest-resume-file-help">选择 PDF 文件</button><input id="guest-resume-file" type="file" accept="application/pdf,.pdf" hidden></div>
         <p id="guest-resume-status" class="cf-feedback" role="status"></p>
         {% endif %}
       </div>
