@@ -150,6 +150,8 @@ jobs:
       CF_TEST_PYTHON: ${{ github.workspace }}/.venv/bin/python
     steps:
       - uses: actions/checkout@v4
+      - name: 安装 CJK 字体（无中文字体的 runner 上字体回退重排会抬高 CLS）
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq fonts-noto-cjk
       - uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
