@@ -175,7 +175,8 @@ def test_scanned_page_uses_bounded_ocr_and_extracts_contact(monkeypatch):
             pass
 
     def recognize(args, **kwargs):
-        assert args[0].lower().endswith("tesseract.exe") or args[0] == "tesseract"
+        # Windows 下是 .tools/tesseract.exe 或 PATH 上的 tesseract；Linux 下 which 解析为绝对路径。
+        assert os.path.basename(args[0]).lower() in {"tesseract", "tesseract.exe"}
         assert args[1:3] == ["stdin", "stdout"]
         assert kwargs["input"].startswith(b"\x89PNG")
         assert kwargs["timeout"] <= 20
