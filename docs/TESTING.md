@@ -2,6 +2,8 @@
 
 2026-10-27 ????????? MySQL ?????? 5 ?????????? 61 ????126 ?????????????????????????????????????????????????????
 
+2026-10-31 CI/CD 与性能基线：建立 GitHub Actions 六段流水线（lint/单元/MySQL 集成/三视口浏览器/HTTP 压测/镜像构建发布），每次 push 自动触发，详见 `docs/CI_CD.md`。性能测试新增 `scripts/perf-smoke.py`（标准库压测，8 端点 p95/错误率/RPS 预算）与 `tests/browser/performance.spec.cjs`（TTFB/FCP/LCP/CLS 预算，仅预算用例允许一次重试）；Flask dev server 4 并发实测 8 端点 p95 < 90ms、RPS 55–95、零错误。浏览器用例分类取证后，5 个只断言旧模板树的 spec 移入 `tests/browser/legacy/`（workflow 42 failed、studio 5、paragraph-review 3、redesign 2、overview-detail 2，均与 origin/main 基线一致）；旧「岗位描述安全 Markdown」用例改写为新界面结构的 `tests/browser/job_description.spec.cjs`。`e2e-server.py` 与 `test-integration.py` 改为支持 CI 环境变量注入（`.env` 不再是必需）。`product_completion` 中失效的 `/guides/backend` 路径更正为 `/guides/backend-engineer`。真实模型质量（Q03/Q04）与真实支付仍未验收。
+
 # 测试方法
 
 2026-10-25 简历编辑交接任务回归：`uv run python scripts/test-integration.py` 在原生 MySQL/Redis 上为 173 passed、1 skipped，覆盖率 93%；随后新增的跨用户 AI 任务状态校验、队列不可用退款与未确认报价允许删简历用例，定向运行 `uv run python scripts/test-focus.py tests/integration/test_resume_ai.py -q` 为 7 passed。`npx.cmd playwright test` 为 64 passed、2 skipped；弹窗居中调整后定向运行 6 passed，覆盖桌面、平板、手机的逐条建议及接受/保留原文。`npm.cmd run build`、`uv run ruff check app tests scripts/e2e-server.py scripts/verify-db-lifecycle.py` 和 `git diff --check` 通过。`uv run python scripts/verify-db-lifecycle.py` 在隔离恢复库完成新迁移升降级和备份恢复，开发库升级后 `flask db check` 无差异。简历改写只使用明确标记的测试模型，未调用真实模型、未进行生产部署。

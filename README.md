@@ -23,7 +23,7 @@
 
 ## 本机运行：Windows + WSL Ubuntu 原生服务
 
-按用户最新要求，运行、测试和部署均不使用 Docker。MySQL/Redis 原生运行于已有的 WSL Ubuntu；Flask/RQ/Mailpit 原生运行于 Windows。数据库始终为 MySQL，不使用 SQLite。
+原生运行（2026-10-24 起的本机主路径）：MySQL/Redis 原生运行于已有的 WSL Ubuntu；Flask/RQ/Mailpit 原生运行于 Windows。数据库始终为 MySQL，不使用 SQLite。2026-10-31 起新增并行可选的容器路径（Docker 镜像 + compose + CI/CD），见 [CI/CD 与容器化](docs/CI_CD.md)；两种方式按需选用。
 
 已验证环境：Windows、WSL Ubuntu 26.04、Python 3.12.13、MySQL 8.4.11、Redis 8.0.5、Mailpit 1.27.10。
 
@@ -52,14 +52,16 @@ Windows 本地使用 Flask 开发服务器，仅供开发。Linux 生产运行�
 
 ```powershell
 uv run ruff check app tests scripts wsgi.py
-uv run ruff format --check app tests scripts wsgi.py migrations
 uv run pytest tests/test_foundation.py -q
 uv run python scripts/test-integration.py
 uv run python scripts/verify-db-lifecycle.py
 uv run python scripts/verify-worker.py
 uv run flask --app wsgi check-services
 npx playwright test
+uv run python scripts/perf-smoke.py --base-url http://127.0.0.1:8021 --duration 8
 ```
+
+`ruff format` 尚未全仓统一（会重排大量现有风格），CI 只强制 `ruff check`；浏览器用例只跑现行维护集，重构前旧用例在 `tests/browser/legacy/`（`testIgnore` 排除）。推送即触发 GitHub Actions 全套流水线（lint/单元/集成/浏览器/压测/镜像），见 [CI/CD 与容器化](docs/CI_CD.md)。
 
 
 集成测试只使用 `careerflow_test`；备份恢复与降级测试只使用 `careerflow_restore_test`。两个数据库由原生初始化脚本创建，不会清空应用库。测试 XML、扫描结果与浏览器截图位于 `output/`，不提交用户数据或凭证。
