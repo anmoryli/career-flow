@@ -1,3 +1,4 @@
+import json
 import re
 from decimal import Decimal
 from uuid import uuid4
@@ -74,6 +75,8 @@ def test_admin_access_and_model_secret_lifecycle(mysql_app, user_factory, admin_
     ordinary_uid, _ = user_factory()
     ordinary, _ = login_client(mysql_app, ordinary_uid)
     assert anonymous.get("/admin").status_code == 303
+    anonymous_api = anonymous.get("/admin/api/config/model")
+    assert anonymous_api.status_code == 401 and anonymous_api.is_json
     assert ordinary.get("/admin").status_code == 403
     assert ordinary.get("/admin/users").status_code == 403
     assert ordinary.get("/admin/api/config/model").status_code == 403
@@ -146,6 +149,86 @@ def test_admin_access_and_model_secret_lifecycle(mysql_app, user_factory, admin_
         assert admin_config.runtime_model()["secret"] == secret
         assert db.session.get(ConfigRevision, one).state == "published"
         assert db.session.get(ConfigRevision, two).state == "published"
+
+
+def test_three_model_profiles_use_independent_providers_and_secrets(mysql_app, admin_client):
+    client, _ = admin_client
+    csrf_token = token(client)
+    profiles = [
+        {"provider": "DeepSeek", "model_id": "deepseek-chat", "base_url": "https://api.deepseek.com/v1"},
+        {"provider": "OpenAI", "model_id": "gpt-4.1-mini", "base_url": "https://api.openai.com/v1"},
+        {"provider": "Qwen", "model_id": "qwen-plus", "base_url": "https://dashscope.aliyuncs.com/compatible-mode/v1"},
+    ]
+    secret_values = ["deepseek-test-key", "openai-test-key", "qwen-test-key"]
+    draft = post(
+        client,
+        "/admin/api/config/model/activate",
+        {
+            "label": "独立三模型",
+            "settings": {"models": profiles, "enabled": True, "tokens_per_credit": None},
+            "secret": json.dumps(secret_values),
+        },
+        csrf_token,
+    )
+    assert draft.status_code == 200
+    assert all(secret not in draft.text for secret in secret_values)
+    revision_id = draft.json["id"]
+    assert draft.json["state"] == "published"
+    with mysql_app.app_context():
+        for profile, secret in zip(profiles, secret_values, strict=True):
+            runtime = admin_config.runtime_model_profile(revision_id, profile["model_id"])
+            assert runtime["provider"] == profile["provider"]
+            assert runtime["base_url"] == profile["base_url"]
+            assert runtime["secret"] == secret
+            assert runtime["enabled"] is True
+            assert runtime["revision_id"] == revision_id
+
+
+def test_admin_api_business_errors_are_json(mysql_app, admin_client):
+    client, _ = admin_client
+    response = client.get("/admin/api/config/not-a-category")
+    assert response.status_code == 404
+    assert response.is_json
+    assert response.json["error"] == "未知配置类别。"
+
+
+def test_service_configuration_shows_current_values_without_history_controls(
+    mysql_app, admin_client
+):
+    client, _ = admin_client
+    page = client.get("/admin/settings")
+    assert page.status_code == 200
+    assert "保存并启用" in page.text
+    assert "保存草稿" not in page.text
+    assert "回滚到此版本" not in page.text
+    assert 'name="model_provider_1"' in page.text
+    assert 'name="model_provider_2"' in page.text
+    assert 'name="model_provider_3"' in page.text
+
+
+def test_old_single_model_revision_does_not_break_configuration_page(mysql_app, admin_client):
+    client, uid = admin_client
+    with mysql_app.app_context():
+        db.session.add(
+            ConfigRevision(
+                category="model",
+                version=1,
+                label="旧版单模型",
+                settings={
+                    "provider": "Legacy",
+                    "model_id": "legacy-chat",
+                    "fallback_model_ids": [],
+                    "base_url": "https://models.example.com/v1",
+                    "enabled": True,
+                },
+                encrypted_secret="legacy-encrypted-secret",
+                state="published",
+                author_id=uid,
+            )
+        )
+        db.session.commit()
+    page = client.get("/admin/settings")
+    assert page.status_code == 200
 
 
 def test_mail_profile_switch_and_real_local_delivery(mysql_app, admin_client):

@@ -4,8 +4,22 @@ import socket
 import httpx
 import pytest
 
+from app.admin_schemas import ModelEndpoint
 from app.services import admin_config
 from app.services.errors import BusinessError
+
+
+def test_model_endpoints_normalize_full_paths_and_known_provider_roots():
+    siliconflow = ModelEndpoint(
+        provider="SiliconFlow",
+        model_id="Qwen/Qwen2.5-7B-Instruct",
+        base_url="https://api.siliconflow.cn/v1/chat/completions",
+    )
+    deepseek = ModelEndpoint(
+        provider="DeepSeek", model_id="deepseek-v4-pro", base_url="https://api.deepseek.com"
+    )
+    assert siliconflow.base_url == "https://api.siliconflow.cn/v1"
+    assert deepseek.base_url == "https://api.deepseek.com/v1"
 
 
 @pytest.fixture

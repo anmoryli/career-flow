@@ -30,11 +30,11 @@ def test_question_form_survives_reload_and_records_answer(mysql_app, context, us
     page = client.get(f"/jobs/{jid}").text
     assert "能补充一个真实项目吗" in page
     assert 'data-diagnosis-chat' in page
-    assert "岗位诊断对话" in page and "补充一点真实经历" in page
-    assert "岗位匹配工作区" in page and "本次诊断依据" in page
-    assert "岗位与简历" in page and "报告与修改" in page
+    assert "补充真实经历" in page and "再补充一点" in page
+    assert 'data-analysis-page="detail"' in page and "本次分析依据" in page
+    assert "关联简历" in page and "审阅修改" in page
     assert 'data-answer="answer"' in page and "提交并继续" in page
-    assert 'data-answer="skip"' in page and "跳过也会计入一轮" in page
+    assert 'data-answer="skip"' in page and "跳过也计入轮数" in page
     other_uid, _ = user_factory()
     other, _ = client_for(mysql_app, other_uid)
     assert other.get(f"/jobs/{jid}").status_code == 404

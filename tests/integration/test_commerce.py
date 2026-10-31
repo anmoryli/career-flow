@@ -73,8 +73,8 @@ def test_free_limits_and_member_entitlements(mysql_app, checkout):
         with pytest.raises(BusinessError) as error:
             commerce.ensure_resume_ai_capacity(uid)
         assert error.value.status == 403
-        with pytest.raises(BusinessError):
-            commerce.ensure_job_analysis_capacity(uid)
+        commerce.ensure_job_analysis_capacity(uid)
+        assert commerce.entitlements(uid)["analysis_remaining"] == 1
 
         order = commerce.create_order(uid, uuid4(), "membership_quarterly")
         commerce.settle_mock(uid, order.id, "success")
@@ -115,7 +115,7 @@ def test_checkout_page_and_single_step_local_activation(mysql_app, checkout):
     assert page.status_code == 200
     assert "39" in page.text
     assert "99" in page.text
-    assert "0 次" in page.text
+    assert "首次" in page.text and "PDF" in page.text
     csrf = page.text.split('name="csrf_token" value="', 1)[1].split('"', 1)[0]
     response = client.post(
         "/commerce/orders",
@@ -140,7 +140,7 @@ def test_checkout_page_and_single_step_local_activation(mysql_app, checkout):
         ) == 1
 
 
-def test_free_user_cannot_export_a_saved_resume(mysql_app, checkout):
+def test_free_export_requires_explicit_grant(mysql_app, checkout):
     from app.models import ResumeVersion
 
     with mysql_app.app_context():
@@ -160,7 +160,7 @@ def test_free_user_cannot_export_a_saved_resume(mysql_app, checkout):
         resume.revision = 1
         resume_id = resume.id
         db.session.commit()
-        assert not commerce.entitlements(checkout)["can_export_resume"]
+        assert commerce.entitlements(checkout)["can_export_resume"]
 
     client, _ = login_client(mysql_app, checkout)
     response = client.get(f"/resumes/{resume_id}/print")

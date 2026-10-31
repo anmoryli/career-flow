@@ -16,6 +16,37 @@ from tests.integration.test_career import client_for, make_operation
 pytestmark = pytest.mark.integration
 
 
+def test_failed_analysis_stays_visible_and_can_be_retried(mysql_app, context):
+    uid, _, job_id, diagnostic_id = context
+    client, _ = client_for(mysql_app, uid)
+    with mysql_app.app_context():
+        diagnostic = db.session.get(Diagnostic, diagnostic_id)
+        failed = AIOperation(
+            user_id=uid,
+            diagnostic_id=diagnostic_id,
+            resume_id=None,
+            request_key=str(uuid4()),
+            kind="analysis",
+            state="failed",
+            diagnostic_revision=diagnostic.revision,
+            ceiling=0,
+            input_snapshot={},
+            error="模型服务暂时不可用，请稍后重试。",
+            expires_at=utcnow() + timedelta(minutes=10),
+            started_at=utcnow(),
+        )
+        db.session.add(failed)
+        db.session.commit()
+
+    response = client.get(f"/jobs/{job_id}")
+    assert response.status_code == 200
+    assert 'data-failed-operation="' in response.text
+    assert "岗位分析失败" in response.text
+    assert "模型服务暂时不可用" in response.text
+    assert 'data-start-ai="analysis"' in response.text
+    assert "重试岗位分析" in response.text
+
+
 def test_api_resume_job_success_and_replay(mysql_app, context):
     uid = context[0]
     client, headers = client_for(mysql_app, uid)
@@ -57,7 +88,8 @@ def test_api_resume_job_success_and_replay(mysql_app, context):
     assert client.get(f"/api/jobs/{unsaved.json['id']}").json["is_saved"] is False
     jobs_page = client.get("/workspace?view=jobs").text
     assert unsaved_job["title"] in jobs_page
-    assert 'class="job-recent-analyses"' in jobs_page
+    assert 'data-analysis-page="jobs"' in jobs_page
+    assert "cfa-job-library" in jobs_page
     job["description"] = "改过的 JD"
     assert client.post("/api/jobs", json=job, headers=headers).status_code == 409
     assert (
@@ -161,11 +193,11 @@ def test_running_report_stays_visible_and_diagnosis_shows_progress(mysql_app, co
     assert reports_page.status_code == 200
     assert f'data-report-operation="{operation_id}"' in reports_page.text
     assert 'data-operation-state="running"' in reports_page.text
-    assert "稍后回来可接着查看" in reports_page.text
+    assert "回到分析" in reports_page.text
 
     diagnosis_page = client.get(f"/jobs/{job_id}")
     assert diagnosis_page.status_code == 200
-    assert "diagnosis-running-premium" in diagnosis_page.text
+    assert "cfa-running" in diagnosis_page.text
     assert f'data-operation="{operation_id}"' in diagnosis_page.text
     assert 'aria-busy="true"' in diagnosis_page.text
 
@@ -192,11 +224,11 @@ def test_running_report_stays_visible_and_diagnosis_shows_progress(mysql_app, co
 
     jobs_page = client.get("/workspace?view=jobs")
     assert jobs_page.status_code == 200
-    assert 'class="job-active-analyses"' in jobs_page.text
+    assert 'cfa-live-tasks' in jobs_page.text
     assert f'data-active-job="{job_id}"' in jobs_page.text
     assert 'href="/jobs/' + str(job_id) + '"' in jobs_page.text
     assert jobs_page.text.count('data-active-job=') == 1
-    assert 'class="workspace-nav-active"' in jobs_page.text
+    assert 'aria-current="page"' in jobs_page.text
 
     reports_page = client.get("/workspace?view=reports")
     assert f'data-report-operation="{analysis_id}"' in reports_page.text
@@ -204,8 +236,8 @@ def test_running_report_stays_visible_and_diagnosis_shows_progress(mysql_app, co
     assert diagnosis_page.status_code == 200
     assert f'data-operation="{analysis_id}"' in diagnosis_page.text
     assert 'data-operation-kind="analysis"' in diagnosis_page.text
-    assert "diagnosis-running-stages" in diagnosis_page.text
-    assert "diagnosis-running-art" in diagnosis_page.text
+    assert "cfa-running-scope" in diagnosis_page.text
+    assert "cfa-running-visual" in diagnosis_page.text
 
 
 @pytest.mark.parametrize(

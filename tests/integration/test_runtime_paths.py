@@ -51,7 +51,9 @@ def test_real_local_mail_registration_and_login_flow(mysql_app):
             headers=headers,
         )
         assert response.status_code == 200
-        assert client.get("/").status_code == 200
+        landing = client.get("/")
+        assert landing.status_code == 303
+        assert landing.headers["Location"].endswith("/workspace")
         with mysql_app.app_context():
             user = db.session.scalar(select(User).where(User.email == email))
             uid = user.id
@@ -184,6 +186,8 @@ def test_all_write_endpoints_require_csrf_and_auth(mysql_app):
         "imports.upload",
         "imports.confirm",
         "imports.parse_guest_resume",
+        "product.export_resume",
+        "product.adoption",
     }
     for rule in rules:
         path = re.sub(r"<int:[^>]+>", "999999999", rule.rule)

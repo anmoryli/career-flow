@@ -52,14 +52,14 @@ def new_conversation(app, user_id):
 def test_mysql_version_schema_engine_charset(mysql_app):
     with mysql_app.app_context():
         assert db.session.scalar(text("SELECT VERSION()")).startswith("8.4.")
-        assert db.session.scalar(text("SELECT version_num FROM alembic_version")) == "d71f4bce92aa"
+        assert db.session.scalar(text("SELECT version_num FROM alembic_version")) == "e8a431c02d9f"
         rows = db.session.execute(
             text(
                 "SELECT ENGINE,TABLE_COLLATION FROM information_schema.TABLES "
                 "WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME != 'alembic_version'"
             )
         ).all()
-        assert len(rows) == len(db.metadata.tables) == 24
+        assert len(rows) == len(db.metadata.tables) == 30
         assert all(
             engine == "InnoDB" and collation == "utf8mb4_0900_ai_ci" for engine, collation in rows
         )

@@ -3,6 +3,18 @@ let uid;
 async function csrf(page) {
   return page.locator('meta[name="csrf-token"]').getAttribute('content');
 }
+async function expectPolishedSelects(page) {
+  const customizable = await page.evaluate(() => CSS.supports('appearance', 'base-select'));
+  for (const select of await page.locator('select').all()) {
+    await expect(select).toHaveCSS('appearance', customizable ? 'base-select' : 'none');
+    if (customizable) {
+      expect(await select.evaluate(element => getComputedStyle(element, '::picker(select)').borderRadius)).not.toBe('0px');
+    } else {
+      await expect(select).not.toHaveCSS('background-image', 'none');
+    }
+    await expect(select).not.toHaveCSS('border-radius', '0px');
+  }
+}
 async function activateQuarterly(page) {
   await page.goto('/workspace?view=billing');
   await expect(page.locator('.billing-plan-card')).toHaveCount(2);
@@ -34,17 +46,36 @@ test('landing page remains accessible to signed-in users', async ({ page }) => {
 test('workspace home presents a personal next step instead of a metric dashboard', async ({ page }) => {
   await page.goto('/workspace');
   await expect(page.locator('.workspace-home-hero')).toBeVisible();
-  await expect(page.locator('.workspace-path li')).toHaveCount(3);
+  expect(parseFloat(await page.locator('.workspace-home-hero').evaluate(element => getComputedStyle(element).paddingLeft))).toBeGreaterThan(10);
+  await expect(page.locator('.workspace-path')).toHaveCount(0);
   await expect(page.locator('.workspace-entryways>a')).toHaveCount(3);
+  await expect(page.locator('.workspace-home-greeting')).toContainText('浏览器测试');
+  await expect(page.locator('.workspace-entryways>a>span').first()).toHaveCSS('display', 'grid');
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await expect(page.locator('.workspace-home-hero')).toHaveCSS('animation-name', 'none');
+  for (const theme of ['light', 'dark', 'system']) {
+    await page.locator('#theme-select').selectOption(theme);
+    await expect(page.locator('.workspace-home-greeting')).toBeVisible();
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBeTruthy();
+  }
+  await page.screenshot({ path: `output/overview-${test.info().project.name}.png`, fullPage: true });
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBeTruthy();
 });
 test('workspace home follows the current resume when one exists', async ({ page }) => {
   await create(page);
   const resumeId = new URL(page.url()).searchParams.get('resume_id');
   await page.goto('/workspace');
-  await expect(page.locator('.workspace-home-hero')).toContainText('接着完善你的经历');
+  await expect(page.locator('.workspace-home-hero')).toContainText('继续编辑');
   await expect(page.locator('.workspace-home-actions a').first()).toHaveAttribute('href', new RegExp(`resume_id=${resumeId}`));
   await expect(page.locator('.workspace-entryways')).toHaveCount(0);
+  const longTitle = 'CareerFlowResumeWithoutSpaces'.repeat(4);
+  await page.goto(`/workspace?view=resume-new&resume_id=${resumeId}`);
+  await page.locator('#resume-title').fill(longTitle);
+  await saved(page);
+  await page.goto('/workspace');
+  await expect(page.locator('.workspace-home-next')).toContainText(longTitle);
+  expect(await page.locator('.workspace-home-next').evaluate(element => element.scrollWidth <= element.clientWidth)).toBeTruthy();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBeTruthy();
 });
 test('starting a new resume does not preload the previous resume', async ({ page }) => {
   await create(page);
@@ -80,7 +111,6 @@ test('saved job descriptions can be imported into a new analysis without duplica
   await page.locator('#job-description').fill('负责 Java 服务开发与线上维护');
   await page.locator('.job-optional-link summary').click();
   await page.locator('#job-url').fill('https://jobs.example.com/backend');
-  await page.locator('[data-ui-form="job"] button[type="submit"]').click();
   await continueJobAnalysis(page, 'yes');
   await expect(page).toHaveURL(/\/jobs\/\d+/);
   await page.goto('/workspace?view=jobs');
@@ -97,15 +127,15 @@ test('saved job descriptions can be imported into a new analysis without duplica
   await expect(page.locator('.job-saved-item')).toHaveCount(1);
   await expect(page.locator('[data-import-job-status]')).toContainText('已导入');
 });
-test('job confirmation asks before saving and unsaved analysis stays out of the import library', async ({ page }) => {
+test('job confirmation goes straight to the save choice and unsaved analysis stays out of the import library', async ({ page }) => {
   await create(page);
   const resumeId = new URL(page.url()).searchParams.get('resume_id');
   await page.goto(`/workspace?view=jobs&resume_id=${resumeId}`);
   await page.locator('#job-title').fill('临时岗位测试');
   await page.locator('#job-description').fill('负责 Java 服务开发与线上维护');
   await expect(page.locator('.job-saved-item')).toHaveCount(0);
-  await page.locator('[data-ui-form="job"] button[type="submit"]').click();
   await expect(page.locator('[data-save-job]')).toBeVisible();
+  await expect(page.locator('#job-review')).toHaveCount(0);
   await page.locator('[data-save-job]').click();
   await expect(page.locator('#job-save-dialog')).toBeVisible();
   await expect(page.locator('.job-saved-item')).toHaveCount(0);
@@ -116,6 +146,27 @@ test('job confirmation asks before saving and unsaved analysis stays out of the 
   expect(job.is_saved).toBe(false);
   await page.goto('/workspace?view=jobs');
   await expect(page.locator('.job-saved-item')).toHaveCount(0);
+});
+test('job analysis visibly asks for a resume and a job before the description form', async ({ page }) => {
+  await create(page);
+  const resumeId = new URL(page.url()).searchParams.get('resume_id');
+  await page.goto(`/workspace?view=jobs&resume_id=${resumeId}`);
+  await expect(page.getByRole('heading', { name: '选择简历' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: '选择岗位' })).toBeVisible();
+  await expect(page.locator('#analysis-resume')).toBeVisible();
+  await expect(page.locator('#job-description')).toBeVisible();
+  await expectPolishedSelects(page);
+  const firstChoice = await page.locator('.job-selection-grid').boundingBox();
+  const description = await page.locator('#job-description').boundingBox();
+  expect(firstChoice.y).toBeLessThan(description.y);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBeTruthy();
+});
+test('select controls keep their theme styling in the resume editor and job workflow', async ({ page }) => {
+  await create(page);
+  await expectPolishedSelects(page);
+  const resumeId = new URL(page.url()).searchParams.get('resume_id');
+  await page.goto(`/workspace?view=jobs&resume_id=${resumeId}`);
+  await expectPolishedSelects(page);
 });
 test('free user can save a resume but cannot export its PDF', async ({ page }) => {
   await page.addInitScript(() => { window.__printCount = 0; window.print = () => { window.__printCount += 1; }; });
@@ -862,21 +913,24 @@ test('administrator can publish a model configuration without exposing its key',
   await page.goto('/admin/settings');
   await expect(page.getByRole('heading', { name: '服务配置' })).toBeVisible();
   const form = page.locator('[data-admin-config-form="model"]');
-  await form.locator('[name="label"]').fill('测试模型');
-  await form.locator('[name="provider"]').fill('测试供应商');
-  await form.locator('[name="model_id"]').fill('model-for-browser-test');
-  await form.locator('[name="fallback_model_1"]').fill('browser-fallback-one');
-  await form.locator('[name="fallback_model_2"]').fill('browser-fallback-two');
-  await form.locator('[name="base_url"]').fill('https://models.example.com/v1');
-  await form.locator('[name="secret"]').fill('browser-only-secret');
+  const browserModels = [
+    ['测试供应商 A', 'model-for-browser-test', 'https://models.example.com/v1'],
+    ['测试供应商 B', 'browser-fallback-one', 'https://backup-a.example.com/v1'],
+    ['测试供应商 C', 'browser-fallback-two', 'https://backup-b.example.com/v1'],
+  ];
+  for (const [index, [provider, model, endpoint]] of browserModels.entries()) {
+    const number = index + 1;
+    await form.locator(`[name="model_provider_${number}"]`).fill(provider);
+    await form.locator(`[name="model_id_${number}"]`).fill(model);
+    await form.locator(`[name="base_url_${number}"]`).fill(endpoint);
+    await form.locator(`[name="model_secret_${number}"]`).fill(`browser-only-secret-${number}`);
+  }
   await form.locator('[name="enabled"]').check();
   await form.locator('[type="submit"]').click();
   const section = page.locator('[data-admin-section="model"]');
-  await expect(section.locator('.admin-version-list article').first()).toContainText('\u6d4b\u8bd5\u6a21\u578b');
-  page.once('dialog', dialog => dialog.accept());
-  await section.locator('[data-admin-publish]').click();
-  await expect(section.locator('.admin-version-list article').first().locator('small')).toContainText('\u5f53\u524d\u751f\u6548');
-  await expect(page.locator('body')).not.toContainText('browser-only-secret');
+  await expect(section.locator('.admin-config-state')).toContainText('\u5f53\u524d\u5df2\u542f\u7528');
+  await expect(section.locator('[name="model_id_1"]')).toHaveValue('model-for-browser-test');
+  await expect(page.locator('body')).not.toContainText('browser-only-secret-1');
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBeTruthy();
   await page.evaluate(() => scrollTo(0, 0));
   await page.screenshot({ path: `output/admin-${test.info().project.name}.png`, fullPage: true });
@@ -889,26 +943,18 @@ test('administrator can publish task routing and diagnosis prompt', async ({ pag
   expect(promote.status()).toBe(200);
   await page.goto('/admin/settings');
   const routes = page.locator('[data-admin-config-form="model_routes"]');
-  await routes.locator('[name="label"]').fill('任务分配');
   await routes.locator('[name="route_analysis"]').fill('analysis-model');
   await routes.locator('[name="route_report"]').fill('report-model');
   await routes.locator('[name="enabled"]').check();
   await routes.locator('[type="submit"]').click();
   const routeSection = page.locator('[data-admin-section="model_routes"]');
-  await expect(routeSection.locator('.admin-version-list article').first()).toContainText('\u4efb\u52a1\u5206\u914d');
-  page.once('dialog', dialog => dialog.accept());
-  await routeSection.locator('[data-admin-publish]').click();
-  await expect(routeSection.locator('.admin-version-list article').first().locator('small')).toContainText('\u5f53\u524d\u751f\u6548');
+  await expect(routeSection.locator('.admin-config-state')).toContainText('\u5f53\u524d\u5df2\u542f\u7528');
   const prompt = page.locator('[data-admin-config-form="prompt_diagnosis"]');
-  await prompt.locator('[name="label"]').fill('证据优先');
   await prompt.locator('[name="instructions"]').fill('先核对简历证据，再说明岗位要求中的不确定信息。');
   await prompt.locator('[name="enabled"]').check();
   await prompt.locator('[type="submit"]').click();
   const promptSection = page.locator('[data-admin-section="prompt_diagnosis"]');
-  await expect(promptSection.locator('.admin-version-list article').first()).toContainText('\u8bc1\u636e\u4f18\u5148');
-  page.once('dialog', dialog => dialog.accept());
-  await promptSection.locator('[data-admin-publish]').click();
-  await expect(promptSection.locator('.admin-version-list article').first().locator('small')).toContainText('\u5f53\u524d\u751f\u6548');
+  await expect(promptSection.locator('.admin-config-state')).toContainText('\u5f53\u524d\u5df2\u542f\u7528');
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBeTruthy();
 });
 

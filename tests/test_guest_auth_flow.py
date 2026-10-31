@@ -1,6 +1,5 @@
 import re
 from io import BytesIO
-from urllib.parse import parse_qs, urlparse
 
 
 def test_guest_can_open_resume_editor_and_keep_save_behind_login_modal(app):
@@ -21,14 +20,13 @@ def test_guest_job_page_offers_pdf_before_analysis_login(app):
     assert b"id=\"auth-dialog\"" in response.data
 
 
-def test_login_route_opens_shared_modal_on_landing_page(app):
+def test_login_route_renders_standalone_auth_page_for_guests(app):
     response = app.test_client().get("/login?next=/workspace?view=jobs")
 
-    assert response.status_code == 302
-    target = urlparse(response.headers["Location"])
-    assert target.path == "/"
-    assert parse_qs(target.query)["auth"] == ["login"]
-    assert parse_qs(target.query)["next"] == ["/workspace?view=jobs"]
+    # 整体前端重构后的既定行为：/login 渲染独立认证页（next 由前端脚本从 URL 读取），
+    # 共享登录弹窗用于工作空间游客页，见 dc2a2e0 与 browser/craft、frontend_experience 用例。
+    assert response.status_code == 200
+    assert b'data-ui-form="auth"' in response.data
 
 
 def test_anonymous_api_requests_return_json_login_signal(app):

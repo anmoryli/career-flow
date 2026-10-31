@@ -7,6 +7,7 @@ from pydantic import ValidationError
 
 from app.diagnosis_schemas import DiagnosisResult
 from app.services.diagnosis import validate_output
+from app.services.model_fallback import model_unavailable
 from app.services.model_provider import generate
 from tests.integration.test_career import valid_output
 
@@ -32,6 +33,7 @@ def test_pydantic_ai_adapter_contract_without_external_request(app, monkeypatch)
         data = json.loads(request.content)
         seen.append(data)
         assert "tools" not in data
+        assert data["response_format"] == {"type": "json_object"}
         from tests.test_model_runtime import sse_output
 
         assert data["stream"] is True
@@ -49,7 +51,10 @@ def test_pydantic_ai_adapter_contract_without_external_request(app, monkeypatch)
 
     monkeypatch.setattr(openai, "AsyncOpenAI", client)
     app.config.update(
-        AI_ENABLED=True, AI_API_KEY="test-key", AI_BASE_URL="https://model.example/v1"
+        AI_ENABLED=True,
+        AI_API_KEY="test-key",
+        AI_BASE_URL="https://model.example/v1",
+        AI_MODEL="test-model",
     )
     with app.app_context():
         result, tokens = generate(snapshot() | {"prompt_instructions": "补充审查重点"})
@@ -58,6 +63,17 @@ def test_pydantic_ai_adapter_contract_without_external_request(app, monkeypatch)
     assert "untrusted_user_data" in json.dumps(seen[0]["messages"])
     assert "连续短语" in json.dumps(seen[0]["messages"], ensure_ascii=False)
     assert "补充审查重点" in json.dumps(seen[0]["messages"], ensure_ascii=False)
+
+
+def test_invalid_structured_output_is_eligible_for_model_fallback():
+    class UnexpectedModelBehavior(Exception):
+        pass
+
+    class ProviderError(Exception):
+        status_code = 402
+
+    assert model_unavailable(UnexpectedModelBehavior())
+    assert not model_unavailable(ProviderError())
 
 
 @pytest.mark.parametrize(

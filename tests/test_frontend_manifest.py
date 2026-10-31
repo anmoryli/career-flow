@@ -90,6 +90,7 @@ def test_asset_version_tracks_bytes_even_with_preserved_mtime(tmp_path):
 def test_public_admin_and_export_use_new_templates():
     routes = (ROOT / "app/web/routes.py").read_text(encoding="utf-8")
     assert 'render_template("frontend/public/home.html")' in routes
+    assert 'render_template("frontend/public/auth.html", mode="register")' in routes
     assert 'render_template("frontend/public/auth.html", mode="login")' in routes
     assert '"frontend/analysis/conversation.html"' in routes
     export = (ROOT / "app/web/career.py").read_text(encoding="utf-8")

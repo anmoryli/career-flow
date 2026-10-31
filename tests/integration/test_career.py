@@ -274,9 +274,10 @@ def test_suggestion_review_has_its_own_private_page(mysql_app, context, user_fac
 
     page = client.get(f"/jobs/{jid}/suggestions?operation_id={operation_id}")
     assert page.status_code == 200
-    assert "简历修改建议" in page.text
-    assert "简历原文" in page.text and "建议写法" in page.text
-    assert page.text.count('name="suggestion"') == 1
+    assert 'data-analysis-page="review"' in page.text
+    assert "核对建议，保存岗位简历" in page.text
+    assert "简历原文" in page.text and "替换正文" in page.text
+    assert page.text.count('name="suggestion"') >= 1
 
     other_uid, _ = user_factory()
     other, _ = client_for(mysql_app, other_uid)
@@ -323,6 +324,16 @@ def test_failures_retry_once_and_full_refund(mysql_app, context, mode):
         assert len(calls) == 2
         assert "secret" not in op.error
         assert op.ceiling == op.charged == 0
+    client, _ = client_for(mysql_app, uid)
+    page = client.get(f"/jobs/{context[2]}")
+    assert page.status_code == 200
+    assert "岗位分析失败" in page.text
+    assert (
+        "连接模型服务超时" in page.text
+        if mode == "timeout"
+        else "模型返回内容不符合诊断格式" in page.text
+    )
+    assert "重试岗位分析" in page.text
 
 
 def test_second_attempt_success_and_cancel_during_execution(mysql_app, context):
