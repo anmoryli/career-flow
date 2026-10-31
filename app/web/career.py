@@ -6,7 +6,7 @@ from app.career_schemas import ConfirmDelete, CopyResume, JobSave, ResumeSave
 from app.extensions import db
 from app.models import AIOperation, JobTarget, Resume, ResumeVersion
 from app.resume_ai_schemas import ResumeAIQuote, ResumeComposeQuote
-from app.services import career, commerce, resume_ai
+from app.services import career, resume_ai
 from app.services.errors import BusinessError
 from app.services.model_runtime import public_ai_error
 from app.web.routes import input_data, login_required
@@ -123,8 +123,9 @@ def delete_job(item_id):
 @login_required
 def print_resume(item_id):
     item = career.owned(Resume, g.user.id, item_id)
-    commerce.ensure_resume_export_capacity(g.user.id)
     version = career.version_of(item, request.args.get("revision", type=int))
+    from app.services.product import authorize_export
+    authorize_export(g.user.id,version)
     return render_template("frontend/resume/print.html", resume=item, version=version)
 
 
@@ -241,3 +242,5 @@ def resume_ai_status(item_id):
 def register_evidence_ui(state):
     from app.web.frontend import register_evidence_filter
     register_evidence_filter(state.app)
+    from app.web.product import product_web
+    state.app.register_blueprint(product_web)

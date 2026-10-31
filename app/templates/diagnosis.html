@@ -53,6 +53,15 @@
       {% if not configured %}<div class="diagnosis-notice" role="status"><strong>AI 服务暂不可用</strong><p>当前无法启动新的分析。已有岗位和报告仍可查看。</p></div>{% endif %}
       {% if active_operation %}
         {{ running_panel(active_operation) }}
+      {% elif latest_failed_operation %}
+        <section class="diagnosis-failure-panel" role="alert" data-failed-operation="{{ latest_failed_operation.id }}">
+          <span class="diagnosis-eyebrow">本次任务未完成</span>
+          <h2>{{ '岗位分析失败' if latest_failed_operation.kind == 'analysis' else '报告生成失败' }}</h2>
+          <p>{{ (latest_failed_operation.error or '分析暂时没有完成，请重试。')|ai_public_error }}</p>
+          <button class="button" type="button" data-start-ai="{{ latest_failed_operation.kind }}">{{ '重试岗位分析' if latest_failed_operation.kind == 'analysis' else '重试生成报告' }}</button>
+          <p class="diagnosis-progress" data-start-status role="status" aria-live="polite" hidden></p>
+          <template id="diagnosis-running-template">{{ running_panel() }}</template>
+        </section>
       {% elif diagnostic.state != 'completed' %}
         {% if diagnostic.question %}
         <section class="diagnosis-chat diagnosis-chat-focus" aria-labelledby="diagnosis-chat-title" data-diagnosis-chat>

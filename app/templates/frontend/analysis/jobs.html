@@ -7,7 +7,7 @@
     <span class="cf-eyebrow">岗位匹配分析</span>
     <h1>岗位分析</h1>
     <p>带上一份简历和一段岗位描述。先看要求与证据，再决定哪里值得修改。</p>
-    <a class="cfa-text-link" href="{{ url_for('web.workspace',view='reports') }}">查看已有分析 {{ icon('arrow') }}</a>
+    <p class="cfa-quota-note">{% if g.user %}本自然月剩余 {{ entitlements.analysis_remaining }} / {{ entitlements.analysis_limit }} 份岗位匹配 · {{ entitlements.quota_resets_at|datetime_cn }} 重置{% else %}登录后每自然月可免费体验一次基础匹配，先看分数与缺口。{% endif %}</p><a class="cfa-text-link" href="{{ url_for('web.workspace',view='reports') }}">查看已有分析 {{ icon('arrow') }}</a>
   </header>
   {% if active_jobs %}
   <section class="cfa-live-tasks" aria-label="正在分析的岗位">

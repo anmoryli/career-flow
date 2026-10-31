@@ -20,8 +20,7 @@
         <p class="report-company">{{ job.company or '未填写公司' }}</p>
         <div class="report-meta">
           <time>{{ operation.created_at|datetime_cn }}</time>
-          {% if active %}<span>任务会继续运行，稍后回来可接着查看。</span>
-          {% elif operation.state == 'failed' and operation.error %}<span>{{ operation.error|ai_public_error }}</span>{% endif %}
+          {% if operation.state == 'failed' and operation.error %}<span>{{ operation.error|ai_public_error }}</span>{% endif %}
         </div>
       </div>
       {% if operation.state == 'succeeded' and operation.result and operation.result.get('overall_score') is not none %}
@@ -33,7 +32,6 @@
     <div class="report-empty">
       <span class="report-empty-mark" aria-hidden="true">✦</span>
       <h2>还没有岗位诊断记录</h2>
-      <p>开始分析后，任务会保留在这里；完成后可随时回来查看报告。</p>
       <a class="button" href="{{ url_for('web.workspace', view='jobs') }}">添加目标岗位</a>
     </div>
   {% endfor %}

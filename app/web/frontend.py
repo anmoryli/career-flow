@@ -118,6 +118,25 @@ PAGES_BY_TEMPLATE = MappingProxyType(
             )
             for name in ("detail", "review", "conversation")
         },
+        **{
+            f"frontend/product/{name}.html": FrontendPage(
+                f"frontend/product/{name}.html",
+                (style,),
+                ("product",),
+                current_view=view,
+                admin=is_admin,
+                task_path=task,
+            )
+            for name, style, view, is_admin, task in (
+                ("guide", "public", "", False, False),
+                ("guides", "public", "", False, False),
+                ("share", "public", "", False, False),
+                ("share_manage", "analysis", "reports", False, True),
+                ("report", "analysis", "reports", False, True),
+                ("invite", "account", "settings", False, False),
+                ("admin", "admin", "", True, False),
+            )
+        },
         "frontend/resume/print.html": FrontendPage(
             "frontend/resume/print.html",
             ("tokens", "components", "document", "resume"),
@@ -176,8 +195,10 @@ def register_frontend_assets(app):
 
 
 def register_evidence_filter(app):
+    from app.resume_templates import TEMPLATE_CATALOG
     from app.services.diagnosis_evidence import evidence_rows, resume_passages
 
+    app.jinja_env.globals["resume_templates"] = TEMPLATE_CATALOG
     app.jinja_env.filters["evidence_rows"] = evidence_rows
     app.jinja_env.filters["resume_passages"] = resume_passages
     register_frontend_assets(app)

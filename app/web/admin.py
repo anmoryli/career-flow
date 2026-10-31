@@ -1,6 +1,6 @@
 from functools import wraps
 
-from flask import Blueprint, flash, g, redirect, render_template, url_for
+from flask import Blueprint, flash, g, redirect, render_template, request, url_for
 from sqlalchemy import func, select
 
 from app.admin_schemas import ConfigDraftInput, ConfigPublishInput, ConfigRollbackInput
@@ -17,6 +17,8 @@ def admin_required(view):
     @wraps(view)
     def wrapper(*args, **kwargs):
         if g.user is None:
+            if request.path.startswith("/admin/api/"):
+                raise BusinessError("登录已失效，请重新登录后继续。", 401)
             return redirect(url_for("web.login"), code=303)
         if not g.user.is_admin:
             raise BusinessError("无权访问管理后台。", 403)
@@ -119,6 +121,14 @@ def available_models():
 def config_draft(category):
     data = ConfigDraftInput.model_validate(input_data())
     return admin_config.revision_summary(admin_config.create_draft(g.user.id, category, data)), 201
+
+
+@admin_web.post("/api/config/<category>/activate")
+@admin_required
+def config_activate(category):
+    data = ConfigDraftInput.model_validate(input_data())
+    item = admin_config.create_draft(g.user.id, category, data, activate=True)
+    return admin_config.revision_summary(item)
 
 
 @admin_web.post("/api/config/<category>/<int:revision_id>/publish")

@@ -1,0 +1,4 @@
+{% extends 'frontend/base.html' %}
+{% block title %}岗位简历准备指南 · 职序 CareerFlow{% endblock %}
+{% block head %}<meta name="description" content="从真实经历出发，对照岗位要求整理证据。产品、研发、数据、转行和应届准备指南。"><link rel="canonical" href="{{ canonical }}">{% endblock %}
+{% block content %}<div class="cf-page cf-guides"><header class="cf-page-heading"><div><span class="cf-eyebrow">岗位准备 / 真实经历优先</span><h1>先理清事实，再准备岗位。</h1><p>这些是准备思路，不是替你编写经历的答案；具体要求以目标岗位JD为准。</p></div></header>{% for slug,guide in guides.items() %}<article><h2><a href="{{ url_for('product.guide',slug=slug) }}">{{ guide.title }}</a></h2><p>{{ guide.description }}</p><a class="cf-link" href="{{ url_for('product.guide',slug=slug) }}">阅读准备指南 →</a></article>{% endfor %}</div>{% endblock %}

@@ -6,7 +6,7 @@
 <head>
   <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="csrf-token" content="{{ csrf_token() }}"><meta name="htmx-config" content='{"allowEval":false,"includeIndicatorStyles":false}'>
-  <meta name="description" content="职序 CareerFlow · 简历编辑、AI 改写与岗位分析工作台"><link rel="icon" href="data:,">
+  {% if not canonical|default(none) %}<meta name="description" content="职序 CareerFlow · 简历编辑、AI 改写与岗位分析">{% endif %}<link rel="icon" href="data:,">
   <title>{% block title %}职序简历 · 为下一次机会做好准备{% endblock %}</title>
   <script src="{{ frontend_asset_url('js/frontend/theme.js') }}"></script>
   {% for asset in frontend_styles %}<link rel="stylesheet" href="{{ frontend_asset_url(asset) }}">{% endfor %}
@@ -14,7 +14,7 @@
 </head>
 {% from '_ui.html' import icon %}
 
-<body class="cf-body {{ 'cf-editor-page' if editor_page else 'cf-admin-page' if admin_page else 'cf-workspace-page' if g.user else 'cf-public-page' }}" data-frontend="refactored" data-authenticated="{{ 'yes' if g.user else 'no' }}" data-editor-page="{{ 'yes' if editor_page else 'no' }}">
+<body class="cf-body {{ 'cf-editor-page' if editor_page else 'cf-admin-page' if admin_page else 'cf-workspace-page' if g.user else 'cf-public-page' }}" data-template-catalog='{{ resume_templates|tojson }}' data-frontend="refactored" data-authenticated="{{ 'yes' if g.user else 'no' }}" data-editor-page="{{ 'yes' if editor_page else 'no' }}">
   <a class="cf-skip" href="#main">跳至主要内容</a>
   {% if not editor_page %}{% include 'frontend/shell/header.html' %}{% endif %}
   {% with notices = get_flashed_messages(with_categories=true) %}{% for category,notice in notices %}<div class="cf-flash cf-notice" data-tone="{{ category }}" role="status">{{ notice }}</div>{% endfor %}{% endwith %}

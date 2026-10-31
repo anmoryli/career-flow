@@ -644,14 +644,8 @@ document.querySelectorAll('[data-theme-choice]').forEach(button => {
   });
   form.addEventListener('submit', event => {
     event.preventDefault();
-    if (!description.value.trim()) { description.setCustomValidity('请先粘贴完整的岗位描述。'); description.reportValidity(); return; }
-    description.setCustomValidity('');
-    document.querySelector('#review-job-title').textContent = document.querySelector('#job-title').value.trim() || '未填写岗位名称';
-    document.querySelector('#review-job-company').textContent = document.querySelector('#job-company').value.trim() || '未填写公司名称';
-    document.querySelector('#review-job-description').textContent = description.value;
-    const review = document.querySelector('#job-review');
-    review.hidden = false;
-    review.scrollIntoView({ block: 'start', behavior: 'instant' });
+    if (!form.reportValidity()) return;
+    form.querySelector('[data-save-job]')?.click();
   });
   description.addEventListener('input', () => description.setCustomValidity(''));
 })();

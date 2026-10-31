@@ -2,25 +2,6 @@
   const feedback = document.querySelector('#admin-config-feedback');
   if (!feedback) return;
   const show = message => { feedback.textContent = message; };
-  document.querySelector('[data-admin-load-models]')?.addEventListener('click', async event => {
-    const button = event.currentTarget;
-    const select = document.querySelector('[data-admin-model-list]');
-    button.disabled = true;
-    try {
-      const response = await fetch('/admin/api/models', { credentials: 'same-origin', redirect: 'error' });
-      const result = await response.json();
-      if (!response.ok) throw new Error(result.error || '读取模型失败');
-      select.replaceChildren(new Option('选择模型 ID', ''));
-      result.models.forEach(id => select.add(new Option(id, id)));
-      select.hidden = result.models.length === 0;
-      if (!result.models.length) show('服务商没有返回可用模型，请手动填写模型 ID。');
-      else show(`已读取 ${result.models.length} 个模型。`);
-    } catch (error) { show(error.message); }
-    finally { button.disabled = false; }
-  });
-  document.querySelector('[data-admin-model-list]')?.addEventListener('change', event => {
-    if (event.target.value) document.querySelector('[data-admin-config-form="model"] [name="model_id"]').value = event.target.value;
-  });
   document.querySelectorAll('[data-admin-config-form]').forEach(form => {
     form.addEventListener('submit', async event => {
       event.preventDefault();
@@ -28,17 +9,29 @@
       const category = form.dataset.adminConfigForm;
       const button = form.querySelector('[type="submit"]'); button.disabled = true;
       const values = Object.fromEntries(new FormData(form));
-      const { label, secret, ...settings } = values;
+      const { secret, ...settings } = values;
+      const label = ({ mail: '邮件配置', model: '三模型配置', model_routes: '任务模型分配', prompt_diagnosis: '岗位诊断提示词' })[category];
       settings.enabled = form.elements.enabled.checked;
+      let submittedSecret = secret || '';
       if (category === 'mail') {
         settings.use_tls = form.elements.use_tls.checked;
         settings.use_ssl = form.elements.use_ssl.checked;
         settings.port = Number(settings.port);
       } else if (category === 'model') {
-        settings.fallback_model_ids = ['fallback_model_1', 'fallback_model_2']
-          .map(key => settings[key].trim()).filter(Boolean);
-        delete settings.fallback_model_1;
-        delete settings.fallback_model_2;
+        settings.models = [1, 2, 3].map(index => ({
+          provider: settings[`model_provider_${index}`].trim(),
+          model_id: settings[`model_id_${index}`].trim(),
+          base_url: settings[`base_url_${index}`].trim()
+        }));
+        const modelSecrets = [1, 2, 3].map(index => settings[`model_secret_${index}`].trim());
+        [1, 2, 3].forEach(index => {
+          delete settings[`model_provider_${index}`];
+          delete settings[`model_id_${index}`];
+          delete settings[`base_url_${index}`];
+          delete settings[`model_secret_${index}`];
+        });
+        settings.tokens_per_credit = null;
+        submittedSecret = JSON.stringify(modelSecrets);
       }
       else if (category === 'prompt_diagnosis') { settings.variables = settings.variables.split(',').map(value => value.trim()); }
       else {
@@ -48,21 +41,18 @@
         Object.keys(settings).filter(key => key.startsWith('route_')).forEach(key => delete settings[key]);
       }
       try {
-        await window.cfApi(`/admin/api/config/${category}/draft`, { label, settings, secret });
-        show('草稿已保存，请核对后发布。'); location.reload();
+        await window.cfApi(`/admin/api/config/${category}/activate`, {
+          label, settings, secret: submittedSecret
+        });
+        show('配置已保存并立即生效。'); location.reload();
       } catch (error) { show(error.message); button.disabled = false; }
     });
   });
-  document.querySelectorAll('[data-admin-publish]').forEach(button => button.addEventListener('click', async () => {
-    if (!confirm('发布后，新请求将使用此配置。确认发布？')) return;
-    const [category, id] = button.dataset.adminPublish.split(':'); button.disabled = true;
-    try { await window.cfApi(`/admin/api/config/${category}/${id}/publish`, { confirm: true }); location.reload(); }
-    catch (error) { show(error.message); button.disabled = false; }
-  }));
-  document.querySelectorAll('[data-admin-rollback]').forEach(button => button.addEventListener('click', async () => {
-    if (!confirm('回滚会创建新的发布版本。确认继续？')) return;
-    const [category, id] = button.dataset.adminRollback.split(':'); button.disabled = true;
-    try { await window.cfApi(`/admin/api/config/${category}/rollback`, { revision_id: Number(id), confirm: true }); location.reload(); }
-    catch (error) { show(error.message); button.disabled = false; }
-  }));
+  document.querySelectorAll('[data-admin-config-form]').forEach(form => {
+    const toggle = form.elements.enabled;
+    const button = form.querySelector('[data-admin-save]');
+    const updateLabel = () => { button.textContent = toggle.checked ? '保存并启用' : '保存并停用'; };
+    toggle.addEventListener('change', updateLabel);
+    updateLabel();
+  });
 })();

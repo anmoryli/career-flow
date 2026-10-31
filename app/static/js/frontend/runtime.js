@@ -86,7 +86,9 @@
   document.addEventListener('keydown',event=>{if(event.key==='Escape')document.querySelectorAll('.cf-account-menu[open],.cf-task-menu[open]').forEach(menu=>{menu.open=false;menu.querySelector('summary').focus();});});
   document.addEventListener('htmx:configRequest',event=>{event.detail.headers['X-CSRFToken']=csrf();});
   // Disable only ordinary server forms after all page listeners had a chance to cancel submission.
-  document.addEventListener('submit',event=>{const form=event.target;if(form.matches('[data-ui-form]'))return;queueMicrotask(()=>{if(event.defaultPrevented)return;form.querySelectorAll('button[type="submit"]').forEach(button=>{button.disabled=true;button.setAttribute('aria-busy','true');});});});
+  // A macrotask keeps the submitter enabled while the browser encodes the entry list; a microtask
+  // would run before encoding and drop the clicked button's name/value (breaks action=... forms).
+  document.addEventListener('submit',event=>{const form=event.target;if(form.matches('[data-ui-form]'))return;setTimeout(()=>{if(event.defaultPrevented)return;form.querySelectorAll('button[type="submit"]').forEach(button=>{button.disabled=true;button.setAttribute('aria-busy','true');});},0);});
   window.addEventListener('pageshow',()=>document.querySelectorAll('button[aria-busy=true]').forEach(button=>{button.disabled=false;button.removeAttribute('aria-busy');}));
   const resize=new ResizeObserver(entries=>entries.forEach(({target})=>{
     const doc=target.querySelector('.resume-doc');if(!doc||!target.clientWidth)return;

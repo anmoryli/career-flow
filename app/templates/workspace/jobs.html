@@ -1,60 +1,106 @@
 {% from '_ui.html' import icon %}
 <section class="business-page-heading job-page-heading">
-  <div><span class="page-kicker">围绕一个真实机会</span><h1>岗位分析</h1><p>选择简历，粘贴岗位描述，查看要求与经历的对应依据。</p></div>
-  <a class="subtle-link" href="{{ url_for('web.workspace', view='reports') }}">查看诊断报告 {{ icon('arrow') }}</a>
+  <div><span class="page-kicker">为一个具体机会做准备</span><h1>岗位分析</h1><p>选择简历，粘贴岗位描述，查看要求与经历的对应依据。</p></div>
+  <a class="subtle-link" href="{{ url_for('web.workspace', view='reports') }}">查看报告 {{ icon('arrow') }}</a>
 </section>
 
 {% if active_jobs %}
-<section class="job-active-analyses" aria-labelledby="active-jobs-heading">
-  <header><span class="job-active-signal" aria-hidden="true"></span><div><h2 id="active-jobs-heading">正在分析的岗位</h2><p>任务会在后台继续。随时回来查看当前进度。</p></div></header>
+<section class="job-active-analyses" aria-label="正在分析的岗位">
+  <header><span class="job-active-signal" aria-hidden="true"></span><h2>正在分析 {{ active_jobs|length }} 个岗位</h2></header>
   <div class="job-active-list">
     {% for operation, diagnostic, job in active_jobs %}
     <article class="job-active-item" data-active-job="{{ job.id }}" data-active-operation="{{ operation.id }}" data-operation-state="{{ operation.state }}">
-      <div class="job-active-icon" aria-hidden="true"><span></span><span></span><span></span></div>
-      <div class="job-active-copy"><span>{{ '岗位报告生成中' if operation.kind == 'report' else '岗位匹配分析中' }}</span><strong>{{ job.title or '目标岗位' }}</strong><small>{{ job.company or '未填写公司' }} · {{ '正在排队' if operation.state == 'queued' else 'AI 正在分析' }}</small></div>
-      <a class="button job-active-return" href="{{ url_for('diagnosis.detail', job_id=job.id) }}">回到分析</a>
+      <div class="job-active-copy"><strong>{{ job.title or '目标岗位' }}</strong><small>{{ job.company or '未填写公司' }} · {{ '排队中' if operation.state == 'queued' else '分析中' }}</small></div>
+      <a class="job-active-return" href="{{ url_for('diagnosis.detail', job_id=job.id) }}">回到分析</a>
     </article>
     {% endfor %}
   </div>
 </section>
 {% endif %}
 
-<section class="job-page-layout">
-  <div class="job-entry-panel">
-    <div class="job-entry-title"><span class="job-entry-step">01</span><div><h2>添加目标岗位</h2><p>填写岗位描述后直接开始，可选择是否保留岗位。</p></div></div>
-    <form method="post" data-ui-form="job" class="business-form job-form-simple">
-      {% if g.user %}<label for="analysis-resume">用于分析的简历</label>
-      <select id="analysis-resume" required><option value="">选择一份已保存的简历</option>{% for item in resumes %}<option value="{{ item.id }}" data-revision="{{ item.revision }}" {% if current_resume and current_resume.id == item.id %}selected{% endif %}>{{ item.title }}</option>{% endfor %}</select>
-      {% if not resumes %}<p class="small-text muted">先创建一份简历，再开始岗位分析。 <a href="{{ url_for('web.workspace', view='resume-new') }}">创建简历</a></p>{% endif %}
-      {% else %}<label for="guest-resume-file">上传简历 PDF</label><input id="guest-resume-file" type="file" accept="application/pdf,.pdf"><p class="small-text muted">简历会在本次操作中提取并暂存在当前页面；点击开始分析时再登录保存。</p><p id="guest-resume-status" class="small-text" role="status"></p>{% endif %}
-      {% if saved_jobs %}<div class="saved-job-import"><label for="saved-job-select">从已保存岗位导入</label><div class="saved-job-import-controls"><select id="saved-job-select"><option value="">选择最近或历史岗位</option>{% for item in saved_jobs %}<option value="{{ item.id }}">{{ item.title or '未命名岗位' }}{% if item.company %} · {{ item.company }}{% endif %} · {{ item.created_at|datetime_cn }}</option>{% endfor %}</select><button type="button" class="button secondary" data-import-saved-job>导入岗位</button></div><p class="small-text muted" data-import-job-status role="status"></p></div>{% endif %}
-      <div class="field-grid job-meta-fields"><label>岗位名称 <small>选填</small><input id="job-title" maxlength="160" placeholder="例如：产品经理"></label><label>公司名称 <small>选填</small><input id="job-company" maxlength="160" placeholder="公司名称"></label></div>
-      <label for="job-description">岗位描述</label><textarea id="job-description" rows="12" required maxlength="20000" placeholder="粘贴完整岗位描述，包含职责和任职要求"></textarea>
-      <div class="input-footnote"><span>保留完整要求，分析会更准确</span><span id="jd-character-count">0 字</span></div>
-      <details class="job-optional-link"><summary>添加岗位链接（选填）</summary><label for="job-url" class="sr-only">岗位链接</label><input id="job-url" type="url" placeholder="https://"></details>
-      <div class="job-form-footer"><label class="job-save-preference"><input type="checkbox" data-save-job-for-later checked> 保存岗位，方便下次载入</label><button class="button" type="button" data-save-job>开始岗位分析 {{ icon('arrow') }}</button></div><p id="job-save-status" class="form-feedback" role="status"></p>
-    </form>
+<form method="post" data-ui-form="job" class="business-form job-form-simple">
+  <section class="job-selection-grid" aria-label="分析对象">
+    <div class="job-selection-card">
+      <div class="job-selection-heading"><span>1</span><h2>选择简历</h2></div>
+      {% if g.user %}
+        {% if resumes %}
+        <label for="analysis-resume">用于本次分析</label>
+        <select id="analysis-resume" class="job-choice-select" required>
+          <option value="">请选择简历</option>
+          {% for item in resumes %}<option value="{{ item.id }}" data-revision="{{ item.revision }}" {% if current_resume and current_resume.id == item.id %}selected{% endif %}>{{ item.title }}</option>{% endfor %}
+        </select>
+        {% else %}
+        <p class="job-choice-help">还没有简历</p>
+        <a class="button secondary" href="{{ url_for('web.workspace', view='resumes') }}">先创建简历</a>
+        {% endif %}
+      {% else %}
+        <label for="guest-resume-file">上传简历 PDF</label>
+        <input id="guest-resume-file" type="file" accept="application/pdf,.pdf">
+        <p id="guest-resume-status" class="job-choice-help" role="status"></p>
+      {% endif %}
+    </div>
+
+    <div class="job-selection-card">
+      <div class="job-selection-heading"><span>2</span><h2>选择岗位</h2></div>
+      {% if saved_jobs %}
+      <label for="saved-job-select">载入已保存岗位（选填）</label>
+      <div class="saved-job-import-controls">
+        <select id="saved-job-select" class="job-choice-select">
+          <option value="">或填写一个新岗位</option>
+          {% for item in saved_jobs %}<option value="{{ item.id }}">{{ item.title or '未命名岗位' }}{% if item.company %} · {{ item.company }}{% endif %}</option>{% endfor %}
+        </select>
+        <button type="button" class="button secondary" data-import-saved-job>载入</button>
+      </div>
+      <p class="job-choice-help" data-import-job-status role="status"></p>
+      {% else %}
+      <div class="job-new-choice"><strong>新岗位</strong><span>填写下方岗位信息</span></div>
+      {% endif %}
+    </div>
+  </section>
+
+  <section class="job-fields-block" aria-labelledby="job-fields-title">
+    <h2 id="job-fields-title">岗位信息</h2>
+    <div class="field-grid job-meta-fields">
+      <label>岗位名称 <small>选填</small><input id="job-title" maxlength="160" placeholder="例如：Java 后端工程师"></label>
+      <label>公司名称 <small>选填</small><input id="job-company" maxlength="160" placeholder="公司名称"></label>
+    </div>
+    <label for="job-description">岗位描述</label>
+    <textarea id="job-description" rows="8" required maxlength="20000" placeholder="粘贴岗位职责和任职要求"></textarea>
+    <div class="input-footnote"><span></span><span id="jd-character-count">0 字</span></div>
+    <details class="job-optional-link"><summary>添加岗位链接（选填）</summary><label for="job-url" class="sr-only">岗位链接</label><input id="job-url" type="url" placeholder="https://"></details>
+  </section>
+  <div class="job-form-footer">
+    {% if not g.user %}<p>开始分析时再登录。</p>{% endif %}
+    <label class="job-save-preference"><input type="checkbox" data-save-job-for-later checked> 保存岗位，方便下次载入</label>
+    <button class="button" type="button" data-save-job {% if g.user and not resumes %}disabled{% endif %}>开始岗位分析 {{ icon('arrow') }}</button>
   </div>
-  <aside class="job-saved-panel">
-    <div class="job-saved-heading"><span class="page-kicker">已保存</span><h2>目标岗位</h2><p>回到已有岗位继续分析。</p></div>
+</form>
+<p id="job-save-status" class="form-feedback" role="status" aria-live="polite"></p>
+
+{% if inactive_saved_jobs or recent_only_jobs %}
+<details class="job-saved-panel">
+  <summary>已保存岗位与近期分析 <span>{{ inactive_saved_jobs|length + recent_only_jobs|length }}</span></summary>
+  <div class="job-saved-content">
+    {% if inactive_saved_jobs %}
+    <h2>已保存岗位</h2>
     <div class="job-saved-list">
       {% for item in inactive_saved_jobs %}
-      <article class="job-saved-item"><span class="job-saved-mark">{{ icon('briefcase') }}</span><div><strong>{{ item.title or '未命名岗位' }}</strong><small>{{ item.company or '公司未填写' }} <i>·</i> {{ item.created_at|datetime_cn }}</small></div><a href="{{ url_for('diagnosis.detail', job_id=item.id) }}" aria-label="继续分析 {{ item.title or '未命名岗位' }}">{{ icon('arrow') }}</a><button type="button" data-delete-job="{{ item.id }}" aria-label="删除岗位：{{ item.title or '未命名岗位' }}">删除</button></article>
-      {% else %}
-      <div class="job-saved-empty"><span>{{ icon('briefcase') }}</span><p>{{ '正在分析的岗位显示在上方。' if active_jobs else '保存的岗位会显示在这里。' }}</p></div>
+      <article class="job-saved-item"><span class="job-saved-mark">{{ icon('briefcase') }}</span><div><strong>{{ item.title or '未命名岗位' }}</strong><small>{{ item.company or '公司未填写' }} · {{ item.created_at|datetime_cn }}</small></div><a href="{{ url_for('diagnosis.detail', job_id=item.id) }}" aria-label="继续分析 {{ item.title or '未命名岗位' }}">打开</a><button type="button" data-delete-job="{{ item.id }}" aria-label="删除岗位：{{ item.title or '未命名岗位' }}">删除</button></article>
       {% endfor %}
     </div>
-    {% if recent_only_jobs %}
-    <section class="job-recent-analyses" aria-labelledby="job-recent-heading">
-      <div><span class="page-kicker">历史保留</span><h3 id="job-recent-heading">近期分析</h3><p>未加入复用库的岗位也会保留在这里。</p></div>
-      {% for item in recent_only_jobs %}
-      <article class="job-recent-analysis">
-        <div><strong>{{ item.title or '目标岗位' }}</strong><small>{{ item.company or '未填写公司' }} · {{ item.created_at|datetime_cn }}</small></div>
-        <a href="{{ url_for('diagnosis.detail', job_id=item.id) }}">继续查看 {{ icon('arrow') }}</a>
-      </article>
-      {% endfor %}
-    </section>
     {% endif %}
-    <p class="job-list-feedback" data-list-feedback role="status"></p>
-  </aside>
-</section>
+    {% if recent_only_jobs %}
+    <h2>近期分析</h2>
+    <div class="job-recent-analyses">
+      {% for item in recent_only_jobs %}
+      <article class="job-recent-analysis"><div><strong>{{ item.title or '目标岗位' }}</strong><small>{{ item.company or '未填写公司' }} · {{ item.created_at|datetime_cn }}</small></div><a href="{{ url_for('diagnosis.detail', job_id=item.id) }}">打开</a></article>
+      {% endfor %}
+    </div>
+    {% endif %}
+    {% if not inactive_saved_jobs and not recent_only_jobs %}<p class="job-choice-help">保存或分析过的岗位会显示在这里。</p>{% endif %}
+  </div>
+</details>
+{% endif %}
+<p class="job-list-feedback" data-list-feedback role="status"></p>
+
+

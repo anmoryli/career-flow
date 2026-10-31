@@ -10,8 +10,8 @@
 {% endfor %}
 {%- endmacro %}
 
-{% macro experience_list(data) -%}
-<section class="rd-section" data-rf-section="experiences"><h2 class="rd-section-title">工作经历</h2>
+{% macro experience_list(data, bilingual=false) -%}
+<section class="rd-section" data-rf-section="experiences"><h2 class="rd-section-title">{{ '工作经历 / Experience' if bilingual else '工作经历' }}</h2>
 {% for item in data.experiences %}<article class="rd-entry" data-rf-entry="experiences.{{ loop.index0 }}">
   <div class="rd-entry-top"><h3 data-rf="experiences.{{ loop.index0 }}.company">{{ item.company }}</h3><span class="rd-period" data-rf="experiences.{{ loop.index0 }}.period">{{ item.period }}</span></div>
   <div class="rd-entry-sub"><span class="rd-entry-role" data-rf="experiences.{{ loop.index0 }}.role">{{ item.role }}</span><span class="rd-location" data-rf="experiences.{{ loop.index0 }}.location">{{ item.location }}</span></div>
@@ -19,8 +19,8 @@
 </article>{% endfor %}</section>
 {%- endmacro %}
 
-{% macro project_list(data) -%}
-<section class="rd-section" data-rf-section="projects"><h2 class="rd-section-title">项目经历</h2>
+{% macro project_list(data, bilingual=false) -%}
+<section class="rd-section" data-rf-section="projects"><h2 class="rd-section-title">{{ '项目经历 / Projects' if bilingual else '项目经历' }}</h2>
 {% for item in data.projects %}<article class="rd-entry" data-rf-entry="projects.{{ loop.index0 }}">
   <div class="rd-entry-top"><h3 data-rf="projects.{{ loop.index0 }}.name">{{ item.name }}</h3><span class="rd-period" data-rf="projects.{{ loop.index0 }}.period">{{ item.period }}</span></div>
   <div class="rd-entry-sub"><span class="rd-entry-role" data-rf="projects.{{ loop.index0 }}.role">{{ item.role }}</span><span class="rd-techline" data-rf="projects.{{ loop.index0 }}.tech">{{ item.tech }}</span></div>
@@ -28,8 +28,8 @@
 </article>{% endfor %}</section>
 {%- endmacro %}
 
-{% macro education_list(data) -%}
-<section class="rd-section" data-rf-section="education"><h2 class="rd-section-title">教育经历</h2>
+{% macro education_list(data, bilingual=false) -%}
+<section class="rd-section" data-rf-section="education"><h2 class="rd-section-title">{{ '教育经历 / Education' if bilingual else '教育经历' }}</h2>
 {% for item in data.education %}<article class="rd-entry" data-rf-entry="education.{{ loop.index0 }}">
   <div class="rd-entry-top"><h3 data-rf="education.{{ loop.index0 }}.school">{{ item.school }}</h3><span class="rd-period" data-rf="education.{{ loop.index0 }}.period">{{ item.period }}</span></div>
   <div class="rd-entry-sub"><span class="rd-entry-role" data-rf="education.{{ loop.index0 }}.degree">{{ item.degree }}</span></div><div class="rd-entry-text rd-markdown" data-rf="education.{{ loop.index0 }}.detail">{{ item.detail|resume_markdown }}</div>
@@ -47,13 +47,13 @@
 {% macro ordered_sections(template, data) -%}
 {% set order = data.section_order|default(['summary','experiences','projects','education','skills','certificates','languages']) %}
 {% for section in order %}{% if section not in data.hidden_sections|default([]) %}
-{% if section == 'summary' %}<section class="rd-section rd-profile-intro" data-rf-section="summary"><h2 class="rd-section-title">个人简介</h2><div class="rd-summary rd-markdown" data-rf="summary">{{ data.summary|resume_markdown }}</div></section>
-{% elif section == 'experiences' %}{{ experience_list(data) }}
-{% elif section == 'projects' %}{{ project_list(data) }}
-{% elif section == 'education' %}{{ education_list(data) }}
-{% elif section == 'skills' %}<section class="rd-section" data-rf-section="skills"><h2 class="rd-section-title">专业技能</h2>{{ skill_groups(data) }}</section>
-{% elif section == 'certificates' %}{{ list_section(data, 'certificates', '证书与资质') }}
-{% elif section == 'languages' %}{{ list_section(data, 'languages', '语言能力') }}
+{% if section == 'summary' %}<section class="rd-section rd-profile-intro" data-rf-section="summary"><h2 class="rd-section-title">{{ '个人简介 / Profile' if template=='bilingual' else '个人简介' }}</h2><div class="rd-summary rd-markdown" data-rf="summary">{{ data.summary|resume_markdown }}</div></section>
+{% elif section == 'experiences' %}{{ experience_list(data, template=='bilingual') }}
+{% elif section == 'projects' %}{{ project_list(data, template=='bilingual') }}
+{% elif section == 'education' %}{{ education_list(data, template=='bilingual') }}
+{% elif section == 'skills' %}<section class="rd-section" data-rf-section="skills"><h2 class="rd-section-title">{{ '专业技能 / Skills' if template=='bilingual' else '专业技能' }}</h2>{{ skill_groups(data) }}</section>
+{% elif section == 'certificates' %}{{ list_section(data, 'certificates', '证书与资质 / Certificates' if template=='bilingual' else '证书与资质') }}
+{% elif section == 'languages' %}{{ list_section(data, 'languages', '语言能力 / Languages' if template=='bilingual' else '语言能力') }}
 {% elif section.startswith('custom:') %}{% for custom in data.custom_sections|default([]) %}{% if section == ('custom:' ~ custom.id) %}<section class="rd-section" data-rf-section="{{ section }}">{% if custom.title|trim and custom.title != '自定义板块' %}<h2 class="rd-section-title"><span>{{ custom.title }}</span></h2>{% endif %}<div class="rd-markdown" data-rf="custom_sections.{{ loop.index0 }}.content">{{ custom.content|resume_markdown }}</div></section>{% endif %}{% endfor %}
 {% endif %}{% endif %}{% endfor %}
 {%- endmacro %}
@@ -76,6 +76,8 @@
     <div class="rd-header-contact">{{ contact_items(data) }}</div>
   </header>
   <div class="rd-document-content" data-section-flow>{{ ordered_sections(template, data) }}</div>
+  {% elif template != 'modern' %}
+  <header class="rd-head rd-head-{{ template }}"><div class="rd-identity"><p class="rd-eyebrow">{{ '简历 / Résumé' if template=='bilingual' else '个人简历' }}</p><h1 data-rf="name">{{ data.name }}</h1><p class="rd-role" data-rf="role">{{ data.role }}</p></div>{{ photo(data) }}<div class="rd-header-contact">{{ contact_items(data) }}</div></header><div class="rd-document-content" data-section-flow>{{ ordered_sections(template,data) }}</div>
   {% else %}
   <div class="rd-modern-layout">
     <aside class="rd-modern-rail">

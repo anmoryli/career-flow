@@ -481,9 +481,268 @@ body { letter-spacing:.002em; }
 @keyframes report-card-sweep { 0% { transform:translateX(0); opacity:0; } 18% { opacity:1; } 82% { opacity:1; } 100% { transform:translateX(510%); opacity:0; } } @keyframes report-status-breathe { 50% { opacity:.55; box-shadow:0 0 0 7px color-mix(in srgb,var(--brand) 8%,transparent); } }
 @media(prefers-reduced-motion:reduce) { .report-card.is-running::after,.report-status-dot.is-running,.report-state.is-running::before { animation:none; } }
 
+/* Keep the primary workspace actions clear and readable. */
+.workspace-content .business-page-heading { margin-bottom:16px; }
+.workspace-content .business-page-heading p { margin-top:5px; font-size:14px; }
+.job-page-heading h1 { font-size:30px; }
+.job-active-analyses { display:flex; align-items:center; gap:14px; margin:0 0 12px; padding:8px 12px; border:1px solid var(--border); border-radius:10px; background:var(--surface); box-shadow:none; }
+.job-active-analyses>header { flex:0 0 auto; gap:9px; margin:0; }
+.job-active-analyses>header h2 { font-size:13px; }
+.job-active-list { grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); flex:1; gap:6px; }
+.job-active-item { grid-template-columns:minmax(0,1fr) auto; gap:8px; min-width:0; padding:5px 8px; border:0; border-radius:7px; background:var(--surface-secondary); }
+.job-active-copy { gap:1px; }
+.job-active-copy strong { font-size:12px; }
+.job-active-copy small { font-size:11px; }
+.job-active-return { min-height:30px; padding:5px 8px; font-size:12px; }
+.job-form-simple { display:grid; gap:18px; width:100%; max-width:none; margin:0; padding:20px; border:1px solid var(--border); border-radius:14px; background:var(--surface); }
+.job-selection-grid { display:grid; grid-template-columns:1fr 1fr; gap:0; padding:18px; border:1px solid var(--border); border-radius:11px; background:var(--surface-secondary); }
+.job-selection-card { min-width:0; padding:0 20px 0 0; }
+.job-selection-card+.job-selection-card { padding:0 0 0 20px; border-left:1px solid var(--border); }
+.job-selection-heading { display:flex; align-items:center; gap:10px; margin-bottom:12px; }
+.job-selection-heading>span { display:grid; place-items:center; width:27px; height:27px; border-radius:50%; background:var(--brand-soft); color:var(--brand); font-size:13px; font-weight:700; }
+.job-selection-heading h2 { margin:0; color:var(--text-primary); font-size:16px; font-weight:700; }
+.job-selection-card>label,.job-fields-block>label,.job-meta-fields label { display:grid; gap:6px; color:var(--text-primary); font-size:14px; font-weight:650; }
+.job-choice-select,.job-selection-card input[type=file],.job-fields-block input,.job-fields-block textarea,.job-optional-link input { min-height:48px; padding:11px 13px; border:1px solid var(--border-strong,var(--border)); border-radius:9px; background:var(--surface); color:var(--text-primary); font-size:15px; }
+.job-choice-select:focus,.job-fields-block input:focus,.job-fields-block textarea:focus { outline:2px solid color-mix(in srgb,var(--brand) 38%,transparent); outline-offset:1px; border-color:var(--brand); }
+.job-choice-help { min-height:20px; margin:8px 0 0; color:var(--text-secondary); font-size:13px; }
+.job-new-choice { display:flex; align-items:center; justify-content:space-between; gap:12px; min-height:48px; padding:10px 13px; border:1px solid var(--border); border-radius:9px; background:var(--surface); }
+.job-new-choice strong { color:var(--text-primary); font-size:15px; }
+.job-new-choice span { color:var(--text-secondary); font-size:13px; }
+.saved-job-import-controls { display:grid; grid-template-columns:minmax(0,1fr) auto; gap:9px; }
+.saved-job-import-controls .button { min-height:48px; font-size:14px; }
+.job-fields-block { display:grid; gap:11px; }
+.job-fields-block>h2 { margin:0 0 2px; color:var(--text-primary); font-size:16px; font-weight:700; }
+.job-fields-block .job-meta-fields { margin:0 0 3px; gap:12px; }
+.job-meta-fields label small { color:var(--text-secondary); font-size:12px; font-weight:400; }
+.job-fields-block textarea { min-height:190px; line-height:1.65; }
+.job-fields-block .input-footnote { margin-top:-8px; color:var(--text-secondary); font-size:12px; }
+.job-optional-link { color:var(--text-secondary); font-size:13px; }
+.job-optional-link summary { padding:2px 0; }
+.job-form-footer { display:flex; align-items:center; justify-content:space-between; gap:12px; }
+.job-form-footer p { margin:0; color:var(--text-secondary); font-size:13px; }
+.job-form-footer .button { min-height:46px; padding:11px 18px; font-size:15px; font-weight:700; }
+.job-form-footer .button:disabled { opacity:.5; cursor:not-allowed; }
+.job-saved-panel { margin-top:18px; border:1px solid var(--border); border-radius:11px; background:var(--surface); }
+.job-saved-panel>summary { display:flex; align-items:center; justify-content:space-between; min-height:50px; padding:0 16px; color:var(--text-primary); font-size:14px; font-weight:650; cursor:pointer; }
+.job-saved-panel>summary span { color:var(--text-secondary); font-size:12px; font-weight:500; }
+.job-saved-content { padding:0 16px 14px; }
+.job-saved-content h2 { margin:10px 0; font-size:14px; }
+.job-saved-content .job-saved-item { grid-template-columns:30px minmax(0,1fr) auto auto; gap:10px; }
+.job-saved-content .job-saved-item strong { font-size:13px; }
+.job-saved-content .job-saved-item small,.job-recent-analysis small { font-size:12px; }
+.job-saved-content .job-saved-item>a,.job-saved-content .job-saved-item>button,.job-recent-analysis>a { color:var(--brand); font-size:12px; }
+.job-saved-content .job-recent-analyses { margin-top:0; padding-top:0; border:0; }
+.job-saved-content .job-recent-analysis { grid-template-columns:minmax(0,1fr) auto; align-items:center; }
+.job-saved-content .job-recent-analysis strong { font-size:13px; }
+
+.workspace-home-hero { grid-template-columns:minmax(0,1fr); min-height:0; margin:0 0 22px; padding:28px 32px; }
+.workspace-home-copy { max-width:760px; }
+.workspace-home-copy h1 { max-width:760px; font-size:clamp(30px,4vw,42px); line-height:1.2; }
+.workspace-home-copy p { margin-top:10px; font-size:14px; }
+.workspace-home-actions { margin-top:18px; }
+.workspace-home-hero~.workspace-first-actions { margin-top:4px; }
+.workspace-first-actions-heading { margin-bottom:10px; }
+.workspace-first-actions-heading h2,.workspace-section-heading h2 { margin:0; font-size:17px; font-weight:700; }
+.workspace-entryways>a { grid-template-columns:minmax(0,1fr) 18px; min-height:72px; padding:12px 16px; }
+.workspace-entryways>a+a { padding-left:16px; }
+.workspace-entryways strong { font-size:14px; }
+.workspace-entryways small { font-size:12px; }
+.workspace-section-heading { margin-bottom:8px; }
+.workspace-recent-list { border-top:1px solid var(--border); }
+.workspace-recent-item { min-height:62px; }
+.workspace-recent-item strong { font-size:14px; }
+.workspace-recent-item small,.workspace-recent-item>a { font-size:12px; }
+
+.history-list .history-row { grid-template-columns:minmax(0,1fr) auto auto; gap:14px; min-height:68px; padding:12px 16px; }
+.history-record-name { gap:10px; }
+.history-record-icon { width:34px; height:34px; flex-basis:34px; border-radius:9px; }
+.history-record-name strong { font-size:14px; }
+.history-record-name small,.history-record-meta time { color:var(--text-secondary); font-size:12px; }
+.history-record-meta { justify-content:flex-end; }
+.history-open-link { font-size:13px; }
+.report-card { grid-template-columns:minmax(0,1fr) 76px auto; gap:16px; padding:16px 18px; box-shadow:none; }
+.report-card-title h2 { font-size:15px; }
+.report-company,.report-meta { font-size:13px; }
+.report-state { font-size:12px; }
+.report-open { min-height:40px; font-size:13px; }
+
+@media(max-width:760px) {
+  .job-page-heading { align-items:flex-start; }
+  .job-page-heading h1 { font-size:26px; }
+  .job-active-analyses { display:grid; gap:8px; }
+  .job-active-list { grid-template-columns:1fr; }
+  .job-form-simple { gap:14px; padding:13px; }
+  .job-selection-grid { grid-template-columns:1fr; gap:15px; padding:13px; }
+  .job-selection-card,.job-selection-card+.job-selection-card { padding:0; border:0; }
+  .job-selection-card+.job-selection-card { padding-top:14px; border-top:1px solid var(--border); }
+  .job-selection-heading { margin-bottom:8px; }
+  .job-fields-block .job-meta-fields { grid-template-columns:1fr; }
+  .job-fields-block textarea { min-height:160px; }
+  .job-form-footer { align-items:stretch; flex-direction:column; }
+  .job-form-footer .button { width:100%; }
+  .job-saved-content .job-saved-item { grid-template-columns:28px minmax(0,1fr) auto; }
+  .job-saved-content .job-saved-item>button { grid-column:2; justify-self:start; }
+  .workspace-home-hero { padding:18px 16px 20px; }
+  .workspace-home-copy h1 { font-size:30px; }
+  .workspace-entryways { grid-template-columns:1fr; }
+  .workspace-entryways>a+a { padding-left:16px; border-left:0; }
+  .history-list .history-row { grid-template-columns:minmax(0,1fr) auto; gap:8px 10px; }
+  .history-record-meta { grid-column:1; grid-row:2; justify-content:flex-start; margin-left:44px; }
+  .history-open-link { grid-column:2; grid-row:1/3; }
+  .report-card { grid-template-columns:minmax(0,1fr) auto; gap:10px; padding:14px; }
+  .report-card-copy { grid-column:1; }
+  .report-score { grid-column:2; grid-row:1; width:58px; height:58px; }
+  .report-open { grid-column:1/-1; width:100%; }
+}
+
 .job-active-analyses{margin:0 0 20px;padding:18px 20px;border:1px solid color-mix(in srgb,var(--brand) 28%,var(--border));border-radius:15px;background:linear-gradient(110deg,color-mix(in srgb,var(--brand-soft) 72%,var(--surface)),var(--surface) 72%);box-shadow:0 12px 32px color-mix(in srgb,var(--brand) 7%,transparent)}.job-active-analyses>header{display:flex;align-items:center;gap:11px;margin-bottom:12px}.job-active-analyses>header h2{margin:0;color:var(--text-primary);font-size:14px}.job-active-analyses>header p{margin:3px 0 0;color:var(--text-secondary);font-size:10px}.job-active-signal{width:9px;height:9px;flex:0 0 9px;border-radius:50%;background:var(--brand);box-shadow:0 0 0 5px var(--brand-soft);animation:report-status-breathe 2s ease-in-out infinite}.job-active-list{display:grid;gap:7px}.job-active-item{display:grid;grid-template-columns:34px minmax(0,1fr) auto;align-items:center;gap:11px;padding:11px 12px;border:1px solid color-mix(in srgb,var(--brand) 14%,var(--border));border-radius:11px;background:color-mix(in srgb,var(--surface) 88%,transparent)}.job-active-icon{display:flex;align-items:center;justify-content:center;gap:3px;width:32px;height:32px;border-radius:9px;background:var(--brand-soft)}.job-active-icon span{width:3px;height:9px;border-radius:4px;background:var(--brand);animation:job-wave 1.1s ease-in-out infinite}.job-active-icon span:nth-child(2){height:15px;animation-delay:.15s}.job-active-icon span:nth-child(3){height:11px;animation-delay:.3s}.job-active-copy{display:grid;gap:2px;min-width:0}.job-active-copy>span{color:var(--brand);font-size:8px;font-weight:750;letter-spacing:.04em}.job-active-copy strong{overflow:hidden;color:var(--text-primary);font-size:11px;text-overflow:ellipsis;white-space:nowrap}.job-active-copy small{overflow:hidden;color:var(--text-secondary);font-size:9px;text-overflow:ellipsis;white-space:nowrap}.job-active-return{min-height:34px;padding:7px 11px;font-size:10px}.job-recent-analyses{margin-top:14px;padding-top:13px;border-top:1px solid var(--border)}
 .workspace-nav-active{padding:3px 6px;border-radius:99px;background:var(--brand-soft);color:var(--brand);font-size:8px;font-weight:750;white-space:nowrap}
 @keyframes job-wave{0%,100%{transform:scaleY(.55);opacity:.65}50%{transform:scaleY(1);opacity:1}}
 @media(max-width:760px){.workspace-nav-active{overflow:hidden;width:7px;height:7px;padding:0;border-radius:50%;font-size:0}}
 @media(max-width:540px){.job-active-analyses{padding:14px}.job-active-item{grid-template-columns:30px minmax(0,1fr);gap:8px;padding:9px}.job-active-return{grid-column:2;justify-self:start}.job-active-copy strong{font-size:10px}}
 @media(prefers-reduced-motion:reduce){.job-active-signal,.job-active-icon span{animation:none}}
+
+/* Normalize select controls after legacy page rules that reset their background shorthand. */
+body :is(.theme-label,.sidebar-theme,.workspace-theme-select) select,
+body :is(.business-form,.stack,.job-entry-panel,.resume-fields,.preview-control,.saved-job-import-controls) select,
+body .job-entry-panel .job-form-simple select,
+body .resume-fields .editor-section select,
+body select.job-choice-select {
+  appearance:none;
+  min-height:44px;
+  padding:10px 42px 10px 13px;
+  border:1px solid var(--border);
+  border-radius:10px;
+  background-color:var(--surface);
+  background-image:linear-gradient(45deg,transparent 50%,var(--text-secondary) 50%),linear-gradient(135deg,var(--text-secondary) 50%,transparent 50%);
+  background-position:calc(100% - 19px) 50%,calc(100% - 14px) 50%;
+  background-size:5px 5px,5px 5px;
+  background-repeat:no-repeat;
+  color:var(--text-primary);
+  box-shadow:0 1px 2px rgb(20 30 24 / 5%);
+  cursor:pointer;
+  transition:border-color 150ms ease,box-shadow 150ms ease,background-color 150ms ease;
+}
+body :is(.theme-label,.sidebar-theme,.workspace-theme-select) select {
+  min-height:38px;
+  padding:7px 36px 7px 12px;
+  border-color:color-mix(in srgb,var(--border) 82%,var(--text-secondary));
+  border-radius:999px;
+  background-color:var(--surface);
+  font-size:12px;
+}
+body :is(.business-form,.stack,.job-entry-panel,.resume-fields,.preview-control,.saved-job-import-controls) select:hover,
+body .job-entry-panel .job-form-simple select:hover,
+body .resume-fields .editor-section select:hover,
+body select.job-choice-select:hover,
+body :is(.theme-label,.sidebar-theme,.workspace-theme-select) select:hover {
+  border-color:color-mix(in srgb,var(--brand) 55%,var(--border));
+  box-shadow:0 2px 8px color-mix(in srgb,var(--brand) 10%,transparent);
+}
+body :is(.business-form,.stack,.job-entry-panel,.resume-fields,.preview-control,.saved-job-import-controls) select:focus-visible,
+body .job-entry-panel .job-form-simple select:focus-visible,
+body .resume-fields .editor-section select:focus-visible,
+body select.job-choice-select:focus-visible,
+body :is(.theme-label,.sidebar-theme,.workspace-theme-select) select:focus-visible {
+  border-color:var(--brand);
+  outline:0;
+  box-shadow:0 0 0 3px color-mix(in srgb,var(--brand) 18%,transparent);
+}
+body select option { background:var(--surface); color:var(--text-primary); }
+@media(max-width:600px) {
+  body :is(.business-form,.stack,.job-entry-panel,.resume-fields,.preview-control,.saved-job-import-controls) select,
+  body .job-entry-panel .job-form-simple select,
+  body .resume-fields .editor-section select,
+  body select.job-choice-select { min-height:46px; }
+}
+
+/* Use the customizable select picker where supported so its open menu shares the theme. */
+@supports (appearance:base-select) {
+  body select,
+  body :is(.theme-label,.sidebar-theme,.workspace-theme-select) select,
+  body :is(.business-form,.stack,.job-entry-panel,.resume-fields,.preview-control,.saved-job-import-controls) select,
+  body .job-entry-panel .job-form-simple select,
+  body .resume-fields .editor-section select,
+  body select.job-choice-select {
+    appearance:base-select;
+    background-image:none;
+  }
+  body select::picker-icon { color:var(--text-secondary); transition:rotate 160ms ease; }
+  body select:open::picker-icon { rotate:180deg; }
+  body select::picker(select) {
+    appearance:base-select;
+    max-height:min(340px,55vh);
+    margin-block:5px;
+    padding:5px;
+    overflow:auto;
+    border:1px solid var(--border);
+    border-radius:13px;
+    background:var(--surface);
+    color:var(--text-primary);
+    box-shadow:0 16px 42px rgb(25 34 29 / 18%);
+  }
+  body select option {
+    display:flex;
+    align-items:center;
+    min-height:40px;
+    margin:2px 0;
+    padding:9px 11px;
+    border-radius:8px;
+    background:transparent;
+    color:var(--text-primary);
+  }
+  body select option:checked,body select option:hover {
+    background:var(--brand-soft);
+    color:var(--text-primary);
+  }
+  body select option:disabled { color:var(--text-secondary); opacity:.58; }
+}
+@media(prefers-reduced-motion:reduce) { body select::picker-icon { transition:none; } }
+
+/* Overview: keep real names readable and align the simplified entry markup. */
+.workspace-home-hero { gap:0; border-radius:var(--radius-lg); background:var(--surface); }
+.workspace-home-copy { min-width:0; width:100%; }
+.workspace-home-copy .workspace-home-greeting { margin:0 0 12px; max-width:none; font-size:14px; }
+.workspace-home-greeting span { color:var(--text-primary); font-weight:650; overflow-wrap:anywhere; }
+.workspace-home-copy h1 { margin:0; letter-spacing:-.035em; overflow-wrap:anywhere; }
+.workspace-home-actions { flex-wrap:wrap; gap:12px 20px; }
+.workspace-home-actions .button { border-radius:var(--radius); }
+.workspace-first-actions,.workspace-recent { max-width:none; }
+.workspace-entryways>a>span:first-child { display:grid; gap:4px; min-width:0; }
+.workspace-entryways small { display:block; line-height:1.5; }
+.workspace-recent-item { padding-block:12px; }
+.workspace-recent-item small { overflow-wrap:anywhere; }
+.workspace-recent-item>a,.workspace-section-heading>a { flex-shrink:0; white-space:nowrap; }
+.workspace-account-menu .account-avatar { flex-shrink:0; }
+.workspace-account-fullname { padding:7px 9px 0; font-size:13px; overflow-wrap:anywhere; }
+.workspace-account-menu summary:focus-visible,.workspace-entryways>a:focus-visible { outline:2px solid var(--brand); outline-offset:3px; }
+@keyframes overview-enter { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:none; } }
+@media (prefers-reduced-motion:no-preference) {
+  .workspace-home-hero { animation:overview-enter 280ms ease-out; }
+  .workspace-home-hero~:is(.workspace-first-actions,.workspace-recent) { animation:overview-enter 320ms ease-out; }
+  .workspace-entryways>a { transition:background-color 160ms; }
+  .workspace-entryways>a:hover { background:var(--surface-secondary); }
+}
+@media (min-width:761px) and (max-width:1050px) {
+  .workspace-header { grid-template-columns:170px minmax(0,1fr) auto; }
+  .workspace-account-name { display:block; max-width:72px; }
+}
+@media (max-width:760px) {
+  .workspace-home-copy h1 { font-size:clamp(24px,6vw,30px); line-height:1.35; }
+  .workspace-home-copy .workspace-home-greeting { font-size:13px; }
+  .workspace-entryways>a,.workspace-entryways>a+a { padding:14px 12px; }
+  .workspace-section-heading { align-items:center; gap:10px; }
+}
+@media (prefers-reduced-motion:reduce) {
+  .workspace-entryways>a,.workspace-entryways>a>.icon { transition:none; }
+  .workspace-entryways>a:hover>.icon { transform:none; }
+}
+
+.workspace-brand .brand-mark { flex-shrink:0; }
+@media (max-width:760px) {
+  .workspace-theme-select select { width:116px; min-width:116px; min-height:36px; padding:6px 10px; white-space:nowrap; font-size:12px; }
+}
+@media (min-width:761px) and (max-width:1050px) {
+  .workspace-nav-long { display:none; }
+  .workspace-nav-short { display:inline; }
+}

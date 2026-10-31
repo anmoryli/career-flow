@@ -109,7 +109,8 @@ def register():
         return render_template("frontend/public/auth.html", mode="register")
     rate_limit("registration-ip", request.remote_addr or "unknown", 20, 600)
     data = RegisterInput.model_validate(input_data())
-    user = auth.register(data)
+    user = auth.register(data,referral_code=session.get("referral_code"))
+    session.pop("referral_code",None)
     return set_session(user)
 
 
@@ -201,7 +202,8 @@ def workspace():
 
         guest_entitlements = SimpleNamespace(
             resume_count=0, resume_limit=10, free_resume_limit=2,
-            can_create_resume=True, can_export_resume=False,
+            can_create_resume=True, can_export_resume=True,
+            free_export_remaining=1,free_export_resume_id=None,free_export_revision=None,
             is_member=False, plan_name="免费版", expires_at=None,
             resume_ai_remaining=5,
         )

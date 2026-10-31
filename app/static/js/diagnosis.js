@@ -51,7 +51,7 @@
   };
   root.querySelectorAll('[data-start-ai]').forEach(button => button.addEventListener('click', async () => {
     const kind = button.dataset.startAi;
-    const startPanel = root.querySelector('.diagnosis-start-panel');
+    const startPanel = root.querySelector('.diagnosis-start-panel, .diagnosis-failure-panel');
     const animationTemplate = root.querySelector('#diagnosis-running-template');
     const animation = animationTemplate?.content.firstElementChild.cloneNode(true);
     root.querySelectorAll('[data-start-ai]').forEach(item => { item.disabled = true; });

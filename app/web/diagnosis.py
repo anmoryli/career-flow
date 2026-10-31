@@ -7,6 +7,7 @@ from app.extensions import db
 from app.models import AIOperation, Diagnostic, DiagnosticAnswer, JobTarget, Resume, ResumeVersion
 from app.services import diagnosis
 from app.services.career import owned
+from app.services.commerce import membership_active
 from app.services.interactions import active_question
 from app.services.model_runtime import diagnosis_job_seconds, public_ai_error
 from app.web.routes import input_data, login_required
@@ -15,13 +16,14 @@ diagnosis_web = Blueprint("diagnosis", __name__)
 
 
 def operation_json(item):
+    from app.services.product import public_result
     return {
         "id": item.id,
         "state": item.state,
         "kind": item.kind,
         "charged": item.charged,
         "error": public_ai_error(item.error),
-        "result": item.result,
+        "result": public_result(g.user.id,item),
         "attempts": item.attempts,
     }
 
@@ -61,6 +63,13 @@ def detail(job_id):
     active_operation = next(
         (item for item in operations if item.state in {"queued", "running"}), None
     )
+    latest_failed_operation = (
+        operations[0]
+        if operations
+        and operations[0].kind in {"analysis", "report"}
+        and operations[0].state == "failed"
+        else None
+    )
     active_job_rows = db.session.execute(
         select(AIOperation, Diagnostic, JobTarget)
         .join(Diagnostic, AIOperation.diagnostic_id == Diagnostic.id)
@@ -77,11 +86,17 @@ def detail(job_id):
         if row[2].id not in seen_active_job_ids:
             active_jobs.append(row)
             seen_active_job_ids.add(row[2].id)
+    from app.services.product import full_access
+    can_review=bool(suggestion_operation and full_access(g.user.id,suggestion_operation))
+    if not can_review:
+        suggestion_operation=None
     resume_version = db.session.get(ResumeVersion, job.resume_version_id)
     resume = db.session.get(Resume, resume_version.resume_id) if resume_version else None
     return render_template(
         "frontend/analysis/detail.html",
         job=job,
+        can_review=can_review,
+        may_run_deep=membership_active(g.user.id),
         diagnostic=diagnostic,
         operations=operations,
         answers=answers,
@@ -89,6 +104,7 @@ def detail(job_id):
         latest_report=latest_report,
         suggestion_operation=suggestion_operation,
         active_operation=active_operation,
+        latest_failed_operation=latest_failed_operation,
         active_jobs=active_jobs,
         resume=resume,
         resume_version=resume_version,
@@ -113,6 +129,8 @@ def suggestions(job_id):
         abort(404)
     resume_version = db.session.get(ResumeVersion, job.resume_version_id)
     resume = db.session.get(Resume, resume_version.resume_id) if resume_version else None
+    from app.services.product import ensure_full_access
+    ensure_full_access(g.user.id,operation)
     from app.services.diagnosis_review import review_paragraphs
 
     return render_template(

@@ -5,7 +5,10 @@
     const response = await fetch(url, { method: 'POST', credentials: 'same-origin', redirect: 'error',
       headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrf() },
       body: JSON.stringify(payload) });
-    const result = await response.json();
+    const body = await response.text();
+    let result;
+    try { result = body ? JSON.parse(body) : {}; }
+    catch { throw new Error(`服务返回了错误页面（HTTP ${response.status}），请检查登录状态后重试。`); }
     if (!response.ok) { const error = new Error(result.error || 'Request failed'); error.loginRequired = Boolean(result.login_required); throw error; }
     return result;
   }
@@ -27,7 +30,7 @@
       const result = await response.json();
       if (!response.ok) throw new Error(result.error || 'PDF 解析失败');
       guestResume = result;
-      status.textContent = `已读取「${result.title}」，确认岗位后点击开始分析`;
+      status.textContent = `已读取「${result.title}」，现在可以开始分析`;
     } catch (error) { guestResume = null; status.textContent = error.message; }
   });
   document.querySelector('[data-import-saved-job]')?.addEventListener('click', async event => {
@@ -55,7 +58,7 @@
         resume.dispatchEvent(new Event('change', { bubbles: true }));
       }
       if (result.url) document.querySelector('.job-optional-link')?.setAttribute('open', '');
-      status.textContent = `已导入「${result.title || '未命名岗位'}」，核对信息后可继续分析`;
+      status.textContent = `已导入「${result.title || '未命名岗位'}」，点击“确认并开始分析”即可继续`;
       document.querySelector('#job-title')?.focus();
     } catch (error) { status.textContent = error.message; }
     finally { button.disabled = false; }

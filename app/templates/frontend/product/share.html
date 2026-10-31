@@ -1,0 +1,4 @@
+{% extends 'frontend/base.html' %}
+{% block title %}匿名岗位匹配复盘 · 职序{% endblock %}
+{% block head %}<meta name="robots" content="noindex,nofollow,noarchive">{% endblock %}
+{% block content %}<article class="cf-page cf-review-report"><header class="cf-page-heading"><div><span class="cf-eyebrow">经本人选择公开 / 匿名复盘</span><h1>一次岗位准备的记录</h1><p>此页不包含简历姓名、联系方式或经历原文。链接有效至 {{ expires_at|datetime_cn }}，分享者可随时撤销。</p></div></header>{% include 'frontend/product/_snapshot.html' %}<div class="cf-report-actions"><button class="cf-button is-secondary" type="button" data-print-report>打印 / 保存复盘 PDF</button><a class="cf-button" href="{{ url_for('web.workspace',view='jobs') }}">开始我的岗位准备</a></div></article>{% endblock %}

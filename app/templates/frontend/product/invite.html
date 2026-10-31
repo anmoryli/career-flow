@@ -1,0 +1,3 @@
+{% extends 'frontend/base.html' %}
+{% block title %}邀请朋友 · 职序{% endblock %}{% block head %}<meta name="robots" content="noindex,nofollow">{% endblock %}
+{% block content %}<div class="cf-page cf-invite"><header class="cf-page-heading"><div><span class="cf-eyebrow">把准备方法分享给朋友</span><h1>邀请朋友，从真实经历开始。</h1><p>朋友通过此链接注册会记录邀请来源。没有积分、现金或会员奖励，也不会自动发送消息。</p></div></header><article><label class="cf-field">你的邀请链接<input readonly value="{{ invite_url }}" data-share-link></label><button class="cf-button" type="button" data-copy-link>复制链接</button><p>已归因注册：{{ invited_count }} 人。每个新账户仅记录一次，不支持自邀或重复归因；不公开朋友的邮箱。</p></article></div>{% endblock %}
