@@ -72,6 +72,8 @@ def quote_compose(user_id, resume_id, data):
     size = len(json.dumps(snapshot, ensure_ascii=False).encode())
     if size > 12000:
         raise BusinessError("整理内容过长，请缩短后重试。", 422)
+    from app.services.product import prepare_snapshot
+    prepare_snapshot(user_id,snapshot)
     item = AIOperation(
         user_id=user_id,
         resume_id=resume_id,
@@ -175,6 +177,8 @@ def quote(user_id, resume_id, data):
     size = len(json.dumps(snapshot, ensure_ascii=False).encode())
     if size > 12000:
         raise BusinessError("改写内容过长，请缩短后重试。", 422)
+    from app.services.product import prepare_snapshot
+    prepare_snapshot(user_id,snapshot)
     item = AIOperation(
         user_id=user_id,
         resume_id=resume_id,
@@ -210,13 +214,22 @@ def confirm(user_id, operation_id):
     )
     if (
         not is_configured()
-        or item.input_snapshot["model"] != route["model_id"]
-        or item.input_snapshot.get("model_candidates", [item.input_snapshot["model"]])
+        or item.input_snapshot.get("standard_model", item.input_snapshot["model"])
+        != route["model_id"]
+        or item.input_snapshot.get(
+            "standard_model_candidates",
+            item.input_snapshot.get("model_candidates", [item.input_snapshot["model"]]),
+        )
         != route["model_ids"]
         or item.input_snapshot["model_revision_id"] != model["revision_id"]
         or item.input_snapshot["model_route_revision_id"] != route["revision_id"]
     ):
         raise BusinessError("模型配置已变化，请重试。", 503)
+    from app.services.product import prepare_snapshot
+
+    snapshot = dict(item.input_snapshot)
+    prepare_snapshot(user_id, snapshot, exclude=item.id)
+    item.input_snapshot = snapshot
     item.ceiling = 0
     item.state = "queued"
     db.session.commit()
@@ -236,13 +249,16 @@ def run_operation(operation_id):
     item.state = "running"
     item.started_at = utcnow()
     snapshot = copy.deepcopy(item.input_snapshot)
+    from app.services.product import call_usage, policy, store_call_usage
+    usage_policy, usage_policy_revision = policy()
+    calls = []
     revision = item.diagnostic_revision
     kind = item.kind
     db.session.commit()
     result = None
     tokens = 0
     attempts = 0
-    failure_message = "模型超时或输出无效，请稍后重试。"
+    failure_message = "模型服务暂时不可用，请稍后重试。"
     from app.services.model_fallback import candidates, model_unavailable
     from app.services.model_provider import generate_resume, generate_resume_document
 
@@ -295,6 +311,7 @@ def run_operation(operation_id):
                 if not isinstance(usage, int) or not 0 < usage <= 2000000:
                     raise ValueError("费用用量不可用")
                 tokens += usage
+                calls.append(call_usage(attempts,model_id,usage,usage_policy,"returned"))
                 if kind == "compose":
                     output = ResumeComposeOutput.model_validate(raw)
                     document = output.document.model_dump()
@@ -346,6 +363,10 @@ def run_operation(operation_id):
                     }
                 break
             except Exception as error:
+                if not calls or calls[-1]["attempt"]!=attempts:
+                    calls.append(call_usage(attempts,model_id,None,usage_policy,"provider_error"))
+                else:
+                    calls[-1]["outcome"]="invalid_output"
                 last_error = error
                 status_code = getattr(error, "status_code", None)
                 if status_code == 402:
@@ -369,6 +390,7 @@ def run_operation(operation_id):
         failure_message = "已尝试配置的模型，仍不可用，请稍后重试。"
     lock_user(user_id)
     item = owned(AIOperation, user_id, operation_id, True)
+    store_call_usage(item,calls,usage_policy_revision)
     if item.state != "running":
         db.session.commit()
         return
