@@ -21,3 +21,22 @@
 ## 运营验收
 
 30名真实用户、真实付费转化、NPS/复购、真实毛利需要实际样本和支付事实。实现邀请归因、指标采集/导出和访谈手册不能被写作已经完成这些运营结果。
+
+## 本轮验证记录（2026-10-31）
+
+本轮全部验证在本地环境执行（MySQL 8.4 @127.0.0.1:3310、Redis 6390、Mailpit 8026），未部署生产。
+
+- 静态检查：`ruff check`（app/tests/scripts）全部通过。
+- 单元测试：`pytest tests -q --ignore=tests/integration` → 100 通过。
+- 集成回归（真实 MySQL）：`uv run python scripts/test-integration.py` → 250 通过（155s）。
+- 数据库一致性：`flask db check` → schema: ok（模型与迁移 e8a431c02d9f 一致）。
+- 离线产品评测：`scripts/evaluate-product-model.py` 默认离线模式在 6 个合成用例上输出 `contract_valid=true`。
+- 浏览器三端矩阵（Playwright chromium；desktop 1440 / tablet 820 / mobile 390；workers=1；用时 1.2h）：执行 230 项，103 通过、125 失败、2 跳过。
+- 125 个失败的归属（已逐项取证，不是本轮引入）：全部位于按整体重构前旧界面编写的历史 spec（workflow 83、studio 10、paragraph-review 9、overview-detail 6、redesign 6、frontend_experience 4、frontend_workflows 3、craft 3、product_completion 1）。抽样确认其断言的选择器只存在于已停止渲染的旧模板树：`.billing-plan-card` 仅在 templates/workspace/billing.html、`.resume-list-card` 无对应模板、`data-ui-form="auth"` 属于独立认证页而非共享登录弹窗。
+- 基线对照（origin/main=254dc75，相同 8 个 spec 文件、desktop 视口）：53 失败 / 14 通过；本轮代码同条件子集复跑：56 失败 / 13 通过。差 3 项的结论：
+  - craft 1 项、frontend_experience 1 项：同根因——自重构提交 dc2a2e0 起 `/login` 对游客渲染独立认证页，但更早提交 e61b546 遗留的单元测试仍要求 302 跳首页弹窗，本轮工作区一度按该过时测试改了路由，破坏了重构既定行为。已修复：恢复 `/login` 渲染 `frontend/public/auth.html`（next 由前端脚本从 URL 读取），并把过时单元测试改写为断言独立认证页；修复后 craft + frontend_experience 桌面 8/8 通过。
+  - frontend_workflows 1 项：状态型波动（整跑 3 失败、子集 0 失败、基线 1 失败），非代码回归。
+- 新界面验收 spec（product_completion，3 用例 × 3 视口）：desktop 3/3、tablet 3/3 通过；mobile 首跑 1 项超时，取证为移动端编辑器"编辑/预览"双模式下模板快切位于预览面板（≤760px 时编辑模式下 `display:none`，属既定交互），测试已改为先进入预览模式再切换模板，修复后 mobile 3/3 通过（21.4s），desktop/tablet 复验通过。
+- 真实模型（Q03/Q04）：未执行。实时模式按设计只接受"当前官网核实免费"的 SiliconFlow Qwen 模型，而当前 .env 指向 token-plan 供应商，脚本按既定护栏拒绝执行；未擅自改用收费供应商或绕过护栏。X02 授权（≤¥5、仅合成数据）保留未动用。
+- 未做 / 外部依赖：X01 真实支付接入（用户明确暂缓）、X03 真实用户招募与转化数据。
+- 遗留问题（不阻塞本次交付）：历史 spec 未随整体重构更新，建议后续按新前端重写或归档；移动端整跑中部分旧用例耗时受 45s 默认预算影响。

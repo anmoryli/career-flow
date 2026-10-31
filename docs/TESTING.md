@@ -48,3 +48,10 @@ OCR 增量验证：加入 Tesseract 后完整 MySQL/Redis 集成套件 158 passe
 - `uv run pytest tests/test_pdf_limits.py -q`（使用项目内 `.tools/tesseract`）：10 passed。覆盖文字 PDF、扫描页 OCR、中文扫描简历字段、文字与嵌入头像混合 PDF、结构化字段、协议前缀清理、损坏/空 PDF、图片误识别过滤与资源限制。
 - Playwright PDF 导入/导出定向回归：桌面 4 passed；简历工作流在桌面、平板、手机 3 passed。实测较多内容压为 A4 单页，极长内容触到压缩下限后保留分页。
 - 本机 MySQL 账户 `anmory` 的原 PDF 经前端重新导入并更新现有简历版本；确认头像保存并显示、教育/项目/技能/荣誉字段入库、主页和 GitHub 不含 `https://`，列表与历史仍可见。该手动流程未替代完整 MySQL 集成套件。
+
+## 2026-10-29 总览姓名、排版和动效修复
+
+- `pytest tests/test_foundation.py -q`：14 passed。
+- Playwright `--grep "workspace home"`：6 passed，覆盖桌面、平板、手机；检查真实账号称呼、创建入口文字布局、三种主题、减少动态效果、已有简历跳转及 112 字无空格标题换行和横向溢出。
+- 修正手机主题选择器宽度后再次运行上述 6 项，全部通过。平板导航改用既有短名称后 tablet 定向回归 2 passed。
+- 前端构建通过；检查手机和平板实际截图。没有执行完整业务、管理端视觉、真实 AI 或支付回归；本次不修改数据库结构和业务接口。
