@@ -81,7 +81,6 @@ def quote(user_id, diagnostic_id, data):
     diagnostic = owned(Diagnostic, user_id, diagnostic_id, True)
     # Verify ownership before revealing account entitlement state. A foreign
     # diagnostic must remain indistinguishable from a missing one.
-    ensure_job_analysis_capacity(user_id)
     previous = db.session.scalar(
         select(AIOperation)
         .where(AIOperation.user_id == user_id, AIOperation.request_key == str(data.request_key))
@@ -92,6 +91,7 @@ def quote(user_id, diagnostic_id, data):
             raise BusinessError("重复请求不一致。", 409)
         db.session.commit()
         return previous
+    ensure_job_analysis_capacity(user_id,diagnostic.id,data.kind)
     if diagnostic.state == "completed" or active_operation(diagnostic.id):
         raise BusinessError("诊断已完成或任务正在执行。", 409)
     if not is_configured():
@@ -156,6 +156,8 @@ def quote(user_id, diagnostic_id, data):
     input_bytes = len(json.dumps(snapshot, ensure_ascii=False).encode())
     if input_bytes > 100000:
         raise BusinessError("本次诊断文字过长，请缩减重复经历或岗位描述后重试。", 422)
+    from app.services.product import prepare_snapshot
+    prepare_snapshot(user_id,snapshot)
     item = AIOperation(
         user_id=user_id,
         diagnostic_id=diagnostic.id,
@@ -203,16 +205,27 @@ def confirm(user_id, operation_id):
     if not is_configured():
         raise BusinessError("AI 服务暂不可用，请稍后重试。", 503)
     if (
-        item.input_snapshot["model"] != route["model_id"]
-        or item.input_snapshot.get("model_candidates", [item.input_snapshot["model"]])
+        item.input_snapshot.get("standard_model", item.input_snapshot["model"])
+        != route["model_id"]
+        or item.input_snapshot.get(
+            "standard_model_candidates",
+            item.input_snapshot.get("model_candidates", [item.input_snapshot["model"]]),
+        )
         != route["model_ids"]
         or item.input_snapshot.get("model_revision_id") != model["revision_id"]
         or item.input_snapshot.get("model_route_revision_id") != route["revision_id"]
         or item.input_snapshot.get("prompt_revision_id") != prompt["revision_id"]
     ):
         raise BusinessError("模型配置已更新，请重新启动本次操作。", 409)
+    ensure_job_analysis_capacity(user_id,diagnostic.id,item.kind,exclude=item.id)
+    from app.services.product import prepare_snapshot, record_event
+
+    snapshot = dict(item.input_snapshot)
+    prepare_snapshot(user_id, snapshot, exclude=item.id)
+    item.input_snapshot = snapshot
     item.ceiling = 0
     item.state = "queued"
+    record_event(user_id,"diagnosis_started",f"start:{item.id}",operation_id=item.id,diagnostic_id=diagnostic.id)
     db.session.commit()
     return item
 
@@ -250,6 +263,8 @@ def answer(user_id, diagnostic_id, data):
             raise BusinessError("重复回答内容不一致。", 409)
         db.session.commit()
         return item
+    from app.services.product import ensure_full_access
+    ensure_full_access(user_id)
     if (
         item.state != "active"
         or not item.question
@@ -336,6 +351,9 @@ def validate_output(raw, snapshot):
     if output.question.count("？") + output.question.count("?") > 1:
         raise ValueError("每轮只能追问一个问题")
     result = output.model_dump()
+    if snapshot.get("access_tier")=="free_preview":
+        result["suggestions"] = []
+        result["question"] = ""
     result["overall_score"] = sum(d.score for d in output.dimensions) / 5
     return DiagnosisResult.model_validate(result).model_dump()
 
@@ -354,6 +372,9 @@ def run_operation(operation_id):
     item.state = "running"
     item.started_at = utcnow()
     snapshot = copy.deepcopy(item.input_snapshot)
+    from app.services.product import call_usage, policy, record_event, store_call_usage
+    usage_policy, usage_policy_revision = policy()
+    calls = []
     db.session.commit()
     result = None
     tokens = 0
@@ -374,9 +395,14 @@ def run_operation(operation_id):
                 if not isinstance(usage, int) or not 0 < usage <= 2000000:
                     raise ValueError("费用用量不可用")
                 tokens += usage
+                calls.append(call_usage(attempts,model_id,usage,usage_policy,"returned"))
                 result = validate_output(raw, snapshot)
                 break
             except Exception as error:
+                if not calls or calls[-1]["attempt"]!=attempts:
+                    calls.append(call_usage(attempts,model_id,None,usage_policy,"provider_error"))
+                else:
+                    calls[-1]["outcome"]="invalid_output"
                 last_error = provider_error(error)
                 # Never persist provider exception strings (may contain credentials/documents).
                 current_app.logger.warning(
@@ -397,6 +423,7 @@ def run_operation(operation_id):
             break
     owner_lock(user_id)
     item = owned(AIOperation, user_id, operation_id, True)
+    store_call_usage(item,calls,usage_policy_revision)
     if item.state != "running":
         db.session.commit()
         return
@@ -431,6 +458,13 @@ def run_operation(operation_id):
         diagnostic = owned(Diagnostic, user_id, item.diagnostic_id, True)
         diagnostic.revision += 1
         diagnostic.question = result["question"]
+        record_event(
+            user_id,
+            "report_completed" if item.kind == "report" else "diagnosis_completed",
+            f"done:{item.id}",
+            operation_id=item.id,
+            diagnostic_id=diagnostic.id,
+        )
         from app.services.interactions import active_question, question_interaction
 
         previous_question = active_question(diagnostic.conversation_id)
@@ -462,6 +496,8 @@ def apply_suggestions(user_id, operation_id, data):
     job = owned(JobTarget, user_id, diagnostic.job_id)
     version = db.session.get(ResumeVersion, job.resume_version_id)
     document = copy.deepcopy(version.document)
+    from app.services.product import ensure_full_access
+    ensure_full_access(user_id,item)
     suggestions = item.result["suggestions"]
     if not set(data.edits).issubset(data.indices):
         raise BusinessError("只能编辑已选择的建议。", 422)
@@ -508,6 +544,7 @@ def apply_suggestions(user_id, operation_id, data):
             document=document,
         ),
         parent_id=version.resume_id,
+        source_operation_id=item.id,
     )
 
 

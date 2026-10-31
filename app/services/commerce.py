@@ -58,7 +58,10 @@ def entitlements(user_id):
         )
     )
     plan_code = membership.plan_code if paid else "free"
+    from app.services.product import export_info, quota_info
+    extra=export_info(user_id)|quota_info(user_id)
     return {
+        **extra,
         "plan_code": plan_code,
         "plan_name": PLANS.get(plan_code, {}).get("title", "免费版" if not paid else "会员"),
         "is_member": paid,
@@ -71,7 +74,7 @@ def entitlements(user_id):
         "resume_ai_used": ai_used,
         "resume_ai_limit": None if paid else FREE_RESUME_AI_LIMIT,
         "resume_ai_remaining": None if paid else max(0, FREE_RESUME_AI_LIMIT - ai_used),
-        "can_export_resume": paid,
+        "can_export_resume": paid or extra["free_export_remaining"]>0,
     }
 
 
@@ -89,14 +92,14 @@ def ensure_resume_ai_capacity(user_id):
         raise BusinessError("免费版的 5 次简历 AI 优化额度已用完，开通会员可继续使用。", 403)
 
 
-def ensure_job_analysis_capacity(user_id):
-    if not membership_active(user_id):
-        raise BusinessError("岗位分析暂不包含在免费版中，开通会员后即可使用。", 403)
+def ensure_job_analysis_capacity(user_id, diagnostic_id=None, kind='analysis', exclude=None):
+    from app.services.product import ensure_analysis
+    ensure_analysis(user_id,diagnostic_id,kind,exclude)
 
 
 def ensure_resume_export_capacity(user_id):
-    if not membership_active(user_id):
-        raise BusinessError("开通会员后即可导出简历 PDF。", 403)
+    if not entitlements(user_id)['can_export_resume']:
+        raise BusinessError('首次免费PDF导出已使用，开通会员可继续导出。',403)
 
 
 def create_order(user_id, request_key, plan_code):
@@ -174,6 +177,8 @@ def settle_mock(user_id, order_id, outcome):
         return order
     if outcome == "success":
         _issue_membership(order)
+        from app.services.product import record_event
+        record_event(user_id,"membership_activated",f"membership:{order.id}",plan_code=order.plan_code,payment_mode="mock",amount_minor=int(order.price_yuan*100),period_days=order.period_days,starts_at=(db.session.get(Membership,user_id).expires_at-timedelta(days=order.period_days)).isoformat(),ends_at=db.session.get(Membership,user_id).expires_at.isoformat())
     order.state = target
     order.completed_at = utcnow()
     db.session.commit()

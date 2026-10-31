@@ -178,7 +178,7 @@ def reset_password(data: PasswordResetInput) -> None:
     db.session.commit()
 
 
-def register(data: RegisterInput) -> User:
+def register(data: RegisterInput, referral_code=None) -> User:
     record = db.session.scalar(
         select(EmailVerificationCode)
         .where(
@@ -204,6 +204,8 @@ def register(data: RegisterInput) -> User:
             )
         )
         db.session.delete(record)
+        from app.services.product_growth import attribute_registration
+        attribute_registration(user.id,referral_code)
         db.session.commit()
     except IntegrityError:
         db.session.rollback()

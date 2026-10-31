@@ -59,7 +59,7 @@ def grant(user_id, amount, category, *, order_id=None, cycle_id=None):
 def freeze(user_id, operation_id, amount):
     balance = account(user_id)
     if balance.available < amount:
-        raise BusinessError("可用积分不足，尚未扣费。", 409)
+        raise BusinessError("当前权益不足以完成此操作，请检查会员状态后重试。", 409)
     remaining = amount
     categories = category_balances(user_id)
     for category in SPEND_ORDER:
@@ -77,7 +77,7 @@ def freeze(user_id, operation_id, amount):
             )
             remaining -= taken
     if remaining:
-        raise BusinessError("积分账本与余额不一致，请联系管理员。", 409)
+        raise BusinessError("账户权益状态异常，请联系管理员。", 409)
     balance.available -= amount
     balance.frozen += amount
 

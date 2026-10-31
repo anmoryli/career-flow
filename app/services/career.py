@@ -8,7 +8,7 @@ from sqlalchemy.exc import IntegrityError
 
 from app.career_schemas import ResumeSave
 from app.extensions import db
-from app.models import JobTarget, Resume, ResumeVersion, User
+from app.models import AIOperation, JobTarget, Resume, ResumeVersion, User
 from app.services.errors import BusinessError
 
 
@@ -83,7 +83,7 @@ def validate_document(document):
             raise BusinessError("照片不能解码，或边长不在 96–4096 像素之间。", 422) from None
 
 
-def save_resume(user_id, data, resume_id=None, parent_id=None):
+def save_resume(user_id, data, resume_id=None, parent_id=None, *, source_operation_id=None):
     document = data.document.model_dump()
     validate_document(document)
     key = str(data.request_key)
@@ -142,6 +142,12 @@ def save_resume(user_id, data, resume_id=None, parent_id=None):
         )
         db.session.add(version)
         db.session.flush()
+        from app.services.product_metrics import resume_saved
+        resume_saved(user_id,item,version)
+        if source_operation_id is not None:
+            from app.services.product import record_event
+            operation=owned(AIOperation,user_id,source_operation_id)
+            record_event(user_id,"job_version_saved",f"job-version:{item.id}",resume_id=item.id,parent_id=item.parent_id,version_id=version.id,operation_id=operation.id,diagnostic_id=operation.diagnostic_id)
         db.session.commit()
         db.session.refresh(item)
         return serialize_resume(item, version)

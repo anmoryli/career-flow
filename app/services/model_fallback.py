@@ -24,6 +24,8 @@ def model_unavailable(error):
         return True
     if isinstance(error, ValueError) or type(error).__name__ == "ValidationError":
         return True
+    if type(error).__name__ == "UnexpectedModelBehavior":
+        return True
     module = type(error).__module__
     return module.startswith(("httpx", "httpcore")) or type(error).__name__ in {
         "APIConnectionError",

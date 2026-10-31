@@ -94,7 +94,7 @@ def create_app(overrides: dict | None = None) -> Flask:
 
     def error_response(message: str, status: int, field_errors=None):
         db.session.rollback()
-        if request.is_json or request.path.startswith("/health/"):
+        if request.is_json or request.path.startswith(("/health/", "/api/", "/admin/api/")):
             body = {"error": message, "request_id": getattr(g, "request_id", "")}
             if field_errors:
                 body["fields"] = field_errors

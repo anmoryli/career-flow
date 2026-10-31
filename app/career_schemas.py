@@ -5,6 +5,7 @@ from uuid import UUID
 
 from pydantic import Field, model_validator
 
+from app.resume_templates import TemplateId
 from app.schemas import Input
 
 
@@ -161,7 +162,7 @@ class ResumeSave(Input):
     request_key: UUID
     revision: int = Field(default=0, ge=0)
     title: str = Field(default="未命名简历", min_length=1, max_length=120)
-    template: Literal["classic", "technical", "modern"] = "classic"
+    template: TemplateId = "classic"
     document: ResumeDocument
 
 

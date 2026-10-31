@@ -16,14 +16,17 @@ from sqlalchemy.exc import IntegrityError
 from app.admin_schemas import (
     DiagnosisPromptSettings,
     MailSettings,
+    ModelEndpoint,
     ModelRouteSettings,
     ModelSettings,
 )
 from app.extensions import db
 from app.models import ActiveConfig, AdminAudit, ConfigRevision, User, utcnow
+from app.product_schemas import ProductPolicy
 from app.services.errors import BusinessError
 
 SCHEMAS = {
+    "product": ProductPolicy,
     "mail": MailSettings,
     "model": ModelSettings,
     "prompt_diagnosis": DiagnosisPromptSettings,
@@ -78,12 +81,15 @@ def active_revision(category):
 
 
 def revision_summary(item):
+    settings = item.settings
+    if item.category == "model":
+        settings = {**settings, "models": _model_profiles(settings)}
     return {
         "id": item.id,
         "category": item.category,
         "version": item.version,
         "label": item.label,
-        "settings": item.settings,
+        "settings": settings,
         "secret_configured": bool(item.encrypted_secret),
         "state": item.state,
         "created_at": item.created_at.isoformat(),
@@ -107,21 +113,23 @@ def history(category):
     }
 
 
-def create_draft(actor_id, category, data):
+def create_draft(actor_id, category, data, *, activate=False):
     if category not in SCHEMAS:
         raise BusinessError("未知配置类别。", 404)
     _lock_administration()
     settings = SCHEMAS[category].model_validate(data.settings).model_dump(mode="json")
     previous = active_revision(category)
-    if category in {"prompt_diagnosis", "model_routes", "commerce"} and data.secret:
+    if category in {"prompt_diagnosis", "model_routes", "commerce", "product"} and data.secret:
         raise BusinessError("此配置不接受密钥。", 422)
-    if previous and not data.secret and category in {"mail", "model"}:
-        identity_fields = ("host", "username") if category == "mail" else ("provider", "base_url")
-        if any(settings[field] != previous.settings[field] for field in identity_fields):
-            raise BusinessError("服务地址或账号改变时，请重新填写密钥。", 422)
-    encrypted = (
-        _seal(data.secret) if data.secret else (previous.encrypted_secret if previous else "")
-    )
+    if category == "model":
+        encrypted = _model_draft_secret(settings, data.secret, previous)
+    else:
+        if previous and not data.secret and category == "mail":
+            if any(settings[field] != previous.settings[field] for field in ("host", "username")):
+                raise BusinessError("服务地址或账号改变时，请重新填写密钥。", 422)
+        encrypted = (
+            _seal(data.secret) if data.secret else (previous.encrypted_secret if previous else "")
+        )
     if settings["enabled"] and category == "model" and not encrypted:
         raise BusinessError("启用模型前必须配置服务端密钥。", 422)
     if settings["enabled"] and category == "mail" and settings["username"] and not encrypted:
@@ -138,17 +146,108 @@ def create_draft(actor_id, category, data):
         label=data.label,
         settings=settings,
         encrypted_secret=encrypted,
-        state="draft",
+        state="published" if activate else "draft",
         author_id=actor_id,
+        published_at=utcnow() if activate else None,
     )
     db.session.add(item)
-    audit(actor_id, "config_draft", category, after={"version": version, "settings": settings})
+    if activate:
+        pointer = db.session.get(ActiveConfig, category, with_for_update=True)
+        before = pointer.revision_id if pointer else None
+        db.session.flush()
+        if pointer:
+            pointer.revision_id = item.id
+        else:
+            db.session.add(ActiveConfig(category=category, revision_id=item.id))
+        audit(
+            actor_id,
+            "config_publish",
+            category,
+            {"revision_id": before},
+            {"revision_id": item.id, "version": version},
+        )
+    else:
+        audit(actor_id, "config_draft", category, after={"version": version, "settings": settings})
     try:
         db.session.commit()
     except IntegrityError:
         db.session.rollback()
         raise BusinessError("配置版本冲突，请刷新后重试。", 409) from None
     return item
+
+
+def _model_draft_secret(settings, submitted, previous):
+    profiles = settings["models"]
+    supplied = []
+    if submitted:
+        try:
+            value = json.loads(submitted)
+            supplied = value if isinstance(value, list) and len(value) == 3 else [submitted] * 3
+        except (ValueError, TypeError):
+            supplied = [submitted] * 3
+    else:
+        supplied = [""] * 3
+    if any(not isinstance(key, str) for key in supplied):
+        raise BusinessError("三个模型的密钥格式无效。", 422)
+    previous_profiles = []
+    previous_keys = [""] * 3
+    if previous:
+        previous_profiles = _model_profiles(previous.settings)
+        try:
+            decoded = _unseal(previous.encrypted_secret)
+            parsed = json.loads(decoded)
+            if isinstance(parsed, list) and len(parsed) == 3:
+                previous_keys = parsed
+            else:
+                previous_keys = [decoded] * 3
+        except (ValueError, TypeError):
+            previous_keys = [_unseal(previous.encrypted_secret)] * 3
+    keys = []
+    for index, profile in enumerate(profiles):
+        key = supplied[index].strip()
+        unchanged_connection = (
+            index < len(previous_profiles)
+            and profile["provider"] == previous_profiles[index]["provider"]
+            and profile["base_url"] == previous_profiles[index]["base_url"]
+        )
+        if not key and unchanged_connection:
+            key = previous_keys[index]
+        if settings["enabled"] and not key:
+            raise BusinessError(f"请填写第 {index + 1} 个模型的 API Key。", 422)
+        keys.append(key)
+    return _seal(json.dumps(keys)) if any(keys) else ""
+
+
+def _model_profiles(settings):
+    if isinstance(settings.get("models"), list):
+        return [
+            ModelEndpoint.model_validate(profile).model_dump(mode="json")
+            for profile in settings["models"]
+        ]
+    identifiers = [settings.get("model_id", ""), *settings.get("fallback_model_ids", [])]
+    if not identifiers or len(identifiers) > 3:
+        raise BusinessError("历史模型配置格式无法识别。", 503)
+    return [
+        ModelEndpoint.model_validate(
+            {
+                "provider": settings.get("provider", ""),
+                "model_id": model_id,
+                "base_url": settings.get("base_url", ""),
+            }
+        ).model_dump(mode="json")
+        for model_id in identifiers
+    ]
+
+
+def _model_keys(item):
+    decoded = _unseal(item.encrypted_secret)
+    try:
+        value = json.loads(decoded)
+        if isinstance(value, list) and len(value) == 3:
+            return value
+    except (ValueError, TypeError):
+        pass
+    return [decoded] * 3
 
 
 def publish(actor_id, category, revision_id, confirm):
@@ -263,12 +362,17 @@ def runtime_model(revision_id=None, *, use_environment=False):
     if item:
         if item.category != "model" or item.state != "published":
             raise BusinessError("模型配置版本不可用。", 503)
-        settings = item.settings | {
-            "fallback_model_ids": item.settings.get("fallback_model_ids", []),
-            "secret": _unseal(item.encrypted_secret),
+        profiles = _model_profiles(item.settings)
+        keys = _model_keys(item)
+        return {
+            **profiles[0],
+            "models": [profile | {"secret": keys[index]} for index, profile in enumerate(profiles)],
+            "model_id": profiles[0]["model_id"],
+            "fallback_model_ids": [profile["model_id"] for profile in profiles[1:]],
+            "secret": keys[0],
+            "enabled": item.settings["enabled"],
             "revision_id": item.id,
         }
-        return settings
     config = current_app.config
     return {
         "provider": "environment",
@@ -279,6 +383,23 @@ def runtime_model(revision_id=None, *, use_environment=False):
         "secret": config["AI_API_KEY"],
         "revision_id": None,
     }
+
+
+def runtime_model_profile(revision_id, model_id):
+    config = runtime_model(revision_id, use_environment=revision_id is None)
+    for profile in config.get("models", []):
+        if profile["model_id"] == model_id:
+            return profile | {
+                "enabled": config["enabled"],
+                "revision_id": config["revision_id"],
+            }
+    if (
+        config["model_id"] == model_id
+        or model_id in config.get("fallback_model_ids", [])
+        or not model_id
+    ):
+        return config | {"secret": config["secret"]}
+    raise BusinessError("请求使用的模型不在当前已发布配置中。", 503)
 
 
 def runtime_diagnosis_prompt():
@@ -315,9 +436,7 @@ def available_models():
     config = runtime_model()
     if not config["secret"]:
         raise BusinessError("请先在服务配置中保存模型密钥。", 503)
-    endpoint = ModelSettings.model_validate(
-        {key: config[key] for key in ModelSettings.model_fields if key in config}
-    ).base_url
+    endpoint = config["base_url"]
     hostname = urlsplit(endpoint).hostname
     try:
         addresses = socket.getaddrinfo(hostname, 443, type=socket.SOCK_STREAM)

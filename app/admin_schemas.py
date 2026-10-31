@@ -29,57 +29,84 @@ class MailSettings(BaseModel):
         return self
 
 
-class ModelSettings(BaseModel):
+def _https_model_endpoint(value):
+    parsed = urlsplit(value)
+    if (
+        parsed.scheme != "https"
+        or not parsed.hostname
+        or parsed.username
+        or parsed.password
+        or parsed.fragment
+        or parsed.query
+    ):
+        raise ValueError("The model endpoint must use HTTPS without userinfo or fragments")
+    host = parsed.hostname.lower()
+    if host == "localhost" or host.endswith((".localhost", ".local", ".internal")):
+        raise ValueError("The model endpoint must not target a local service")
+    try:
+        address = ipaddress.ip_address(host)
+    except ValueError:
+        pass
+    else:
+        if not address.is_global:
+            raise ValueError("The model endpoint must use a public address")
+    path = parsed.path.rstrip("/")
+    # The OpenAI SDK appends /chat/completions itself. Accept pasted full
+    # completion URLs, but store and display the corresponding API base URL.
+    if path.endswith("/chat/completions"):
+        path = path[: -len("/chat/completions")]
+    # These public providers expose their compatible API under /v1 even when
+    # their documentation gives the bare host as the base address.
+    if not path and host in {"api.deepseek.com", "api.siliconflow.cn"}:
+        path = "/v1"
+    return parsed._replace(path=path).geturl().rstrip("/")
+
+
+class ModelEndpoint(BaseModel):
     model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
     provider: str = Field(min_length=1, max_length=60)
     model_id: str = Field(min_length=1, max_length=120)
-    fallback_model_ids: list[str] = Field(default_factory=list, max_length=2)
     base_url: str = Field(min_length=12, max_length=500)
-    # Accept the retired setting in previously published configurations; it is unused.
-    tokens_per_credit: int | None = Field(default=None, ge=1, le=1000000)
-    enabled: bool = False
-
-    @field_validator("fallback_model_ids")
-    @classmethod
-    def valid_fallback_ids(cls, value):
-        if any(not model_id or len(model_id) > 120 for model_id in value):
-            raise ValueError("Fallback model IDs must be 1 to 120 characters")
-        if len(set(value)) != len(value):
-            raise ValueError("Fallback model IDs must be unique")
-        return value
-
-    @model_validator(mode="after")
-    def unique_primary_and_fallbacks(self):
-        if self.model_id in self.fallback_model_ids:
-            raise ValueError("The primary model cannot also be a fallback")
-        if self.enabled and len(self.fallback_model_ids) < 2:
-            raise ValueError("Enabled model configuration requires a primary and two fallbacks")
-        return self
 
     @field_validator("base_url")
     @classmethod
     def https_endpoint(cls, value):
-        parsed = urlsplit(value)
-        if (
-            parsed.scheme != "https"
-            or not parsed.hostname
-            or parsed.username
-            or parsed.password
-            or parsed.fragment
-            or parsed.query
-        ):
-            raise ValueError("The model endpoint must use HTTPS without userinfo or fragments")
-        host = parsed.hostname.lower()
-        if host == "localhost" or host.endswith((".localhost", ".local", ".internal")):
-            raise ValueError("The model endpoint must not target a local service")
-        try:
-            address = ipaddress.ip_address(host)
-        except ValueError:
-            pass
-        else:
-            if not address.is_global:
-                raise ValueError("The model endpoint must use a public address")
-        return value.rstrip("/")
+        return _https_model_endpoint(value)
+
+
+class ModelSettings(BaseModel):
+    model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
+    models: list[ModelEndpoint] = Field(min_length=3, max_length=3)
+    # Accept the retired setting in previously published configurations; it is unused.
+    tokens_per_credit: int | None = Field(default=None, ge=1, le=1000000)
+    enabled: bool = False
+
+    @model_validator(mode="before")
+    @classmethod
+    def migrate_legacy_shape(cls, value):
+        if not isinstance(value, dict) or "models" in value:
+            return value
+        provider = value.get("provider", "")
+        base_url = value.get("base_url", "")
+        identifiers = [value.get("model_id", ""), *value.get("fallback_model_ids", [])]
+        if len(identifiers) == 3:
+            value = dict(value)
+            value["models"] = [
+                {"provider": provider, "model_id": model_id, "base_url": base_url}
+                for model_id in identifiers
+            ]
+            value.pop("provider", None)
+            value.pop("model_id", None)
+            value.pop("fallback_model_ids", None)
+            value.pop("base_url", None)
+        return value
+
+    @model_validator(mode="after")
+    def valid_profiles(self):
+        ids = [item.model_id for item in self.models]
+        if len(set(ids)) != len(ids):
+            raise ValueError("All three model IDs must be unique")
+        return self
 
 
 class DiagnosisPromptSettings(BaseModel):

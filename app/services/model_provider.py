@@ -9,6 +9,7 @@ from app.services.model_runtime import (
     DIAGNOSIS_READ_SECONDS,
     stream_usage_settings,
 )
+from app.services.product import TokenUsage
 
 MAX_OUTPUT_TOKENS = 6000
 
@@ -18,10 +19,11 @@ def generate(snapshot):
     from openai import AsyncOpenAI
     from pydantic_ai import Agent, PromptedOutput
     from pydantic_ai.models.openai import OpenAIChatModel
+    from pydantic_ai.profiles.openai import OpenAIModelProfile
     from pydantic_ai.providers.openai import OpenAIProvider
     from pydantic_ai.usage import UsageLimits
 
-    from app.services.admin_config import runtime_model
+    from app.services.admin_config import runtime_model_profile
     from app.services.diagnosis_references import (
         REFERENCE_INSTRUCTIONS,
         ReferencedDiagnosis,
@@ -30,7 +32,7 @@ def generate(snapshot):
     )
 
     revision_id = snapshot.get("model_revision_id")
-    config = runtime_model(revision_id, use_environment=revision_id is None)
+    config = runtime_model_profile(revision_id, snapshot["model"])
     if not config["enabled"] or not config["secret"]:
         raise RuntimeError("AI provider is disabled")
     # Runtime configuration is fully copied; do not hold a MySQL read transaction
@@ -47,7 +49,12 @@ def generate(snapshot):
             timeout=httpx.Timeout(DIAGNOSIS_READ_SECONDS, connect=10.0, write=10.0, pool=5.0),
         ) as client:
             model = OpenAIChatModel(
-                snapshot["model"], provider=OpenAIProvider(openai_client=client)
+                snapshot["model"],
+                provider=OpenAIProvider(openai_client=client),
+                # The configured vendors use OpenAI-compatible chat APIs. JSON
+                # mode makes their prompted structured output reliable, including
+                # model names that PydanticAI cannot identify from its registry.
+                profile=OpenAIModelProfile(supports_json_object_output=True),
             )
             agent = Agent(
                 model,
@@ -56,11 +63,16 @@ def generate(snapshot):
                 output_type=PromptedOutput(ReferencedDiagnosis),
                 instructions=(
                     snapshot.get("prompt_instructions", "") + "\n" + REFERENCE_INSTRUCTIONS
+                    + (
+                        "\n本轮为基础匹配：只返回真实分数、岗位缺口与证据，"
+                        "suggestions必须为空数组，question必须为空字符串。"
+                        if snapshot.get("access_tier") == "free_preview"
+                        else ""
+                    )
                 ),
                 retries=0,
                 model_settings={
-                    "max_tokens": MAX_OUTPUT_TOKENS,
-                    "temperature": 0.2,
+                    "max_tokens": MAX_OUTPUT_TOKENS, "temperature": 0.2,
                     **stream_usage_settings(config["base_url"]),
                 },
             )
@@ -80,7 +92,7 @@ def generate(snapshot):
             ) as result:
                 output = await result.get_output()
                 usage = result.usage
-            return resolve_references(output, references), usage.input_tokens + usage.output_tokens
+            return resolve_references(output, references), TokenUsage.from_usage(usage)
 
     async def run():
         async with asyncio.timeout(DIAGNOSIS_ATTEMPT_SECONDS):
@@ -160,13 +172,14 @@ def generate_resume(snapshot, on_progress=None):
     from openai import AsyncOpenAI
     from pydantic_ai import Agent, PromptedOutput
     from pydantic_ai.models.openai import OpenAIChatModel
+    from pydantic_ai.profiles.openai import OpenAIModelProfile
     from pydantic_ai.providers.openai import OpenAIProvider
     from pydantic_ai.usage import UsageLimits
 
     from app.resume_ai_schemas import ResumeAIOutput
-    from app.services.admin_config import runtime_model
+    from app.services.admin_config import runtime_model_profile
 
-    config = runtime_model(snapshot["model_revision_id"], use_environment=False)
+    config = runtime_model_profile(snapshot["model_revision_id"], snapshot["model"])
     if not config["enabled"] or not config["secret"]:
         raise RuntimeError("AI provider is disabled")
     db.session.rollback()
@@ -189,7 +202,9 @@ proposed 是可直接替换原文的完整简历正文，直接以动作、职�
             timeout=httpx.Timeout(30.0),
         ) as client:
             model = OpenAIChatModel(
-                snapshot["model"], provider=OpenAIProvider(openai_client=client)
+                snapshot["model"],
+                provider=OpenAIProvider(openai_client=client),
+                profile=OpenAIModelProfile(supports_json_object_output=True),
             )
             agent = Agent(
                 model,
@@ -197,8 +212,7 @@ proposed 是可直接替换原文的完整简历正文，直接以动作、职�
                 instructions=instructions,
                 retries=0,
                 model_settings={
-                    "max_tokens": 1200,
-                    "temperature": 0.2,
+                    "max_tokens": 1200, "temperature": 0.2,
                     **stream_usage_settings(config["base_url"]),
                 },
             )
@@ -228,7 +242,7 @@ proposed 是可直接替换原文的完整简历正文，直接以动作、职�
                         last_sent_at = now
                 output = await result.get_output()
                 usage = result.usage
-            return output.model_dump(), usage.input_tokens + usage.output_tokens
+            return output.model_dump(), TokenUsage.from_usage(usage)
 
     return asyncio.run(run())
 
@@ -239,13 +253,14 @@ def generate_resume_document(snapshot):
     from openai import AsyncOpenAI
     from pydantic_ai import Agent, PromptedOutput
     from pydantic_ai.models.openai import OpenAIChatModel
+    from pydantic_ai.profiles.openai import OpenAIModelProfile
     from pydantic_ai.providers.openai import OpenAIProvider
     from pydantic_ai.usage import UsageLimits
 
     from app.resume_ai_schemas import ResumeComposeOutput
-    from app.services.admin_config import runtime_model
+    from app.services.admin_config import runtime_model_profile
 
-    config = runtime_model(snapshot["model_revision_id"], use_environment=False)
+    config = runtime_model_profile(snapshot["model_revision_id"], snapshot["model"])
     if not config["enabled"] or not config["secret"]:
         raise RuntimeError("AI provider is disabled")
     db.session.rollback()
@@ -258,7 +273,9 @@ def generate_resume_document(snapshot):
             timeout=httpx.Timeout(30.0),
         ) as client:
             model = OpenAIChatModel(
-                snapshot["model"], provider=OpenAIProvider(openai_client=client)
+                snapshot["model"],
+                provider=OpenAIProvider(openai_client=client),
+                profile=OpenAIModelProfile(supports_json_object_output=True),
             )
             agent = Agent(
                 model,
@@ -281,6 +298,6 @@ def generate_resume_document(snapshot):
                 usage_limits=UsageLimits(request_limit=1),
             )
             usage = result.usage
-            return result.output.model_dump(), usage.input_tokens + usage.output_tokens
+            return result.output.model_dump(), TokenUsage.from_usage(usage)
 
     return asyncio.run(run())

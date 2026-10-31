@@ -115,3 +115,11 @@ from app.models.diagnosis import (  # noqa: E402, F401
 )
 from app.models.imports import ResumeImport  # noqa: E402, F401
 from app.models.interactions import StructuredInteraction  # noqa: E402, F401
+from app.models.product import (  # noqa: E402, F401
+    ModelCallUsage,
+    ProductEvent,
+    ReferralAttribution,
+    ReferralCode,
+    ReportShare,
+    ResumeExportGrant,
+)
