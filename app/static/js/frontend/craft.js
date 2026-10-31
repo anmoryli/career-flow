@@ -40,7 +40,7 @@
   const enhanceDetails=root=>{
     const nodes=root instanceof HTMLDetailsElement?[root]:root.querySelectorAll?.('details')||[];
     for(const details of nodes){
-      if(details.dataset.cfFold||details.matches('.cf-account-menu,.cf-task-menu,.cf-document-menu'))continue;
+      if(details.dataset.cfFold||details.matches('.cf-account-menu,.cf-task-menu,.cf-document-menu,.cf-section-menu'))continue;
       const summary=[...details.children].find(node=>node.tagName==='SUMMARY');if(!summary)continue;
       details.dataset.cfFold='true';const grid=document.createElement('div'),inner=document.createElement('div');grid.className='cf-fold';inner.className='cf-fold-content';
       while(summary.nextSibling)inner.append(summary.nextSibling);grid.append(inner);details.append(grid);inner.inert=!details.open;
