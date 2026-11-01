@@ -52,8 +52,9 @@ def test_real_local_mail_registration_and_login_flow(mysql_app):
         )
         assert response.status_code == 200
         landing = client.get("/")
-        assert landing.status_code == 303
-        assert landing.headers["Location"].endswith("/workspace")
+        assert landing.status_code == 200
+        assert 'data-product-landing' in landing.text
+        assert 'data-authenticated="yes"' in landing.text
         with mysql_app.app_context():
             user = db.session.scalar(select(User).where(User.email == email))
             uid = user.id

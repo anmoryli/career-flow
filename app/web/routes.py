@@ -96,9 +96,54 @@ def ready():
 
 @web.get("/")
 def home():
-    if g.user:
-        return redirect(url_for("web.workspace"), code=303)
-    return render_template("frontend/public/home.html")
+    return render_template("frontend/public/home.html", **landing_activity())
+
+
+def landing_activity():
+    """Signed-in visitors see the landing page with a continue-where-you-left path."""
+    if g.user is None:
+        return {"resumes": [], "active_jobs": [], "completed_reports": []}
+    from app.models import AIOperation, Diagnostic, JobTarget, Resume
+
+    resumes = db.session.scalars(
+        select(Resume)
+        .where(Resume.user_id == g.user.id)
+        .order_by(Resume.updated_at.desc())
+        .limit(3)
+    ).all()
+    active_rows = db.session.execute(
+        select(AIOperation, Diagnostic, JobTarget)
+        .join(Diagnostic, AIOperation.diagnostic_id == Diagnostic.id)
+        .join(JobTarget, Diagnostic.job_id == JobTarget.id)
+        .where(
+            AIOperation.user_id == g.user.id,
+            AIOperation.state.in_(["queued", "running"]),
+        )
+        .order_by(AIOperation.id.desc())
+    ).all()
+    active_jobs = []
+    seen_job_ids = set()
+    for row in active_rows:
+        if row[2].id not in seen_job_ids:
+            active_jobs.append(row)
+            seen_job_ids.add(row[2].id)
+    completed_reports = db.session.execute(
+        select(AIOperation, Diagnostic, JobTarget)
+        .join(Diagnostic, AIOperation.diagnostic_id == Diagnostic.id)
+        .join(JobTarget, Diagnostic.job_id == JobTarget.id)
+        .where(
+            AIOperation.user_id == g.user.id,
+            AIOperation.kind.in_(["analysis", "report"]),
+            AIOperation.state == "succeeded",
+        )
+        .order_by(AIOperation.id.desc())
+        .limit(3)
+    ).all()
+    return {
+        "resumes": resumes,
+        "active_jobs": active_jobs,
+        "completed_reports": completed_reports,
+    }
 
 
 @web.route("/register", methods=["GET", "POST"])

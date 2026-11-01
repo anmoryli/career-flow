@@ -14,7 +14,7 @@
 </head>
 {% from '_ui.html' import icon %}
 
-<body class="cf-body {{ 'cf-editor-page' if editor_page else 'cf-admin-page' if admin_page else 'cf-workspace-page' if g.user else 'cf-public-page' }}" data-template-catalog='{{ resume_templates|tojson }}' data-frontend="refactored" data-authenticated="{{ 'yes' if g.user else 'no' }}" data-editor-page="{{ 'yes' if editor_page else 'no' }}">
+<body class="cf-body {{ 'cf-editor-page' if editor_page else 'cf-admin-page' if admin_page else 'cf-workspace-page' if g.user and not frontend_page.public_shell else 'cf-public-page' }}" data-template-catalog='{{ resume_templates|tojson }}' data-frontend="refactored" data-authenticated="{{ 'yes' if g.user else 'no' }}" data-editor-page="{{ 'yes' if editor_page else 'no' }}">
   <a class="cf-skip" href="#main">跳至主要内容</a>
   {% if not editor_page %}{% include 'frontend/shell/header.html' %}{% endif %}
   {% with notices = get_flashed_messages(with_categories=true) %}{% for category,notice in notices %}<div class="cf-flash cf-notice" data-tone="{{ category }}" role="status">{{ notice }}</div>{% endfor %}{% endwith %}

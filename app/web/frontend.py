@@ -19,6 +19,9 @@ class FrontendPage:
     task_path: bool = False
     guest: bool = False
     standalone: bool = False
+    # Public pages keep the marketing shell even for signed-in visitors; only the
+    # landing page opts in, so workspace/product shells stay untouched.
+    public_shell: bool = False
 
 
 WORKSPACE_PAGE_SPECS = MappingProxyType(
@@ -91,7 +94,10 @@ PAGES_BY_TEMPLATE = MappingProxyType(
         **{page.template: page for page in WORKSPACE_PAGE_SPECS.values()},
         **{
             f"frontend/public/{name}.html": FrontendPage(
-                f"frontend/public/{name}.html", ("public",), ("landing",) if name == "home" else ()
+                f"frontend/public/{name}.html",
+                ("public",),
+                ("landing",) if name == "home" else (),
+                public_shell=name == "home",
             )
             for name in ("home", "auth", "password_reset", "error")
         },
