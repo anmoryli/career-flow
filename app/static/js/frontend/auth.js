@@ -35,13 +35,13 @@
     const button=form.querySelector('[type="submit"]');button.disabled=true;
     const mode=form.dataset.authModalForm||form.dataset.authMode||(location.pathname==='/register'?'register':'login');
     const data=Object.fromEntries(new FormData(form));delete data.csrf_token;
-    const next=new URLSearchParams(location.search).get('next')||'/workspace';
+    const next=new URLSearchParams(location.search).get('next')||'/';
     try{
       const target=(mode==='register'?'/register':'/login')+'?next='+encodeURIComponent(next);
       const result=await window.cfApi(target,data);
       if(continuation&&form.hasAttribute('data-auth-modal-form')){
         await window.cfRefreshCSRF();document.body.dataset.authenticated='yes';dialog.close();const callback=continuation;continuation=null;await callback();
-      }else location.assign(result.next||'/workspace');
+      }else location.assign(result.next||'/');
     }catch(error){show(form,error.message);window.cfFieldErrors(form,error);}
     finally{button.disabled=false;}
   }));

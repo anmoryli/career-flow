@@ -62,7 +62,7 @@ def set_session(user):
         or parsed_target.scheme
         or parsed_target.netloc
     ):
-        target = url_for("web.workspace")
+        target = url_for("web.home")
     response = (
         jsonify({"authenticated": True, "next": target})
         if request.is_json
