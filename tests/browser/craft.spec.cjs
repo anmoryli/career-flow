@@ -9,7 +9,7 @@ test('warm surfaces, double focus rings and dark weight compensation',async({pag
 });
 test('streaming glyphs and grid folds honor reduced motion',async({page})=>{
  await page.goto('/');await page.emulateMedia({reducedMotion:'no-preference'});
- const details=page.locator('.cf-public-process-steps>details').nth(1);await details.locator('summary').click();await expect(details).toHaveAttribute('open','');expect(await details.locator('.cf-fold').evaluate(node=>getComputedStyle(node).display)).toBe('grid');
+ const details=page.locator('.cf-faq-list>details').nth(1);await details.locator('summary').click();await expect(details).toHaveAttribute('open','');expect(await details.locator('.cf-fold').evaluate(node=>getComputedStyle(node).display)).toBe('grid');
  await page.evaluate(()=>{const node=document.createElement('p');node.id='test-stream';document.querySelector('#main').append(node);window.cfStreamText(node,'真实流式文本');});
  expect(await page.locator('#test-stream .cf-stream-glyph').count()).toBeGreaterThan(0);const delays=await page.locator('#test-stream .cf-stream-glyph').evaluateAll(nodes=>nodes.map(node=>parseFloat(node.style.animationDelay)));expect(delays[1]-delays[0]).toBeCloseTo(30);
  await page.emulateMedia({reducedMotion:'reduce'});await page.evaluate(()=>window.cfStreamText(document.querySelector('#test-stream'),'真实流式文本继续'));await expect(page.locator('#test-stream .cf-stream-glyph')).toHaveCount(0);await expect(page.locator('#test-stream')).toHaveText('真实流式文本继续');
