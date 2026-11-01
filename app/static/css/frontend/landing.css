@@ -54,10 +54,10 @@
 .cf-chip{padding:6px 13px;border-radius:999px;background:var(--cf-primary);color:var(--cf-primary-text);font-size:12px}
 .cf-chip.is-quiet{background:transparent;color:var(--cf-muted);box-shadow:inset 0 0 0 1px var(--cf-line)}
 .cf-trace-note{margin-left:auto;font-size:11px;color:var(--cf-subtle)}
-.cf-trace-badge{position:absolute;display:flex;align-items:center;gap:7px;padding:9px 13px;border-radius:10px;background:var(--cf-surface);box-shadow:0 10px 30px color-mix(in srgb,var(--cf-primary) 12%,transparent);font-size:11.5px;color:var(--cf-muted);white-space:nowrap}
+.cf-trace-badge{position:absolute;z-index:2;display:flex;align-items:center;gap:7px;padding:9px 13px;border-radius:10px;background:var(--cf-surface);box-shadow:0 10px 30px color-mix(in srgb,var(--cf-primary) 12%,transparent);font-size:11.5px;color:var(--cf-muted);white-space:nowrap}
 .cf-trace-badge .icon{width:14px;height:14px;color:var(--cf-accent)}
-.cf-trace-badge:first-of-type{top:-20px;right:-18px}
-.cf-trace-badge.is-lock{bottom:-26px;left:-18px}
+.cf-trace-badge:first-of-type{top:-16px;right:2px}
+.cf-trace-badge.is-lock{bottom:-22px;left:-12px}
 
 /* Promise strip */
 .cf-promise{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:1px;background:var(--cf-line);border-radius:14px;overflow:hidden;margin-bottom:20px}
@@ -243,3 +243,58 @@
   .cf-landing-end .cf-button{width:100%;justify-content:center}
 }
 @media print{.cf-product-nav,.cf-management-nav,.cf-demo-tabs{display:none!important}}
+
+/* ---------- Motion layer ---------- */
+/* Transforms live on different nodes so CSS entrance and JS parallax never fight:
+   entrance animates .cf-hero-visual, pointer tilt writes .cf-trace, scroll writes translate. */
+.cf-hero-visual{will-change:translate}
+.cf-trace{will-change:transform;z-index:1}
+.cf-hero-glow{will-change:transform,opacity}
+.cf-hero-visual::before{content:'';position:absolute;z-index:0;inset:9% 5% 1%;background:var(--cf-surface-3);border-radius:18px;opacity:.7;transform:rotate(-1.6deg) translateY(22px)}
+.cf-trace::after{content:'';position:absolute;inset:0 0 auto;height:2px;background:linear-gradient(90deg,transparent,color-mix(in srgb,var(--cf-accent) 55%,transparent),transparent)}
+
+@keyframes cf-rise{from{opacity:0;transform:translate3d(0,22px,0)}to{opacity:1;transform:translate3d(0,0,0)}}
+@keyframes cf-rise-visual{from{opacity:0;transform:perspective(1400px) translate3d(0,34px,0) rotateX(6deg) scale(.985)}to{opacity:1;transform:perspective(1400px) translate3d(0,0,0) rotateX(0) scale(1)}}
+@keyframes cf-pop{from{opacity:0;transform:scale(.9)}to{opacity:1;transform:scale(1)}}
+@keyframes cf-breathe{0%,100%{opacity:.65;scale:1}50%{opacity:1;scale:1.07}}
+@keyframes cf-float{0%,100%{translate:0 0}50%{translate:0 -7px}}
+@keyframes cf-pulse{0%,100%{opacity:1;scale:1}50%{opacity:.4;scale:.78}}
+
+@media (prefers-reduced-motion:no-preference){
+  .cf-hero-copy .cf-eyebrow{animation:cf-rise .72s cubic-bezier(.16,1,.3,1) both}
+  .cf-landing-greeting{animation:cf-rise .7s cubic-bezier(.16,1,.3,1) .04s both}
+  .cf-hero-copy h1{animation:cf-rise .82s cubic-bezier(.16,1,.3,1) .08s both}
+  .cf-landing-lead{animation:cf-rise .78s cubic-bezier(.16,1,.3,1) .16s both}
+  .cf-hero-copy .cf-actions{animation:cf-rise .74s cubic-bezier(.16,1,.3,1) .24s both}
+  .cf-hero-facts{animation:cf-rise .74s cubic-bezier(.16,1,.3,1) .32s both}
+  .cf-hero-visual{animation:cf-rise-visual 1.05s cubic-bezier(.16,1,.3,1) .12s both}
+  .cf-trace-badge{animation:cf-pop .62s cubic-bezier(.16,1,.3,1) .52s both,cf-float 7.5s ease-in-out 1.15s infinite}
+  .cf-trace-badge.is-lock{animation-delay:.62s,2.1s}
+  .cf-hero-glow{animation:cf-breathe 13s ease-in-out infinite}
+  .cf-dot{animation:cf-pulse 3.4s ease-in-out infinite}
+  .cf-landing .cf-button .icon,.cf-landing .cf-link .icon{transition:transform .32s var(--cf-ease)}
+  .cf-landing .cf-button:hover .icon,.cf-landing .cf-link:hover .icon{transform:translateX(3px)}
+  .cf-landing .cf-button{transition:translate .32s var(--cf-ease),box-shadow .32s var(--cf-ease),background var(--cf-duration-fast)}
+  .cf-landing .cf-button:hover{translate:0 -2px;box-shadow:0 12px 26px color-mix(in srgb,var(--cf-primary) 18%,transparent)}
+  .cf-capability-grid article{transition:transform .55s var(--cf-ease),box-shadow .55s var(--cf-ease)}
+  .cf-capability-grid article:hover{transform:translateY(-4px);box-shadow:0 18px 46px color-mix(in srgb,var(--cf-primary) 9%,transparent)}
+  .cf-faq-list details[open]>p{animation:cf-rise .45s var(--cf-ease) both}
+  .cf-landing-journey>article{transition:transform .5s var(--cf-ease),box-shadow .5s var(--cf-ease)}
+}
+
+/* Grouped reveal: gated by html.cf-motion so no-JS keeps every section visible. */
+.cf-motion .cf-landing [data-reveal]:not(.cf-hero)>*{transition:opacity .68s var(--cf-ease),transform .68s var(--cf-ease)}
+.cf-motion .cf-landing [data-reveal]:not(.cf-hero)>:nth-child(2){transition-delay:.07s}
+.cf-motion .cf-landing [data-reveal]:not(.cf-hero)>:nth-child(3){transition-delay:.14s}
+.cf-motion .cf-landing [data-reveal]:not(.cf-hero)>:nth-child(4){transition-delay:.21s}
+.cf-motion .cf-landing [data-reveal]:not(.cf-hero)>:nth-child(5){transition-delay:.28s}
+.cf-motion .cf-landing [data-reveal]:not(.cf-hero):not(.is-in)>*{opacity:0;transform:translate3d(0,18px,0)}
+
+#how-it-works,#continue{scroll-margin-top:96px}
+@media(max-width:700px){.cf-hero-visual::before{inset:6% 2% 0}.cf-trace::after{display:none}}
+@media (prefers-reduced-motion:reduce){
+  .cf-hero-copy *,.cf-hero-visual,.cf-trace-badge,.cf-hero-glow,.cf-dot{animation:none!important}
+  .cf-landing .cf-button:hover{translate:none;box-shadow:none}
+  .cf-capability-grid article:hover{transform:none;box-shadow:none}
+  .cf-demo-stage>[role=tabpanel]{animation:none}
+}
