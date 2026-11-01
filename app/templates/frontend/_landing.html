@@ -10,7 +10,7 @@
 <div class="cf-landing-copy cf-hero-copy">
 <span class="cf-eyebrow"><i class="cf-dot"></i>职序 CAREERFLOW / 面向具体岗位的简历准备</span>
 {% if g.user %}<p class="cf-landing-greeting">你好，{{ g.user.display_name }}。上次的准备还在。</p>{% endif %}
-<h1>把经历写清楚，让每一句<em>对得上岗位</em>。</h1>
+<h1><span class="hl"><span class="hl-in">把经历写清楚，</span></span><span class="hl"><span class="hl-in">让每一句<em>对得上岗位</em>。</span></span></h1>
 <p class="cf-landing-lead">岗位要求、你的原文、候选写法，摆在一起看。<br>你逐段核对，只采用经得起面试追问的修改。</p>
 <div class="cf-actions">{% if tasks %}<a class="cf-button" href="{{ url_for('diagnosis.detail',job_id=tasks[0][2].id) }}">继续正在进行的分析 {{ icon('arrow') }}</a>{% elif findings %}<a class="cf-button" href="{{ url_for('diagnosis.detail',job_id=findings[0][2].id) }}">核对分析，继续修改 {{ icon('arrow') }}</a>{% elif documents %}<a class="cf-button" href="{{ url_for('web.workspace',view='resume-new',resume_id=documents[0].id) }}">接着写，{{ documents[0].title }} {{ icon('arrow') }}</a>{% else %}<a class="cf-button" href="{{ url_for('web.workspace',view='resume-new') }}">开始整理我的经历 {{ icon('arrow') }}</a>{% endif %}<a class="cf-link" href="#how-it-works">看看怎么用 {{ icon('arrow') }}</a></div>
 <ul class="cf-hero-facts"><li>{{ icon('check') }}不代写经历</li><li>{{ icon('check') }}不承诺录用</li><li>{{ icon('check') }}内容随时导出</li></ul>
@@ -28,7 +28,7 @@
 </div>
 <div class="cf-trace-row is-candidate">
 <span class="cf-trace-label">候选写法 <em>待你确认</em></span>
-<p>负责订单服务稳定性，将核心接口 P99 从 <mark>820ms</mark> 降至 <mark>210ms</mark>，联合支付与风控团队完成灰度上线。</p>
+<p>负责订单服务稳定性，将核心接口 P99 从 <mark><span data-count="820">820</span>ms</mark> 降至 <mark><span data-count="210">210</span>ms</mark>，联合支付与风控团队完成灰度上线。</p>
 </div>
 <footer><span class="cf-chip">采用这段</span><span class="cf-chip is-quiet">保留原文</span><span class="cf-trace-note">示例内容，不写入你的简历</span></footer>
 </figure>

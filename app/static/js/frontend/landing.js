@@ -39,15 +39,84 @@
     }
   }
 
+  // Number count-up: the P99 evidence inside the hero trace card.
+  const counters = [...document.querySelectorAll('[data-count]')];
+  if (counters.length && !motionQuery.matches) {
+    const easeOut = t => 1 - Math.pow(2, -10 * t);
+    counters.forEach(node => { node.style.fontVariantNumeric = 'tabular-nums'; });
+    const run = node => {
+      const target = Number(node.dataset.count) || 0;
+      const start = performance.now(), span = 1500;
+      const tick = now => {
+        const t = Math.min((now - start) / span, 1);
+        node.textContent = String(Math.round(target * (1 - easeOut(t)) + target * t));
+        if (t < 1) requestAnimationFrame(tick);
+      };
+      requestAnimationFrame(tick);
+    };
+    if ('IntersectionObserver' in window) {
+      const seen = new IntersectionObserver(entries => entries.forEach(entry => {
+        if (!entry.isIntersecting) return;
+        seen.unobserve(entry.target);
+        run(entry.target);
+      }), { threshold: .4 });
+      counters.forEach(node => seen.observe(node));
+    } else {
+      counters.forEach(run);
+    }
+  }
+
   const hero = document.querySelector('.cf-hero');
+  const landingRoot = document.querySelector('.cf-landing');
+  const header = document.querySelector('[data-site-header]');
+
+  // Scroll progress line pinned to the header edge (marketing pages only).
+  if (landingRoot && header && !motionQuery.matches) {
+    const bar = document.createElement('i');
+    bar.className = 'cf-scroll-progress';
+    bar.setAttribute('aria-hidden', 'true');
+    header.appendChild(bar);
+    const paint = () => {
+      const max = document.documentElement.scrollHeight - innerHeight;
+      bar.style.transform = `scaleX(${max > 0 ? (scrollY / max).toFixed(4) : 0})`;
+    };
+    paint();
+    addEventListener('scroll', paint, { passive: true });
+    addEventListener('resize', paint, { passive: true });
+  }
+
+  // Header flips between transparent-on-hero and frosted-on-content.
+  if (landingRoot && header) {
+    const syncHeader = () => {
+      const limit = hero ? hero.offsetTop + hero.offsetHeight - header.offsetHeight - 24 : 0;
+      header.toggleAttribute('data-past-hero', scrollY > limit);
+    };
+    syncHeader();
+    addEventListener('scroll', syncHeader, { passive: true });
+    addEventListener('resize', syncHeader, { passive: true });
+  }
+
   const fine = matchMedia('(pointer: fine) and (hover: hover)');
   const trace = hero && hero.querySelector('.cf-trace');
   const glow = hero && hero.querySelector('.cf-hero-glow');
+  const glowB = hero && hero.querySelector('.cf-hero-glow-b');
   const visual = hero && hero.querySelector('.cf-hero-visual');
   if (!hero || !trace || !fine.matches || motionQuery.matches) return;
 
+  // Magnetic primary CTA: leans toward the pointer, springs back on leave.
+  const magnet = hero.querySelector('.cf-actions .cf-button');
+  if (magnet) {
+    magnet.addEventListener('pointermove', event => {
+      const box = magnet.getBoundingClientRect();
+      const dx = event.clientX - box.left - box.width / 2;
+      const dy = event.clientY - box.top - box.height / 2;
+      magnet.style.transform = `translate(${(dx * .14).toFixed(1)}px,${(dy * .3).toFixed(1)}px)`;
+    }, { passive: true });
+    magnet.addEventListener('pointerleave', () => { magnet.style.transform = ''; }, { passive: true });
+  }
+
   // Pointer parallax: one rAF loop, damped interpolation, transform only.
-  const MAX_TILT = 2.4;
+  const MAX_TILT = 4;
   const want = { x: 0, y: 0, tiltX: 0, tiltY: 0, scroll: 0 };
   const now = { x: 0, y: 0, tiltX: 0, tiltY: 0, scroll: 0 };
   let frame = 0;
@@ -57,10 +126,13 @@
     let moving = false;
     for (const key of ['x', 'y', 'tiltX', 'tiltY', 'scroll']) {
       const delta = want[key] - now[key];
-      if (Math.abs(delta) > .01) { now[key] += delta * .11; moving = true; } else { now[key] = want[key]; }
+      if (Math.abs(delta) > .01) { now[key] += delta * .1; moving = true; } else { now[key] = want[key]; }
     }
-    trace.style.transform = `perspective(1200px) rotateX(${now.tiltX.toFixed(2)}deg) rotateY(${now.tiltY.toFixed(2)}deg)`;
+    trace.style.transform = `perspective(1100px) rotateX(${now.tiltX.toFixed(2)}deg) rotateY(${now.tiltY.toFixed(2)}deg) translate3d(${(now.x * .35).toFixed(1)}px,${(now.y * .3).toFixed(1)}px,0)`;
+    trace.style.setProperty('--mx', `${(50 + now.x * 1.6).toFixed(1)}%`);
+    trace.style.setProperty('--my', `${(50 + now.y * 1.9).toFixed(1)}%`);
     if (glow) glow.style.transform = `translate3d(${now.x.toFixed(1)}px,${now.y.toFixed(1)}px,0)`;
+    if (glowB) glowB.style.transform = `translate3d(${(-now.x * .7).toFixed(1)}px,${(-now.y * .55).toFixed(1)}px,0)`;
     if (visual) visual.style.translate = `0 ${now.scroll.toFixed(1)}px`;
     if (moving) frame = requestAnimationFrame(render);
   };
@@ -70,10 +142,10 @@
     const box = hero.getBoundingClientRect();
     const px = (event.clientX - box.left) / box.width - .5;
     const py = (event.clientY - box.top) / box.height - .5;
-    want.x = px * 20;
-    want.y = py * 14;
-    want.tiltY = px * MAX_TILT * 2;
-    want.tiltX = -py * MAX_TILT * 2;
+    want.x = px * 34;
+    want.y = py * 22;
+    want.tiltY = px * MAX_TILT;
+    want.tiltX = -py * MAX_TILT;
     kick();
   }, { passive: true });
   hero.addEventListener('pointerleave', () => {
