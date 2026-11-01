@@ -188,7 +188,9 @@ def main():
 
     def membership():
         response = flow.api(
-            "POST", "/commerce/orders", {"request_key": str(uuid.uuid4()), "plan_code": "membership_quarterly"}
+            "POST",
+            "/commerce/orders",
+            {"request_key": str(uuid.uuid4()), "plan_code": "membership_quarterly"},
         )
         assert response.status_code in {302, 303}, response.status_code
         page = flow.client.get("/workspace?view=billing")
@@ -324,7 +326,8 @@ def main():
         scores = ", ".join(f"{d['name']}:{d['score']}" for d in dimensions)
         return (
             f"op={operation['id']} 维度={{{scores}}} "
-            f"问题数={len(result['result']['findings'])} 建议={len(result['result']['suggestions'])}"
+            f"问题数={len(result['result']['findings'])} "
+            f"建议={len(result['result']['suggestions'])}"
         )
 
     def follow_up():
@@ -341,7 +344,10 @@ def main():
             {
                 "request_key": str(uuid.uuid4()),
                 "revision": revision,
-                "answer": "我负责差异场景的归类规则和复核队列设计，与财务共同确定 12 类差异的处理优先级。",
+                "answer": (
+                    "我负责差异场景的归类规则和复核队列设计，"
+                    "与财务共同确定 12 类差异的处理优先级。"
+                ),
             },
         )
         assert response.status_code == 200, f"{response.status_code} {response.text[:160]}"
@@ -483,7 +489,8 @@ def main():
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
     failed = [item for item in flow.steps if not item["ok"]]
-    print(f"\n{len(flow.steps) - len(failed)}/{len(flow.steps)} 步通过，耗时 {payload['started']}s → {out}")
+    passed = len(flow.steps) - len(failed)
+    print(f"\n{passed}/{len(flow.steps)} 步通过，耗时 {payload['started']}s → {out}")
     return 1 if failed else 0
 
 

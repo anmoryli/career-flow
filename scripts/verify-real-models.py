@@ -76,10 +76,15 @@ RESUME = {
             "name": "供应商对账自动化",
             "role": "产品负责人",
             "period": "2023.04 - 2023.11",
-            "description": "梳理 12 类对账差异场景，设计规则引擎与人工复核队列，上线后差异单量下降 45%。",
+            "description": (
+                "梳理 12 类对账差异场景，设计规则引擎与人工复核队列，"
+                "上线后差异单量下降 45%."
+            ),
         }
     ],
-    "education": [{"school": "浙江工业大学", "degree": "本科 · 信息管理与信息系统", "period": "2016 - 2020"}],
+    "education": [
+        {"school": "浙江工业大学", "degree": "本科 · 信息管理与信息系统", "period": "2016 - 2020"}
+    ],
     "skills": [{"label": "产品", "items": ["需求分析", "流程设计", "数据埋点"]}],
 }
 
@@ -287,11 +292,14 @@ def main():
                 record = {"model": model_id, "task": task}
                 try:
                     record |= {"ok": True} | TASKS[task](user_id, model_id)
-                    print(f"  OK   {model_id:<28} {task:<10} {record['elapsed']:6.2f}s usage={record['usage']}")
+                    usage = record["usage"]
+                    elapsed = record["elapsed"]
+                    print(f"  OK   {model_id:<28} {task:<10} {elapsed:6.2f}s usage={usage}")
                 except Exception as error:  # noqa: BLE001 - verification harness
                     record |= {"ok": False, "error": describe_error(error)}
                     record["elapsed"] = time.monotonic() - started
-                    print(f"  FAIL {model_id:<28} {task:<10} {record['elapsed']:6.2f}s {record['error']['raised']}")
+                    raised = record["error"]["raised"]
+                    print(f"  FAIL {model_id:<28} {task:<10} {record['elapsed']:6.2f}s {raised}")
                     traceback.print_exc(limit=3)
                 finally:
                     db.session.rollback()

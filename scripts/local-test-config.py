@@ -5,7 +5,8 @@ Only for the local development database. It reuses the shipped publish path
 administrator would produce in the settings screen.
 
     python scripts/local-test-config.py --mail
-    python scripts/local-test-config.py --model-primary deepseek-flash,Qwen/Qwen2.5-7B-Instruct,deepseek-v4-pro
+    python scripts/local-test-config.py \
+        --model-primary deepseek-flash,Qwen/Qwen2.5-7B-Instruct,deepseek-v4-pro
 """
 
 import argparse
@@ -65,13 +66,17 @@ def publish_model(order):
     current = admin_config.active_revision("model")
     profiles = admin_config._model_profiles(current.settings)
     keys = admin_config._model_keys(current)
-    by_identity = {(item["provider"], item["base_url"]): key for item, key in zip(profiles, keys)}
+    by_identity = {
+        (item["provider"], item["base_url"]): key
+        for item, key in zip(profiles, keys, strict=True)
+    }
 
     reordered = []
     for model_id in order:
         source = next((item for item in profiles if item["model_id"] == model_id), None)
         if source is None:
-            raise SystemExit(f"已发布配置里没有模型 {model_id}，可选: {[p['model_id'] for p in profiles]}")
+            available = [p["model_id"] for p in profiles]
+            raise SystemExit(f"已发布配置里没有模型 {model_id}，可选: {available}")
         reordered.append(source)
     if len(reordered) != 3:
         raise SystemExit("必须给出 3 个模型（主模型在前）")
@@ -88,7 +93,9 @@ def publish_model(order):
         ),
         activate=True,
     )
-    print(f"model 已发布 v{item.version}（id={item.id}）→ 主 {reordered[0]['model_id']}，备 {[p['model_id'] for p in reordered[1:]]}")
+    backups = [p["model_id"] for p in reordered[1:]]
+    primary = reordered[0]["model_id"]
+    print(f"model 已发布 v{item.version}（id={item.id}）→ 主 {primary}，备 {backups}")
 
 
 def main():
