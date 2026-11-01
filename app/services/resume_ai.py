@@ -59,7 +59,7 @@ def quote_compose(user_id, resume_id, data):
 
     model = runtime_model()
     route = runtime_model_route(
-        "resume_rewrite", model["model_id"], model.get("fallback_model_ids", [])
+        "resume_optimize", model["model_id"], model.get("fallback_model_ids", [])
     )
     snapshot = {
         "source": data.source,
@@ -160,7 +160,7 @@ def quote(user_id, resume_id, data):
 
     model = runtime_model()
     route = runtime_model_route(
-        "resume_rewrite", model["model_id"], model.get("fallback_model_ids", [])
+        "resume_optimize", model["model_id"], model.get("fallback_model_ids", [])
     )
     snapshot = {
         "path": data.path,
@@ -210,7 +210,7 @@ def confirm(user_id, operation_id):
 
     model = runtime_model()
     route = runtime_model_route(
-        "resume_rewrite", model["model_id"], model.get("fallback_model_ids", [])
+        "resume_optimize", model["model_id"], model.get("fallback_model_ids", [])
     )
     if (
         not is_configured()
@@ -314,7 +314,7 @@ def run_operation(operation_id):
                 calls.append(call_usage(attempts,model_id,usage,usage_policy,"returned"))
                 if kind == "compose":
                     output = ResumeComposeOutput.model_validate(raw)
-                    document = output.document.model_dump()
+                    document = output.document.complete().model_dump()
                     if (
                         document["photo"]
                         or len(document["skills"]) > 4
