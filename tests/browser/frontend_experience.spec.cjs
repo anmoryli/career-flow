@@ -53,9 +53,9 @@ test('product process, reduced motion and linked field errors stay usable',async
   }
  }
  await page.goto('/');
- const steps=page.locator('.cf-public-process-steps>details');await expect(steps).toHaveCount(3);
+ const steps=page.locator('.cf-faq-list>details');await expect(steps).toHaveCount(4);
  await steps.nth(1).locator('summary').focus();await page.keyboard.press('Enter');await expect(steps.nth(1)).toHaveAttribute('open','');await expect(steps.first()).not.toHaveAttribute('open','');
- await expect(steps.nth(1)).toContainText('示例');
+ await expect(steps.nth(1)).toContainText('原文');
  expect(await page.locator('#main').evaluate(node=>node.getAnimations({subtree:true}).some(animation=>animation.playState==='running'))).toBeFalsy();
  await page.goto('/login');
  await page.evaluate(()=>window.cfFieldErrors(document.querySelector('[data-ui-form="auth"]'),{fields:{email:'请使用有效的邮箱地址。'}}));

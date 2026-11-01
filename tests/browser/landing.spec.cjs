@@ -18,7 +18,7 @@ test('custom choice works inside the create dialog and preserves form values',as
  await page.evaluate(()=>{document.querySelector('#resume-template-quick').disabled=true;});await expect(page.locator('[data-select-for=resume-template-quick] .cf-select-trigger')).toBeDisabled();
 });
 test('product demonstration follows four stages without creating user data',async({page})=>{
- await page.goto('/');await expect(page).toHaveURL(/\/workspace/);const tabs=page.locator('[data-product-demo] [role=tab]');await expect(tabs).toHaveCount(4);
+ await page.goto('/');const tabs=page.locator('[data-product-demo] [role=tab]');await expect(tabs).toHaveCount(4);
  const stageHeight=await page.locator('.cf-demo-stage').evaluate(node=>node.clientHeight);let writes=0;page.on('request',request=>{if(request.method()==='POST'&&/\/api\//.test(request.url()))writes++;});
  await tabs.first().focus();await page.keyboard.press('ArrowRight');await expect(tabs.nth(1)).toHaveAttribute('aria-selected','true');await expect(page.locator('#demo-panel-1')).toBeVisible();
  await page.keyboard.press('End');await expect(page.locator('#demo-panel-3')).toBeVisible();await expect(page.locator('#demo-panel-3')).toContainText('基础内容保留');expect(writes).toBe(0);expect(await page.locator('.cf-demo-stage').evaluate(node=>node.clientHeight)).toBe(stageHeight);
