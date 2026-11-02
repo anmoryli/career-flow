@@ -23,7 +23,7 @@
     <section class="cf-library-no-results" data-library-empty hidden role="status">{{ icon('search') }}<h2>没有找到这份简历</h2><p>试试其他关键词，或回到全部文档。</p><button class="cf-button is-secondary is-small" type="button" data-library-reset-search>查看全部简历</button></section>
   </section>
   {% else %}
-  <section class="cf-library-first-story"><span class="cf-eyebrow">你的第一份简历，还没有开始</span><h2>先写下做过的事，<br>再让表达更清楚。</h2><p>不必一次写完。内容、排版和 AI 建议，都可以在编辑过程中逐步完善。</p><ol><li><span>01</span><strong>选择一个起点</strong><p>空白创建，或带入已有的文字与文件。</p></li><li><span>02</span><strong>写好真实经历</strong><p>边填写边预览，需要时对照 AI 改写。</p></li><li><span>03</span><strong>为机会做好准备</strong><p>对照岗位要求，核实内容后导出。</p></li></ol></section>
+  <section class="cf-library-first-story"><span class="cf-eyebrow">你的第一份简历，还没有开始</span><h2>先写下做过的事，<br>再让表达更清楚。</h2><p>不必一次写完。内容、排版和 AI 建议，都可以在编辑过程中逐步完善。</p></section>
   {% endif %}
   <p class="cf-feedback" data-list-feedback role="status"></p>{% if not entitlements.can_create_resume %}<p class="cf-library-limit">当前方案可创建 {{ entitlements.resume_limit if entitlements.is_member else entitlements.free_resume_limit }} 份简历。已有内容仍可编辑。<a href="{{ url_for('web.workspace', view='billing') }}">管理会员 →</a></p>{% endif %}
 </section>

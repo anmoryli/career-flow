@@ -16,7 +16,6 @@ class FrontendPage:
     current_view: str = ""
     editor: bool = False
     admin: bool = False
-    task_path: bool = False
     guest: bool = False
     standalone: bool = False
     # Public pages keep the marketing shell even for signed-in visitors; only the
@@ -33,13 +32,11 @@ WORKSPACE_PAGE_SPECS = MappingProxyType(
                 "frontend/resume/library.html",
                 ("resume",),
                 ("resume-core", "resume-library"),
-                task_path=True,
             ),
             "resume-template": FrontendPage(
                 "frontend/resume/templates.html",
                 ("resume",),
                 ("resume-core", "resume-templates"),
-                task_path=True,
                 guest=True,
             ),
             "resume-new": FrontendPage(
@@ -53,33 +50,28 @@ WORKSPACE_PAGE_SPECS = MappingProxyType(
                 "frontend/resume/import_upload.html",
                 ("resume",),
                 ("resume-core", "resume-import"),
-                task_path=True,
                 guest=True,
             ),
             "optimize": FrontendPage(
                 "frontend/resume/optimize.html",
                 ("resume",),
                 ("resume-core", "resume-library"),
-                task_path=True,
             ),
             "jobs": FrontendPage(
                 "frontend/analysis/jobs.html",
                 ("analysis",),
                 ("analysis", "analysis_review"),
-                task_path=True,
                 guest=True,
             ),
             "reports": FrontendPage(
                 "frontend/analysis/reports.html",
                 ("analysis",),
                 ("analysis", "analysis_review"),
-                task_path=True,
             ),
             "history": FrontendPage(
                 "frontend/analysis/history.html",
                 ("analysis",),
                 ("analysis", "analysis_review"),
-                task_path=True,
             ),
             "billing": FrontendPage("frontend/account/billing.html", ("account",)),
             "settings": FrontendPage("frontend/account/settings.html", ("account",)),
@@ -112,7 +104,6 @@ PAGES_BY_TEMPLATE = MappingProxyType(
             ("resume",),
             ("resume-core", "resume-import"),
             current_view="resumes",
-            task_path=True,
         ),
         **{
             f"frontend/analysis/{name}.html": FrontendPage(
@@ -120,7 +111,6 @@ PAGES_BY_TEMPLATE = MappingProxyType(
                 ("analysis",),
                 ("analysis", "analysis_review"),
                 current_view="history" if name == "conversation" else "jobs",
-                task_path=True,
             )
             for name in ("detail", "review", "conversation")
         },
@@ -131,16 +121,15 @@ PAGES_BY_TEMPLATE = MappingProxyType(
                 ("product",),
                 current_view=view,
                 admin=is_admin,
-                task_path=task,
             )
-            for name, style, view, is_admin, task in (
-                ("guide", "public", "", False, False),
-                ("guides", "public", "", False, False),
-                ("share", "public", "", False, False),
-                ("share_manage", "analysis", "reports", False, True),
-                ("report", "analysis", "reports", False, True),
-                ("invite", "account", "settings", False, False),
-                ("admin", "admin", "", True, False),
+            for name, style, view, is_admin in (
+                ("guide", "public", "", False),
+                ("guides", "public", "", False),
+                ("share", "public", "", False),
+                ("share_manage", "analysis", "reports", False),
+                ("report", "analysis", "reports", False),
+                ("invite", "account", "settings", False),
+                ("admin", "admin", "", True),
             )
         },
         "frontend/resume/print.html": FrontendPage(

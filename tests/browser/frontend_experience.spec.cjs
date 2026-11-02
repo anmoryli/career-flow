@@ -29,17 +29,15 @@ test('all user and admin pages remain readable in light, dark and system themes'
  expect(errors).toEqual([]);
 });
 
-test('overview preparation path reflects saved work and supports keyboard navigation',async({page})=>{
- await page.goto('/workspace');
- await expect(page.locator('[data-dashboard-path] [aria-current=step]')).toHaveCount(1);
- await expect(page.locator('[data-dashboard-path] [aria-current=step]')).toContainText('开始编辑');
+test('overview continue path reflects saved work and supports keyboard navigation',async({page})=>{
+ await page.goto('/');
+ await expect(page.locator('.cf-landing-continue')).toHaveCount(0);
  await page.keyboard.press('Tab');await expect(page.locator('.cf-skip')).toBeFocused();
  const created=await page.request.post('/api/resumes',{headers:await headers(page),data:{request_key:randomUUID(),revision:0,title:'路径核对简历',document:{name:'真实姓名',summary:'实际负责过的工作'}}});expect(created.ok()).toBeTruthy();
  await page.reload();
- await expect(page.locator('[data-dashboard-path] [aria-current=step]')).toContainText('开始岗位准备');
  await expect(page.locator('.cf-landing-continue')).toContainText('路径核对简历');
  await page.emulateMedia({reducedMotion:'reduce'});
- expect(await page.locator('[data-dashboard-path]').evaluate(node=>node.getAnimations({subtree:true}).some(animation=>animation.playState==='running'))).toBeFalsy();
+ expect(await page.locator('.cf-landing-continue').evaluate(node=>node.getAnimations({subtree:true}).some(animation=>animation.playState==='running'))).toBeFalsy();
 });
 
 test('product process, reduced motion and linked field errors stay usable',async({page})=>{

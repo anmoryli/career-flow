@@ -19,7 +19,7 @@
   {% if not editor_page %}{% include 'frontend/shell/header.html' %}{% endif %}
   {% with notices = get_flashed_messages(with_categories=true) %}{% for category,notice in notices %}<div class="cf-flash cf-notice" data-tone="{{ category }}" role="status">{{ notice }}</div>{% endfor %}{% endwith %}
   {% if admin_page %}<div class="cf-management">{% include 'frontend/shell/admin_nav.html' %}{% endif %}
-  <main id="main" class="{{ 'cf-editor-main' if editor_page else 'cf-management-main' if admin_page else 'cf-main' }}">{% if not editor_page and not admin_page and frontend_page.task_path %}{% include 'frontend/shell/task_path.html' %}{% endif %}{% block content %}{% endblock %}</main>
+  <main id="main" class="{{ 'cf-editor-main' if editor_page else 'cf-management-main' if admin_page else 'cf-main' }}">{% block content %}{% endblock %}</main>
   {% if admin_page %}</div>{% endif %}
   {% if not editor_page and not admin_page %}{% include 'frontend/shell/footer.html' %}{% endif %}
   <div class="cf-toast" id="theme-feedback" role="status" aria-live="polite" hidden></div>

@@ -1,6 +1,4 @@
 {% from '_ui.html' import icon %}
-{% from 'resume/_document.html' import resume_document %}
-{% set sample=resume_sample('modern') %}
 {% set documents=resumes|default([]) %}
 {% set tasks=active_jobs|default([]) %}
 {% set findings=completed_reports|default([]) %}
@@ -46,36 +44,17 @@
 <section class="cf-capabilities" data-reveal>
 <header class="cf-section-head"><span class="cf-eyebrow">它具体做了什么</span><h2>把"感觉不对"，换成能核对的三个动作。</h2></header>
 <div class="cf-capability-grid">
-<article><span class="cf-capability-index">01</span>{{ icon('search') }}<h3>拆开岗位要求</h3><p>把职责、能力项、行业词拆成清单，逐条看你的简历有没有对应的事实，而不是笼统打一个分。</p><div class="cf-capability-visual" aria-hidden="true"><span>服务治理</span><span class="is-hit">高并发</span><span>跨团队</span><span class="is-miss">灰度发布</span></div></article>
-<article><span class="cf-capability-index">02</span>{{ icon('eye') }}<h3>逐段比对原文</h3><p>建议落在具体那一段上。原文在左，候选写法在右，差在哪里一眼能看到。</p><div class="cf-capability-visual is-compare" aria-hidden="true"><span>负责用户访谈</span><span>开展访谈并梳理需求</span></div></article>
-<article><span class="cf-capability-index">03</span>{{ icon('history') }}<h3>另存岗位版本</h3><p>确认的修改进入这一版，基础简历保持原样。同一段经历，可以对着不同岗位各准备一版。</p><div class="cf-capability-visual is-stack" aria-hidden="true"><span>基础简历</span><span>岗位版本</span></div></article>
+<article>{{ icon('search') }}<h3>拆开岗位要求</h3><p>把职责、能力项、行业词拆成清单，逐条看你的简历有没有对应的事实，而不是笼统打一个分。</p><div class="cf-capability-visual" aria-hidden="true"><span>服务治理</span><span class="is-hit">高并发</span><span>跨团队</span><span class="is-miss">灰度发布</span></div></article>
+<article>{{ icon('eye') }}<h3>逐段比对原文</h3><p>建议落在具体那一段上。原文在左，候选写法在右，差在哪里一眼能看到。</p><div class="cf-capability-visual is-compare" aria-hidden="true"><span>负责用户访谈</span><span>开展访谈并梳理需求</span></div></article>
+<article>{{ icon('history') }}<h3>另存岗位版本</h3><p>确认的修改进入这一版，基础简历保持原样。同一段经历，可以对着不同岗位各准备一版。</p><div class="cf-capability-visual is-stack" aria-hidden="true"><span>基础简历</span><span>岗位版本</span></div></article>
 </div>
 </section>
 
-<section class="cf-showcase" data-reveal>
-<header class="cf-section-head"><span class="cf-eyebrow">走一遍完整流程</span><h2>从一段旧描述，到一版对得上岗位的简历。</h2></header>
-<div class="cf-landing-demonstration" data-product-demo>
-<div class="cf-demo-frame">
-<div class="cf-demo-chrome" aria-hidden="true"><span></span><span></span><span></span><em>职序 · 准备过程</em></div>
-<div class="cf-demo-tabs" role="tablist" aria-label="产品流程演示">{% for label in ['整理经历','对照岗位','核对建议','保存版本'] %}<button type="button" id="demo-tab-{{ loop.index0 }}" role="tab" aria-controls="demo-panel-{{ loop.index0 }}" aria-selected="{{ 'true' if loop.first else 'false' }}" tabindex="{{ '0' if loop.first else '-1' }}" data-demo-step="{{ loop.index0 }}">{{ '%02d'|format(loop.index) }} {{ label }}</button>{% endfor %}</div>
-<div class="cf-demo-stage">
-<section id="demo-panel-0" role="tabpanel" aria-labelledby="demo-tab-0" data-demo-panel="0"><div class="cf-landing-paper" data-document-thumbnail>{{ resume_document('modern',sample,true) }}</div></section>
-<section id="demo-panel-1" role="tabpanel" aria-labelledby="demo-tab-1" data-demo-panel="1" hidden><div class="cf-demo-evidence"><span class="cf-eyebrow">岗位要求 / 示例</span><h3>有产品需求分析与跨团队推进经验</h3><span class="cf-eyebrow">简历原文 / 模板示例</span><blockquote>{{ sample.summary }}</blockquote><p>把要求和原文放在一起看。相关证据是否充分，仍需结合真实经历核对。</p></div></section>
-<section id="demo-panel-2" role="tabpanel" aria-labelledby="demo-tab-2" data-demo-panel="2" hidden><div class="cf-demo-comparison"><section><span class="cf-eyebrow">原文 / 示例</span><p>负责用户访谈，整理需求，跟进研发上线。</p></section><section><span class="cf-eyebrow">替换稿 / 示例</span><p>开展用户访谈并梳理需求，协调研发推进功能上线。</p></section><p>正式使用时，每一段候选稿先比较、核实，再由你明确采用。</p></div></section>
-<section id="demo-panel-3" role="tabpanel" aria-labelledby="demo-tab-3" data-demo-panel="3" hidden><div class="cf-demo-versions"><span class="cf-eyebrow">保存方式 / 示例</span><h3>基础内容保留，岗位版本单独保存。</h3><div>{{ icon('file') }}<strong>基础简历</strong><span>原有内容保留</span></div><div>{{ icon('file') }}<strong>目标岗位版本</strong><span>仅加入你确认的修改</span></div><p>这里是流程说明，不会创建、保存或分析你的数据。</p></div></section>
-</div>
-<footer class="cf-demo-footer"><span>切换步骤，看看如何完成一次准备。</span><a class="cf-link" href="{{ url_for('web.workspace',view='resume-new',template='modern') }}">进入真实编辑器 {{ icon('arrow') }}</a></footer>
-</div>
-</div>
-</section>
+
 
 {% if documents or tasks %}<section class="cf-landing-continue" id="continue" data-reveal><header><span class="cf-eyebrow">从上一次继续</span><h2>准备过的内容，随时接着做。</h2></header>{% for operation,diagnostic,job in tasks[:3] %}<a class="cf-landing-work" href="{{ url_for('diagnosis.detail',job_id=job.id) }}"><span class="cf-spinner" aria-hidden="true"></span><strong>{{ job.title or '目标岗位' }}</strong><span>{{ '排队中' if operation.state=='queued' else '分析中' }}</span>{{ icon('arrow') }}</a>{% endfor %}{% for item in documents[:3] %}<a class="cf-landing-work" href="{{ url_for('web.workspace',view='resume-new',resume_id=item.id) }}">{{ icon('file') }}<strong>{{ item.title }}</strong><time>{{ item.updated_at|datetime_cn }}</time><span>继续编辑 {{ icon('arrow') }}</span></a>{% endfor %}<a class="cf-link" href="{{ url_for('web.workspace',view='resumes') }}">查看全部简历与版本 {{ icon('arrow') }}</a></section>{% endif %}
 
-<section class="cf-landing-path" id="how-it-works" data-reveal>
-<header class="cf-section-head"><span class="cf-eyebrow">从你的目标出发</span><h2>让每一步，都接到岗位版本。</h2></header>
-<div class="cf-landing-journey" data-dashboard-path>
-{% for number,title,description,view,action in [('01','整理真实经历','从空白、已有 PDF 或真实经历开始。','resume-new','开始编辑'),('02','对照目标岗位','把岗位要求与简历原文放在一起核对。','jobs','开始岗位准备'),('03','核对每一条建议','找到对应原文，比较替换稿，再选择采用。','optimize','选择要打磨的内容'),('04','保留基础，另存岗位版本','确认所选修改，再为这次机会保存一份简历。','resumes','查看我的版本')] %}<article><span class="cf-journey-index">{{ number }}</span><div><h3>{{ title }}</h3><p>{{ description }}</p></div><a href="{{ url_for('web.workspace',view=view) }}" {% if (loop.first and not documents) or (loop.index == 2 and documents) %}aria-current="step"{% endif %}>{{ action }} {{ icon('arrow') }}</a></article>{% endfor %}</div>
-</section>
+
 
 <section class="cf-fit" data-reveal>
 <article class="cf-fit-good"><span class="cf-eyebrow">{{ icon('check') }}适合</span><h2>已经有真实经历，<br>正在准备一个具体机会。</h2><p>工作、项目、实习都可以。你愿意对着岗位，把做过的事说清楚、说准确，并逐条核对修改。</p></article>

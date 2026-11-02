@@ -2,7 +2,7 @@
 {% block title %}核对导入内容 · 职序{% endblock %}
 {% block content %}
 <section class="cf-page cf-import-page">
-  <header class="cf-resume-landing-heading"><div><span class="cf-eyebrow">第二步 / 核对提取内容</span><h1>读过一遍，<br>再成为你的简历。</h1><p>提取是起点，核对让经历更可靠。<br>对照原文确认基本信息，完整经历将在工作台继续完善。</p></div><a class="cf-button is-quiet" href="{{ url_for('web.workspace', view='resume-import') }}">重新选择文件 {{ icon('arrow') }}</a></header>
+  <header class="cf-resume-landing-heading"><div><span class="cf-eyebrow">核对提取内容</span><h1>读过一遍，<br>再成为你的简历。</h1><p>提取是起点，核对让经历更可靠。<br>对照原文确认基本信息，完整经历将在工作台继续完善。</p></div><a class="cf-button is-quiet" href="{{ url_for('web.workspace', view='resume-import') }}">重新选择文件 {{ icon('arrow') }}</a></header>
   <ol class="cf-import-progress" aria-label="导入步骤"><li class="is-complete"><span>01</span>已选择文件</li><li class="is-current"><span>02</span>提取与核对</li><li><span>03</span>进入工作台</li></ol>
   <div data-import-id="{{ item.id }}" data-import-state="{{ item.state }}" data-resume-id="{{ resume_id or '' }}">
     {% if item.state in ['queued','running'] %}<section class="cf-import-wait" role="status" aria-busy="true"><i></i><span class="cf-eyebrow">正在为你展开内容</span><h2>读取简历文字与结构。</h2><p>完成后会进入核对步骤，你也可以稍后通过本页地址回来。</p></section>
