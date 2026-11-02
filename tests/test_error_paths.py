@@ -74,7 +74,7 @@ def test_complete_production_configuration_passes_guards(config):
 
 
 def test_static_assets_keep_cache_policy_and_security_headers(app):
-    response = app.test_client().get("/static/js/theme.js")
+    response = app.test_client().get("/static/js/frontend/theme.js")
     assert response.status_code == 200
     assert response.headers.get("Cache-Control") != "no-store"
     assert response.headers["X-Content-Type-Options"] == "nosniff"

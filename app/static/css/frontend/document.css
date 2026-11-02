@@ -307,7 +307,12 @@
 .resume-doc .rd-rail-solid .rd-pill{background:rgb(255 255 255/.16);border-color:rgb(255 255 255/.3);color:#fff}
 .resume-doc .rd-meter-row{display:grid;grid-template-columns:1fr 72px;align-items:center;gap:8px;font-size:10px;margin:5px 0}
 .resume-doc .rd-meter-track{display:block;height:4px;background:#e0e6e1;border-radius:2px;overflow:hidden}
-.resume-doc .rd-meter-bar{display:block;height:100%;width:calc(var(--value,.8)*100%);background:var(--rd-accent)}
+.resume-doc .rd-meter-bar{display:block;height:100%;width:80%;background:var(--rd-accent)}
+.resume-doc .rd-meter-bar[data-level="92"]{width:92%}
+.resume-doc .rd-meter-bar[data-level="84"]{width:84%}
+.resume-doc .rd-meter-bar[data-level="76"]{width:76%}
+.resume-doc .rd-meter-bar[data-level="68"]{width:68%}
+.resume-doc .rd-meter-bar[data-level="60"]{width:60%}
 .resume-doc .rd-rail-solid .rd-meter-track{background:rgb(255 255 255/.28)}
 .resume-doc .rd-rail-solid .rd-meter-bar{background:#fff}
 .resume-doc .rd-dots-item{display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:10px;margin:5px 0}

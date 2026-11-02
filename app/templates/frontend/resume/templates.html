@@ -20,7 +20,7 @@
   {% for track in resume_tracks %}
   <section class="cf-template-track" data-template-track-group="{{ track.id }}" data-reveal>
     <header class="cf-template-track-head">
-      <div><span class="cf-eyebrow">{{ '%02d'|format(loop.index) }} / 岗位方向</span><h2>{{ track.title }}</h2><p>{{ track.note }}</p></div>
+      <div><span class="cf-eyebrow">岗位方向</span><h2>{{ track.title }}</h2><p>{{ track.note }}</p></div>
       <span class="cf-template-track-count">{{ track.templates|length }} 套版式</span>
     </header>
     <div class="cf-template-grid">

@@ -112,9 +112,6 @@ html{overflow-x:clip}
 .cf-capability-visual.is-stack span{border-radius:8px;padding:10px 14px;font-size:11.5px;width:78%}
 .cf-capability-visual.is-stack span+span{margin-top:-12px;margin-left:14%;background:var(--cf-surface);box-shadow:0 8px 20px color-mix(in srgb,var(--cf-primary) 10%,transparent);border:1px solid var(--cf-line);color:var(--cf-text);font-weight:var(--cf-weight-500)}
 
-/* Showcase */
-.cf-showcase{padding:66px 0 70px}
-
 /* Continue */
 .cf-landing-continue{margin:0 0 66px;padding:30px 30px 26px;background:var(--cf-surface);border-radius:16px}
 .cf-landing-continue>header{margin-bottom:10px}
@@ -204,7 +201,6 @@ html{overflow-x:clip}
   .cf-capability-grid{grid-template-columns:minmax(0,1fr);gap:12px}
   .cf-capability-grid article{min-height:0;padding:22px 20px 0}
   .cf-capability-grid article>.icon{margin-bottom:14px}
-  .cf-showcase{padding:40px 0 44px}
   .cf-landing-continue{padding:22px 18px;margin-bottom:44px}
   .cf-landing-continue h2{font-size:19px}
   .cf-landing-work strong{max-width:52%;font-size:13px}

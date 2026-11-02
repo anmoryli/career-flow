@@ -1,7 +1,10 @@
 import json
+import re
 from datetime import datetime
 from html.parser import HTMLParser
+from pathlib import Path
 from types import SimpleNamespace
+from uuid import uuid4
 
 import pytest
 from flask import g, render_template
@@ -9,36 +12,67 @@ from pydantic import ValidationError
 
 from app.career_schemas import ResumeDocument
 
+ROOT = Path(__file__).resolve().parents[1]
+
+
+def editor_js():
+    return (ROOT / "app/static/js/frontend/resume-editor.js").read_text(encoding="utf-8")
+
 
 def render_editor(app):
     with app.test_request_context("/workspace?view=resume-new"):
         g.user = SimpleNamespace(
+            id=uuid4(),
             display_name="模板测试",
             email="template@example.com",
             theme="system",
             created_at=datetime(2026, 10, 22),
         )
         return render_template(
-            "workspace.html",
+            "frontend/resume/editor.html",
             conversations=[],
             count=0,
-            entitlements={"can_create_resume": True, "resume_count": 0, "resume_limit": 10},
+            resumes=[],
+            jobs=[],
+            saved_jobs=[],
+            active_jobs=[],
+            active_job_ids=set(),
+            inactive_saved_jobs=[],
+            recent_only_jobs=[],
+            current_resume=None,
+            resume_previews={},
+            reports=[],
+            completed_reports=[],
+            entitlements=SimpleNamespace(
+                can_create_resume=True,
+                resume_count=0,
+                resume_limit=10,
+                can_export_resume=True,
+            ),
+            membership=None,
+            orders=[],
+            commerce_plans=None,
+            mock_payment_enabled=False,
+            uuid4=uuid4,
+            now=datetime(2026, 11, 2),
         )
 
 
 def test_every_template_renders_a_visible_photo_slot(app):
     html = render_editor(app)
-    # Every picker thumbnail and the live preview share the same photo macro:
-    # one slot (with an empty-state placeholder) per rendered document, no exceptions.
+    # Every picker thumbnail shares the same photo macro: one slot (with an
+    # empty-state placeholder) per rendered document, no exceptions.
     documents = html.count("data-resume-doc=")
-    assert documents >= 3
+    assert documents == 20
     assert html.count("data-photo-slot") == documents
     assert html.count("data-photo-placeholder") == documents
     assert html.count("data-rf-photo") == documents
-    assert html.count('id="resume-photo"') == 1
-    assert "上传个人照片" in html
-    assert "data-remove-photo" in html
-    assert 'id="resume-photo-position"' in html
+    js = editor_js()
+    # The photo editor itself is generated client-side; keep its contract intact.
+    assert "resume-photo" in js
+    assert "上传个人照片" in js
+    assert "removePhoto" in js
+    assert "resume-photo-position" in js
     assert 'id="resume-template-quick"' in html
 
 
@@ -53,23 +87,23 @@ def test_three_templates_have_distinct_visual_structures(app):
 
 def test_sample_and_account_photo_behavior_are_explicit(app):
     html = render_editor(app)
-    # Keep the sample labeled without exposing a long implementation-style disclaimer.
-    assert "模板预览提供虚构示例" not in html
-    assert html.count('class="template-sample-badge">示例</span>') == 3
-    assert "照片随简历保存到账号" in html
+    # The draft preview is the default; the rich example only lives in the
+    # preview channel and never leaks into the form.
+    assert 'data-preview-mode="draft"' in html
+    assert "data-example=" in html
+    assert "data-examples=" in html
+    js = editor_js()
+    assert "示例内容不会写入你的简历" in js
+    assert "照片会随简历保存到账号" in js
     assert "data-save-resume" in html
-    assert "data-clear-sample" in html
-    assert "data-print-resume" not in html
-    assert 'href="/workspace?view=billing"' in html
-    assert 'data-resume-panel="classic"' in html
-    assert 'data-resume-panel="technical" hidden' in html
-    assert 'data-resume-panel="modern" hidden' in html
+    # Export stays available on the editor; the print flow lives in its own page.
+    assert "data-print-resume" in html
 
 
 def test_summary_section_and_input_have_unique_ids(app):
-    html = render_editor(app)
-    assert html.count('id="resume-summary"') == 1
-    assert html.count('id="resume-summary-section"') == 1
+    js = editor_js()
+    assert js.count("'resume-summary'") == 1
+    assert js.count("'resume-summary-section'") == 1
 
 
 def test_section_order_requires_each_resume_section_once():
@@ -142,22 +176,22 @@ class EditorParser(HTMLParser):
 
 
 def test_editor_starts_empty_with_placeholders(app):
-    parser = EditorParser()
-    parser.feed(render_editor(app))
-    assert len(parser.fields) == 45
-    for field in parser.fields:
-        assert not field.get("value", "").strip(), field["data-rf-field"]
-        assert field.get("placeholder", "").strip(), field["data-rf-field"]
+    html = render_editor(app)
+    # All editable fields are generated client-side from an empty document;
+    # the server never renders prefilled inputs or example values.
+    assert "data-rf-field" not in html
+    assert 'value="示例' not in html
+    # Example content is only reachable through the preview channel.
+    assert "data-example=" in html
 
 
 def test_rich_example_is_separate_from_form(app):
     html = render_editor(app)
-    parser = EditorParser()
-    parser.feed(html)
-    assert 'id="resume-preview-mode"' in html
-    assert 'data-preview-mode="sample"' in html
-    assert len(parser.example["experiences"]) == 2
-    assert len(parser.example["projects"]) == 2
-    assert len(parser.example["skills"]) == 4
-    assert len(parser.example["certificates"]) == 2
-    assert all(len(item["bullets"]) >= 2 for item in parser.example["experiences"])
+    match = re.search(r"data-example='([^']+)'", html)
+    assert match, "editor must embed the sample document for the preview"
+    example = json.loads(match.group(1))
+    assert len(example["experiences"]) == 2
+    assert len(example["projects"]) == 2
+    assert len(example["skills"]) == 4
+    assert len(example["certificates"]) == 2
+    assert all(len(item["bullets"]) >= 2 for item in example["experiences"])

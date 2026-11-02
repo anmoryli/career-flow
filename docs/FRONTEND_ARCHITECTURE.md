@@ -47,7 +47,7 @@
 
 ## 产品叙事与任务衔接
 
-见 `PRODUCT_NARRATIVE_2026-10-30.md`。`landing.js` 仅控制标明示例的四步产品演示，键盘可操作，不创建AI任务或写数据；真实操作仍通过原任务页。登录后首页GET进入个性化Landing，最近工作提前；`shell/task_path.html` 为核心页面提供当前位置和审阅/保存入口，编辑器保持紧凑工作区。
+见 `PRODUCT_NARRATIVE_2026-10-30.md`。产品已移除全部“分步引导”式 UI：早期 `landing.js` 的四步产品演示与 `shell/task_path.html` 任务路径条均已删除，页面入口只有 hero CTA、区块链接与“从上一次继续”。登录后首页 GET 进入个性化 Landing，最近工作提前，编辑器保持紧凑工作区。
 
 ## 操作可发现性
 

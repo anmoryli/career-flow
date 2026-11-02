@@ -24,7 +24,7 @@
 
 {% macro skill_meter(data) -%}
 {% for group in data.skills %}
-<div class="rd-skill-group" data-rf-entry="skills.{{ loop.index0 }}"><b class="rd-skill-label" data-rf="skills.{{ loop.index0 }}.label">{{ group['label'] }}</b><span class="rd-meters" data-rf-list="skills.{{ loop.index0 }}.items" data-rf-list-mode="meter">{% for item in group['items'] %}<span class="rd-meter-row"><span class="rd-meter-text">{{ item }}</span><i class="rd-meter-track" aria-hidden="true"><b class="rd-meter-bar" style="--value: {{ [0.92, 0.84, 0.76, 0.68, 0.6][loop.index0 % 5] }}"></b></i></span>{% endfor %}</span></div>
+<div class="rd-skill-group" data-rf-entry="skills.{{ loop.index0 }}"><b class="rd-skill-label" data-rf="skills.{{ loop.index0 }}.label">{{ group['label'] }}</b><span class="rd-meters" data-rf-list="skills.{{ loop.index0 }}.items" data-rf-list-mode="meter">{% for item in group['items'] %}<span class="rd-meter-row"><span class="rd-meter-text">{{ item }}</span><i class="rd-meter-track" aria-hidden="true"><b class="rd-meter-bar" data-level="{{ [92, 84, 76, 68, 60][loop.index0 % 5] }}"></b></i></span>{% endfor %}</span></div>
 {% endfor %}
 {%- endmacro %}
 
