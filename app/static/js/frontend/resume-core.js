@@ -43,7 +43,7 @@
   const render=(value,template='classic')=>{
     const data=normalize(value),{layout,options}=layoutFor(template),doc=el('article',`resume-doc tpl-${template} lay-${layout}`);doc.dataset.resumeDoc=template;doc.dataset.layout=layout;doc.dataset.size=data.size;doc.dataset.accent=data.accent;doc.dataset.photoPosition=data.photo_position;
     const L=labelsFor(template),bilingual=template==='bilingual',title=key=>bilingual?BILINGUAL_TITLES[key]||key:L[key]||key;
-    const photoFrame=()=>{if(!data.photo)return null;const frame=el('figure','rd-photo-frame'),image=el('img','rd-photo');image.src=data.photo;image.alt='个人照片';image.dataset.rfPhoto='';frame.append(image);return frame;};
+    const photoFrame=(variant='default')=>{const frame=el('figure',`rd-photo-frame rd-photo-${variant}`);frame.dataset.photoSlot='';const image=el('img','rd-photo');image.alt='个人照片';image.dataset.rfPhoto='';if(data.photo){image.src=data.photo;}else{image.hidden=true;const placeholder=el('span','rd-photo-placeholder');placeholder.dataset.photoPlaceholder='';placeholder.append(el('b','rd-photo-mark',(data.name||'照片').slice(0,1)),el('i','rd-photo-hint','照片'));frame.append(placeholder);}frame.append(image);return frame;};
     const contactRow=cls=>{const row=el('div',cls||'rd-header-contact');for(const key of ['phone','email','city','website','github','linkedin'])if(data[key])row.append(el('span','rd-contact-item',data[key]));return row;};
     const section=(key,titleText,no)=>{const node=el('section','rd-section');node.dataset.rfSection=key;const head=el('h2','rd-section-title');if(no!=null)head.append(el('span','rd-section-no',no));head.append(document.createTextNode(titleText));node.append(head);return node;};
     const entryNode=(key,item,index)=>{const entry=el('article','rd-entry');entry.dataset.rfEntry=`${key}.${index}`;const top=el('div','rd-entry-top');top.append(el('h3','',item.company||item.name||item.school||''));if(item.period)top.append(el('span','rd-period',item.period));entry.append(top);const sub=[item.role,item.degree,item.location,item.tech].filter(Boolean);if(sub.length)entry.append(el('p','rd-entry-sub',sub.join(' · ')));if(item.bullets?.length){const list=el('ul','rd-bullets');item.bullets.forEach(text=>list.append(inline(el('li'),text)));entry.append(list);}if(item.description||item.detail)entry.append(markdown(el('div','rd-markdown'),item.description||item.detail));if(item.link)entry.append(link(item.link,/^https?:\/\//.test(item.link)?item.link:`https://${item.link}`));return entry;};
@@ -57,11 +57,11 @@
       if(key.startsWith('custom:')){const item=data.custom_sections.find(item=>key===`custom:${item.id}`);if(!item?.content)return null;const node=section(key,item.title||'补充经历',no);node.append(markdown(el('div','rd-markdown'),item.content));return node;}
       return null;};
     const flowSections=(order,skip,withNumber)=>{const flow=el('div','rd-document-content');flow.dataset.sectionFlow='';let counter=0;for(const key of order){if(data.hidden_sections.includes(key)||skip?.includes(key))continue;const node=sectionNode(key,withNumber?String(++counter).padStart(2,'0'):null);if(node)flow.append(node);}return flow;};
-    const linearHead=(eyebrow,headCls)=>{const header=el('header',`rd-head${headCls?` ${headCls}`:''}`),identity=el('div','rd-identity');identity.append(el('p','rd-eyebrow',eyebrow),el('h1','',data.name||''));if(data.role)identity.append(el('p','rd-role',data.role));const frame=photoFrame();if(frame)header.append(frame);header.append(identity,contactRow());return header;};
+    const linearHead=(eyebrow,headCls)=>{const header=el('header',`rd-head${headCls?` ${headCls}`:''}`),identity=el('div','rd-identity');identity.append(el('p','rd-eyebrow',eyebrow),el('h1','',data.name||''));if(data.role)identity.append(el('p','rd-role',data.role));header.append(photoFrame('head'),identity,contactRow());return header;};
     if(layout==='split'){
       const railOrder=data.section_order.filter(key=>RAIL_SECTIONS.includes(key)),mainOrder=data.section_order.filter(key=>!RAIL_SECTIONS.includes(key));
       const split=el('div',`rd-split rd-split-${options.side||'left'} rd-rail-${options.rail||'soft'} rd-skills-${options.skills||'list'}`);
-      const rail=el('aside','rd-split-rail');const frame=photoFrame();if(frame)rail.append(frame);
+      const rail=el('aside','rd-split-rail');rail.append(photoFrame('rail'));
       const identity=el('div','rd-identity');identity.append(el('h1','',data.name||''));if(data.role)identity.append(el('p','rd-role',data.role));rail.append(identity);
       rail.append(contactRow('rd-rail-contact'));
       const railFlow=el('div','rd-split-rail-sections');railFlow.dataset.sectionFlow='';
@@ -71,13 +71,13 @@
     }
     if(layout==='banner'){
       const lead=data.summary&&data.section_order.includes('summary')&&!data.hidden_sections.includes('summary');
-      const banner=el('header',`rd-banner rd-banner-${options.tone||'solid'}`);const frame=photoFrame();if(frame)banner.append(frame);
+      const banner=el('header',`rd-banner rd-banner-${options.tone||'solid'}`);banner.append(photoFrame('banner'));
       const text=el('div','rd-banner-text');text.append(el('p','rd-eyebrow','个人简历'),el('h1','',data.name||''));if(data.role)text.append(el('p','rd-role',data.role));if(lead)text.append(el('p','rd-banner-lead',data.summary));banner.append(text,contactRow('rd-banner-contact'));doc.append(banner);
       doc.append(flowSections(data.section_order,lead?['summary']:null));return doc;
     }
     if(layout==='editorial'){
       const lead=data.summary&&data.section_order.includes('summary')&&!data.hidden_sections.includes('summary');
-      const head=el('header','rd-editorial-head');head.append(el('p','rd-editorial-eyebrow','CURRICULUM VITAE'),el('h1','',data.name||''));if(data.role)head.append(el('p','rd-editorial-role',data.role));head.append(contactRow('rd-editorial-meta'));doc.append(head);
+      const head=el('header','rd-editorial-head'),main=el('div','rd-editorial-main');main.append(el('p','rd-editorial-eyebrow','CURRICULUM VITAE'),el('h1','',data.name||''));if(data.role)main.append(el('p','rd-editorial-role',data.role));main.append(contactRow('rd-editorial-meta'));head.append(main,photoFrame('editorial'));doc.append(head);
       if(lead)doc.append(el('p','rd-editorial-lead',data.summary));
       doc.append(flowSections(data.section_order,lead?['summary']:null,options.numbered!==false));return doc;
     }

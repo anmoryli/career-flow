@@ -58,8 +58,8 @@
 <section class="rd-section" data-rf-section="{{ key }}"><h2 class="rd-section-title">{{ title }}</h2><ul class="rd-compact-list" data-rf-list="{{ key }}">{% for item in data[key] %}<li>{{ item }}</li>{% endfor %}</ul></section>
 {%- endmacro %}
 
-{% macro photo(data) -%}
-<figure class="rd-photo-frame" data-photo-slot aria-label="个人照片"><img class="rd-photo" data-rf-photo alt="个人照片"{% if data.photo %} src="{{ data.photo }}"{% else %} hidden{% endif %}><figcaption class="rd-photo-placeholder" data-photo-placeholder{% if data.photo %} hidden{% endif %}>照片</figcaption></figure>
+{% macro photo(data, variant='default') -%}
+<figure class="rd-photo-frame rd-photo-{{ variant }}" data-photo-slot aria-label="个人照片"><img class="rd-photo" data-rf-photo alt="个人照片"{% if data.photo %} src="{{ data.photo }}"{% else %} hidden{% endif %}><figcaption class="rd-photo-placeholder" data-photo-placeholder{% if data.photo %} hidden{% endif %}><span class="rd-photo-mark" aria-hidden="true">{{ (data.name or '照片')[:1] }}</span><span class="rd-photo-hint">照片</span></figcaption></figure>
 {%- endmacro %}
 
 {% macro ordered_sections(template, data, labels, default_order, skip=(), numbered=false, bilingual=false, fixed_order=false) -%}
@@ -79,7 +79,7 @@
 {% macro linear_head(template, data, eyebrow) -%}
 <header class="rd-head rd-head-{{ template }}">
   <div class="rd-identity"><p class="rd-eyebrow">{{ eyebrow }}</p><h1 data-rf="name">{{ data.name }}</h1><p class="rd-role" data-rf="role">{{ data.role }}</p></div>
-  {{ photo(data) }}
+  {{ photo(data, 'head') }}
   <div class="rd-header-contact">{{ contact_items(data) }}</div>
 </header>
 {%- endmacro %}
@@ -91,7 +91,7 @@
 {% set rail_order = source_order|select('in', rail_keys)|list %}
 <div class="rd-split rd-split-{{ options.get('side', 'left') }} rd-rail-{{ options.get('rail', 'soft') }} rd-skills-{{ options.get('skills', 'list') }}">
   <aside class="rd-split-rail">
-    {{ photo(data) }}
+    {{ photo(data, 'rail') }}
     <div class="rd-identity"><h1 data-rf="name">{{ data.name }}</h1><p class="rd-role" data-rf="role">{{ data.role }}</p></div>
     <div class="rd-rail-contact">{{ contact_items(data) }}</div>
     <div class="rd-split-rail-sections" data-section-flow>
@@ -113,7 +113,7 @@
 {% macro banner_document(template, data, labels, order, options) -%}
 {% set lead_used = data.summary|trim|length > 0 and 'summary' in order and 'summary' not in data.hidden_sections|default([]) %}
 <header class="rd-banner rd-banner-{{ options.get('tone', 'solid') }}">
-  {{ photo(data) }}
+  {{ photo(data, 'banner') }}
   <div class="rd-banner-text"><p class="rd-eyebrow">个人简历</p><h1 data-rf="name">{{ data.name }}</h1><p class="rd-role" data-rf="role">{{ data.role }}</p>{% if lead_used %}<p class="rd-banner-lead" data-rf="summary">{{ data.summary }}</p>{% endif %}</div>
   <div class="rd-banner-contact">{{ contact_items(data) }}</div>
 </header>
@@ -123,10 +123,13 @@
 {% macro editorial_document(template, data, labels, order, options) -%}
 {% set lead_used = data.summary|trim|length > 0 and 'summary' in order and 'summary' not in data.hidden_sections|default([]) %}
 <header class="rd-editorial-head">
-  <p class="rd-editorial-eyebrow">CURRICULUM VITAE</p>
-  <h1 data-rf="name">{{ data.name }}</h1>
-  <p class="rd-editorial-role" data-rf="role">{{ data.role }}</p>
-  <div class="rd-editorial-meta">{{ contact_items(data) }}</div>
+  <div class="rd-editorial-main">
+    <p class="rd-editorial-eyebrow">CURRICULUM VITAE</p>
+    <h1 data-rf="name">{{ data.name }}</h1>
+    <p class="rd-editorial-role" data-rf="role">{{ data.role }}</p>
+    <div class="rd-editorial-meta">{{ contact_items(data) }}</div>
+  </div>
+  {{ photo(data, 'editorial') }}
 </header>
 {% if lead_used %}<p class="rd-editorial-lead" data-rf="summary">{{ data.summary }}</p>{% endif %}
 <div class="rd-editorial-body rd-document-content" data-section-flow>{{ ordered_sections(template, data, labels, order, skip=['summary'] if lead_used else (), numbered=options.get('numbered', false)) }}</div>
@@ -143,7 +146,7 @@
   {{ editorial_document(template, data, labels, default_order, plan.options) }}
   {% elif plan.layout == 'timeline' %}
   {% if template == 'teacher' %}
-  <header class="rd-head rd-head-centered"><div class="rd-identity"><p class="rd-eyebrow">个人简历</p><h1 data-rf="name">{{ data.name }}</h1><p class="rd-role" data-rf="role">{{ data.role }}</p></div>{{ photo(data) }}<div class="rd-header-contact">{{ contact_items(data) }}</div></header>
+  <header class="rd-head rd-head-centered"><div class="rd-identity"><p class="rd-eyebrow">个人简历</p><h1 data-rf="name">{{ data.name }}</h1><p class="rd-role" data-rf="role">{{ data.role }}</p></div>{{ photo(data, 'head') }}<div class="rd-header-contact">{{ contact_items(data) }}</div></header>
   {% else %}
   {{ linear_head(template, data, '个人简历') }}
   {% endif %}

@@ -9,12 +9,21 @@
 .resume-doc .rd-header-contact {grid-column:1/-1;display:flex;flex-wrap:wrap;gap:5px 16px;font-size:10px;color:#59695e;}
 .resume-doc .rd-contact-item {display:inline-flex;gap:5px;}
 .resume-doc .rd-contact-item b {font-size:9px;font-weight:400;color:#79857d;}
-.resume-doc .rd-photo-frame {grid-column:2;grid-row:1;width:74px;height:94px;border:1px solid var(--rd-line);overflow:hidden;background:#f7f9f7;}
-.resume-doc .rd-photo {width:100%;height:100%;object-fit:cover;object-position:center;}
+.resume-doc .rd-photo-frame {position:relative;grid-column:2;grid-row:1;width:74px;height:94px;flex:none;border:1px solid var(--rd-line);border-radius:2px;overflow:hidden;background:var(--rd-soft);}
+.resume-doc .rd-photo {display:block;width:100%;height:100%;object-fit:cover;object-position:center;}
 .resume-doc[data-photo-position=top] .rd-photo {object-position:top;}
 .resume-doc[data-photo-position=bottom] .rd-photo {object-position:bottom;}
-.resume-doc .rd-photo-placeholder {display:grid;place-items:center;height:100%;color:#9aa69d;font-size:10px;}
-.resume-doc .rd-photo-frame:has(img[hidden]) {display:none;}
+/* Empty state: an intentional framing box, so every template shows where the photo goes. */
+.resume-doc .rd-photo-placeholder {position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;background:linear-gradient(158deg,var(--rd-soft) 6%,#fff 96%);border:1px dashed rgb(120 138 126 / 45%);border-radius:inherit;color:#93a298;font-style:normal;line-height:1;}
+.resume-doc .rd-photo-mark {font-size:26px;font-weight:500;color:var(--rd-accent);opacity:.62;letter-spacing:0;}
+.resume-doc .rd-photo-hint {font-size:8px;letter-spacing:.18em;opacity:.8;font-style:normal;}
+.resume-doc .rd-rail-solid .rd-photo-placeholder,.resume-doc .rd-banner-solid .rd-photo-placeholder {background:rgb(255 255 255/.12);border-color:rgb(255 255 255/.45);color:rgb(255 255 255/.82);}
+.resume-doc .rd-rail-solid .rd-photo-mark,.resume-doc .rd-banner-solid .rd-photo-mark {color:#fff;opacity:.82;}
+.cf-resume-canvas .resume-doc [data-photo-slot]:has(>.rd-photo-placeholder) {cursor:pointer;}
+.cf-resume-canvas .resume-doc [data-photo-slot]:has(>.rd-photo-placeholder):hover,.cf-resume-canvas .resume-doc [data-photo-slot]:has(>.rd-photo-placeholder):focus-visible {outline:2px solid var(--rd-accent);outline-offset:2px;}
+/* A document without a photo should not carry an empty frame into print or export. */
+.cf-print-canvas .resume-doc .rd-photo-frame:has(>img[hidden]),.print-stage .resume-doc .rd-photo-frame:has(>img[hidden]) {display:none;}
+@media print {.resume-doc .rd-photo-frame:has(>img[hidden]) {display:none;}}
 .resume-doc .rd-section {margin-top:23px;break-inside:auto;}
 .resume-doc .rd-section-title {margin:0 0 10px;padding:0 0 6px;border-bottom:1px solid var(--rd-line);color:var(--rd-accent);font-size:14px;font-weight:600;letter-spacing:.02em;}
 .resume-doc .rd-entry {padding:0;margin:0 0 17px;break-inside:avoid;}
@@ -91,7 +100,7 @@
 /* Additional V1 layouts: shared content/order, distinct print typography and proportions. */
 .tpl-executive .rd-head{padding-bottom:28px;text-align:left}.tpl-executive .rd-identity h1{font-size:38px;letter-spacing:.08em}.tpl-executive .rd-document-content{padding-top:18px}.tpl-executive .rd-section-title{font-size:16px;letter-spacing:.12em;padding-bottom:10px}.tpl-executive .rd-entry{margin-block:20px}.tpl-executive .rd-header-contact{display:flex;flex-wrap:wrap;gap:6px 20px}
 .tpl-graduate .rd-head{background:#edf3ee;padding:22px 26px;margin-bottom:26px}.tpl-graduate .rd-eyebrow{letter-spacing:.18em}.tpl-graduate .rd-section-title{display:inline-block;background:#edf3ee;padding:5px 12px;border:0}.tpl-graduate .rd-entry-top{align-items:baseline}.tpl-graduate .rd-period{font-weight:500}.tpl-graduate .rd-document-content{padding-inline:8px}
-.tpl-transition .rd-head{display:block;padding-bottom:20px}.tpl-transition .rd-identity{padding-left:22px}.tpl-transition .rd-section{padding-left:24px;position:relative}.tpl-transition .rd-section::before{content:'';position:absolute;left:0;top:8px;width:6px;height:6px;border-radius:50%;background:var(--rd-accent,#466951)}.tpl-transition .rd-entry{padding-left:12px}.tpl-transition .rd-entry-top{flex-direction:column;gap:4px}.tpl-transition .rd-period{font-size:11px;letter-spacing:.08em}
+.tpl-transition .rd-head{grid-template-columns:minmax(0,1fr) 74px;align-items:end;padding-bottom:20px}.tpl-transition .rd-identity{padding-left:22px}.tpl-transition .rd-section{padding-left:24px;position:relative}.tpl-transition .rd-section::before{content:'';position:absolute;left:0;top:8px;width:6px;height:6px;border-radius:50%;background:var(--rd-accent,#466951)}.tpl-transition .rd-entry{padding-left:12px}.tpl-transition .rd-entry-top{flex-direction:column;gap:4px}.tpl-transition .rd-period{font-size:11px;letter-spacing:.08em}
 .tpl-public_sector{font-family:'Microsoft YaHei','Noto Sans CJK SC',sans-serif}.tpl-public_sector .rd-identity{text-align:center}.tpl-public_sector .rd-identity h1{font-size:30px;letter-spacing:.2em}.tpl-public_sector .rd-header-contact{display:grid;grid-template-columns:1fr 1fr;background:#f5f5f3;padding:12px 16px;gap:8px}.tpl-public_sector .rd-section-title{background:#f5f5f3;padding:6px 10px;font-size:14px}.tpl-public_sector .rd-entry{margin-block:12px}.tpl-public_sector .rd-eyebrow{text-align:center}
 .tpl-bilingual .rd-head{padding-bottom:26px}.tpl-bilingual .rd-eyebrow{text-transform:uppercase;letter-spacing:.15em}.tpl-bilingual .rd-identity h1{font-size:34px;font-weight:500}.tpl-bilingual .rd-section-title{font-size:13px;font-weight:600;letter-spacing:.04em}.tpl-bilingual .rd-header-contact{display:flex;flex-wrap:wrap;gap:7px 18px}.tpl-bilingual .rd-document-content{line-height:1.8}.tpl-bilingual .rd-entry-top{gap:18px}
 
@@ -332,7 +341,10 @@
 .resume-doc.lay-banner .rd-banner-band .rd-banner-contact{color:#59695e;border-top-color:var(--rd-line)}
 .resume-doc.lay-banner .rd-banner-contact .rd-contact-item b{color:inherit;opacity:.6}
 /* --- editorial: oversized name, lead, numbered chapters --- */
-.resume-doc.lay-editorial .rd-editorial-head{display:grid;gap:6px;padding:14px 0 22px;border-bottom:3px solid #26221f}
+.resume-doc.lay-editorial .rd-editorial-head{position:relative;display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:end;gap:10px 26px;padding:14px 0 22px;border-bottom:3px solid #26221f}
+.resume-doc.lay-editorial .rd-editorial-main{display:grid;gap:6px;align-content:end;min-width:0}
+.resume-doc.lay-editorial .rd-photo-editorial{grid-column:2;grid-row:1;width:96px;height:122px;border-radius:2px;background:var(--rd-soft)}
+.resume-doc.tpl-designer .rd-photo-editorial .rd-photo{filter:grayscale(1) contrast(1.04)}
 .resume-doc.lay-editorial .rd-editorial-eyebrow{font:9px/1 var(--font-mono,monospace);letter-spacing:.34em;color:var(--rd-accent)}
 .resume-doc.lay-editorial h1{font-size:46px;font-weight:500;letter-spacing:.05em;line-height:1.15}
 .resume-doc.lay-editorial .rd-editorial-role{font-size:13px;letter-spacing:.22em;color:var(--rd-accent);text-transform:uppercase}

@@ -26,12 +26,15 @@ def render_editor(app):
         )
 
 
-def test_three_templates_have_visible_photo_slots(app):
+def test_every_template_renders_a_visible_photo_slot(app):
     html = render_editor(app)
-    # Three picker examples and three actual preview documents share the same macro.
-    assert html.count('class="rd-photo-frame"') == 6
-    assert html.count("data-photo-placeholder") == 6
-    assert html.count("data-rf-photo") == 6
+    # Every picker thumbnail and the live preview share the same photo macro:
+    # one slot (with an empty-state placeholder) per rendered document, no exceptions.
+    documents = html.count("data-resume-doc=")
+    assert documents >= 3
+    assert html.count("data-photo-slot") == documents
+    assert html.count("data-photo-placeholder") == documents
+    assert html.count("data-rf-photo") == documents
     assert html.count('id="resume-photo"') == 1
     assert "上传个人照片" in html
     assert "data-remove-photo" in html
