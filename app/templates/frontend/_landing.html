@@ -1,6 +1,6 @@
 {% from '_ui.html' import icon %}
 {% from 'resume/_document.html' import resume_document %}
-{% from 'resume/_sample.html' import sample %}
+{% set sample=resume_sample('modern') %}
 {% set documents=resumes|default([]) %}
 {% set tasks=active_jobs|default([]) %}
 {% set findings=completed_reports|default([]) %}

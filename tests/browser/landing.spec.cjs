@@ -14,7 +14,7 @@ test('custom choices support pointer keyboard and dynamic controller changes',as
 
 });
 test('custom choice works inside the create dialog and preserves form values',async({page})=>{
- await page.goto('/workspace?view=resumes');await page.locator('[data-create-resume=blank]').first().click();const dialog=page.locator('[data-create-dialog]');const choice=dialog.locator('.cf-select-trigger');await choice.click();const list=page.locator('.cf-select-popover:visible');await list.getByRole('option',{name:'技术项目',exact:true}).click();await expect(dialog.locator('[name=template]')).toHaveValue('technical');await expect(choice).toHaveText('技术项目');await page.locator('[data-create-submit]').click();await expect(page.locator('#resume-template-quick')).toHaveValue('technical');
+ await page.goto('/workspace?view=resumes');await page.locator('[data-create-resume=blank]').first().click();const dialog=page.locator('[data-create-dialog]');const choice=dialog.locator('.cf-select-trigger');await choice.click();const list=page.locator('.cf-select-popover:visible');await expect(list.getByRole('option')).toHaveCount(20);await list.getByRole('option',{name:/^技术项目/}).click();await expect(dialog.locator('[name=template]')).toHaveValue('technical');await expect(choice).toHaveText('技术项目 · 前端 · 全栈 · 工程化');await page.locator('[data-create-submit]').click();await expect(page.locator('#resume-template-quick')).toHaveValue('technical');
  await page.evaluate(()=>{document.querySelector('#resume-template-quick').disabled=true;});await expect(page.locator('[data-select-for=resume-template-quick] .cf-select-trigger')).toBeDisabled();
 });
 test('product demonstration follows four stages without creating user data',async({page})=>{

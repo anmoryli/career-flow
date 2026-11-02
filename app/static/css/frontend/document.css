@@ -94,3 +94,164 @@
 .tpl-transition .rd-head{display:block;padding-bottom:20px}.tpl-transition .rd-identity{padding-left:22px}.tpl-transition .rd-section{padding-left:24px;position:relative}.tpl-transition .rd-section::before{content:'';position:absolute;left:0;top:8px;width:6px;height:6px;border-radius:50%;background:var(--rd-accent,#466951)}.tpl-transition .rd-entry{padding-left:12px}.tpl-transition .rd-entry-top{flex-direction:column;gap:4px}.tpl-transition .rd-period{font-size:11px;letter-spacing:.08em}
 .tpl-public_sector{font-family:'Microsoft YaHei','Noto Sans CJK SC',sans-serif}.tpl-public_sector .rd-identity{text-align:center}.tpl-public_sector .rd-identity h1{font-size:30px;letter-spacing:.2em}.tpl-public_sector .rd-header-contact{display:grid;grid-template-columns:1fr 1fr;background:#f5f5f3;padding:12px 16px;gap:8px}.tpl-public_sector .rd-section-title{background:#f5f5f3;padding:6px 10px;font-size:14px}.tpl-public_sector .rd-entry{margin-block:12px}.tpl-public_sector .rd-eyebrow{text-align:center}
 .tpl-bilingual .rd-head{padding-bottom:26px}.tpl-bilingual .rd-eyebrow{text-transform:uppercase;letter-spacing:.15em}.tpl-bilingual .rd-identity h1{font-size:34px;font-weight:500}.tpl-bilingual .rd-section-title{font-size:13px;font-weight:600;letter-spacing:.04em}.tpl-bilingual .rd-header-contact{display:flex;flex-wrap:wrap;gap:7px 18px}.tpl-bilingual .rd-document-content{line-height:1.8}.tpl-bilingual .rd-entry-top{gap:18px}
+
+/* Skill items keep a visible separator in every template. */
+.resume-doc .rd-skill-items>span+span::before{content:" / ";color:#9aa69d}
+/* Job-family templates: one accent, one type rhythm, one entry treatment each. */
+.resume-doc.tpl-backend{--rd-accent:#1f3f63;--rd-soft:#eef3f8;--rd-line:#d6e0eb;font-family:Inter,"Microsoft YaHei","PingFang SC",sans-serif}
+.resume-doc.tpl-backend .rd-head{grid-template-columns:minmax(0,1fr) 76px;padding:0 0 15px;border-top:6px solid var(--rd-accent);border-bottom:2px solid var(--rd-accent)}
+.resume-doc.tpl-backend .rd-eyebrow{font:8px/1.6 var(--font-mono,monospace);letter-spacing:.22em;color:#5d7591}
+.resume-doc.tpl-backend .rd-identity h1{font-size:30px;font-weight:650;letter-spacing:-.01em}
+.resume-doc.tpl-backend .rd-role{font:12px/1.6 var(--font-mono,monospace);color:#40597a;margin-top:5px}
+.resume-doc.tpl-backend .rd-header-contact{gap:6px 18px;padding-top:11px;border-top:1px solid var(--rd-line);font-family:var(--font-mono,monospace);font-size:9px;color:#5b718c}
+.resume-doc.tpl-backend .rd-photo-frame{width:72px;height:90px}
+.resume-doc.tpl-backend .rd-section-title{border-bottom:0;padding-bottom:7px;color:#1b3550;font-size:13px;letter-spacing:.14em}
+.resume-doc.tpl-backend .rd-section-title::after{content:"";flex:1;height:1px;margin-left:12px;background:linear-gradient(90deg,#9db4cd,rgb(157 180 205 / 0%))}
+.resume-doc.tpl-backend .rd-entry{border-left:2px solid #d9e3ee;padding-left:14px;margin-bottom:14px}
+.resume-doc.tpl-backend .rd-entry-top{border-bottom:1px dotted #dbe4ee;padding-bottom:3px}
+.resume-doc.tpl-backend .rd-period{font-family:var(--font-mono,monospace);font-size:9px;color:#4e6b8c}
+
+.resume-doc.tpl-algorithm{--rd-accent:#3f3d7a;--rd-soft:#f1f0f9;--rd-line:#dcd9ee;font-family:"Microsoft YaHei","PingFang SC",sans-serif}
+.resume-doc.tpl-algorithm .rd-head{grid-template-columns:minmax(0,1fr) 74px;padding:18px 0 16px;border-top:0;border-bottom:1px solid var(--rd-line);background:linear-gradient(90deg,#f4f3fb,#fff 62%)}
+.resume-doc.tpl-algorithm .rd-eyebrow{font:8px/1.6 var(--font-mono,monospace);letter-spacing:.28em;color:#6d69a8}
+.resume-doc.tpl-algorithm .rd-identity h1{font-size:31px;font-weight:600;letter-spacing:.01em}
+.resume-doc.tpl-algorithm .rd-role{font:11px/1.6 var(--font-mono,monospace);color:#504c92;margin-top:5px}
+.resume-doc.tpl-algorithm .rd-header-contact{gap:5px 16px;font-size:9px;color:#635f8f}
+.resume-doc.tpl-algorithm .rd-document-content{counter-reset:algo-section}
+.resume-doc.tpl-algorithm .rd-section-title{border-bottom:0;padding-bottom:6px;color:#332f66;font-size:13px;letter-spacing:.1em}
+.resume-doc.tpl-algorithm .rd-section-title::before{counter-increment:algo-section;content:"0" counter(algo-section);font:9px/1.5 var(--font-mono,monospace);padding:2px 5px;margin-right:2px;color:#fff;background:var(--rd-accent);border-radius:2px}
+.resume-doc.tpl-algorithm .rd-section-title::after{content:"";flex:1;height:1px;margin-left:10px;background:#e3e0f3}
+.resume-doc.tpl-algorithm .rd-entry{margin-bottom:15px}
+.resume-doc.tpl-algorithm .rd-entry h3{color:#2b2857}
+.resume-doc.tpl-algorithm .rd-bullets li::marker{color:#6d69a8}
+.resume-doc.tpl-algorithm .rd-skill-items{display:flex;flex-wrap:wrap;gap:4px}
+.resume-doc.tpl-algorithm .rd-skill-items>span{padding:1px 6px;border:1px solid #d9d5ef;border-radius:3px;background:#f7f6fc;font-size:10px}
+.resume-doc.tpl-algorithm .rd-skill-items>span+span::before{content:none}
+
+.resume-doc.tpl-product_mgr{--rd-accent:#1f5f5b;--rd-soft:#edf4f3;--rd-line:#d3e2e0;font-family:"Microsoft YaHei","PingFang SC",sans-serif}
+.resume-doc.tpl-product_mgr .rd-head{grid-template-columns:minmax(0,1fr) 78px;padding:0 0 16px;border-top:0;border-bottom:0}
+.resume-doc.tpl-product_mgr .rd-head::before{content:"";grid-column:1/-1;height:5px;margin-bottom:16px;background:linear-gradient(90deg,#1f5f5b 0 64%,#c8b273 64%)}
+.resume-doc.tpl-product_mgr .rd-eyebrow{font:8px/1.6 var(--font-mono,monospace);letter-spacing:.2em;color:#4a7a75}
+.resume-doc.tpl-product_mgr .rd-identity h1{font-size:32px;font-weight:600}
+.resume-doc.tpl-product_mgr .rd-role{color:#2c6f69;font-size:13px;margin-top:6px}
+.resume-doc.tpl-product_mgr .rd-header-contact{gap:6px 16px;padding:10px 0;border-top:1px solid var(--rd-line);font-size:9px}
+.resume-doc.tpl-product_mgr .rd-section-title{border-bottom:0;padding:5px 10px;color:#1b4b47;font-size:13px;letter-spacing:.08em;background:linear-gradient(90deg,#e7f0ef,#fff 88%)}
+.resume-doc.tpl-product_mgr .rd-entry .rd-entry-top h3{font-size:13px}
+.resume-doc.tpl-product_mgr .rd-entry{border-bottom:1px solid #eef4f3;padding-bottom:12px}
+.resume-doc.tpl-product_mgr .rd-entry:last-child{border-bottom:0}
+
+.resume-doc.tpl-designer{--rd-accent:#c2503a;--rd-soft:#f7f4f2;--rd-line:#e4ddda;font-family:"Helvetica Neue","Microsoft YaHei","PingFang SC",sans-serif}
+.resume-doc.tpl-designer .rd-head{grid-template-columns:minmax(0,1fr) 70px;align-items:end;padding:0 0 14px;border-top:0;border-bottom:3px solid #26221f}
+.resume-doc.tpl-designer .rd-eyebrow{font:8px/1.6 var(--font-mono,monospace);letter-spacing:.3em;color:#8a8179}
+.resume-doc.tpl-designer .rd-identity h1{font-size:44px;font-weight:500;letter-spacing:-.02em;line-height:1.1;color:#26221f}
+.resume-doc.tpl-designer .rd-role{color:#c2503a;font-size:12px;letter-spacing:.16em;margin-top:8px;text-transform:uppercase}
+.resume-doc.tpl-designer .rd-header-contact{gap:6px 18px;padding-top:11px;font-size:9px;color:#6f6862}
+.resume-doc.tpl-designer .rd-photo-frame{width:66px;height:82px;border:0;background:#f1ece8}
+.resume-doc.tpl-designer .rd-section{margin-top:26px}
+.resume-doc.tpl-designer .rd-section-title{border-bottom:0;padding-bottom:8px;color:#26221f;font-size:10px;font-weight:700;letter-spacing:.24em;text-transform:uppercase}
+.resume-doc.tpl-designer .rd-section-title::after{content:"";flex:1;height:1px;margin-left:14px;background:#cfc6c0}
+.resume-doc.tpl-designer .rd-entry h3{font-size:14px;font-weight:600}
+.resume-doc.tpl-designer .rd-period{font:9px/1.6 var(--font-mono,monospace);color:#8a8179}
+.resume-doc.tpl-designer .rd-bullets li{line-height:1.85}
+
+.resume-doc.tpl-marketing{--rd-accent:#b25a1e;--rd-soft:#fdf4ec;--rd-line:#efe0d2;font-family:"Microsoft YaHei","PingFang SC",sans-serif}
+.resume-doc.tpl-marketing .rd-head{grid-template-columns:minmax(0,1fr) 74px;padding:16px 18px 14px;border:0;border-left:6px solid var(--rd-accent);background:#fdf7f1}
+.resume-doc.tpl-marketing .rd-eyebrow{font:8px/1.6 var(--font-mono,monospace);letter-spacing:.2em;color:#a8612a}
+.resume-doc.tpl-marketing .rd-identity h1{font-size:31px;font-weight:650}
+.resume-doc.tpl-marketing .rd-role{color:#8d4a17;font-size:13px;margin-top:5px}
+.resume-doc.tpl-marketing .rd-header-contact{gap:6px 16px;border-top:1px solid #f0e0cf;padding-top:9px;font-size:9px;color:#7b5a41}
+.resume-doc.tpl-marketing .rd-section-title{border-bottom:0;padding-bottom:6px;color:#8d4a17;font-size:13px;letter-spacing:.1em}
+.resume-doc.tpl-marketing .rd-section-title::before{content:"";width:8px;height:8px;background:var(--rd-accent);border-radius:2px}
+.resume-doc.tpl-marketing .rd-entry-top h3{color:#2c231c}
+.resume-doc.tpl-marketing .rd-skill-items{display:flex;flex-wrap:wrap;gap:4px}
+.resume-doc.tpl-marketing .rd-skill-items>span{padding:1px 7px;border-radius:20px;background:#fbeadd;color:#8d4a17;font-size:10px}
+.resume-doc.tpl-marketing .rd-skill-items>span+span::before{content:none}
+
+.resume-doc.tpl-sales{--rd-accent:#7a2333;--rd-soft:#f8eef0;--rd-line:#ecdada;font-family:"Microsoft YaHei","PingFang SC",sans-serif}
+.resume-doc.tpl-sales .rd-head{grid-template-columns:minmax(0,1fr) 76px;padding:20px 22px;border:0;background:#7a2333;color:#fff}
+.resume-doc.tpl-sales .rd-eyebrow{color:#e3bbc2;font:8px/1.6 var(--font-mono,monospace);letter-spacing:.22em}
+.resume-doc.tpl-sales .rd-identity h1{color:#fff;font-size:32px;font-weight:600}
+.resume-doc.tpl-sales .rd-role{color:#f3d9dd;font-size:13px}
+.resume-doc.tpl-sales .rd-header-contact{grid-column:1/-1;gap:6px 18px;border-top:1px solid rgb(255 255 255 / 25%);padding-top:10px;color:#f6e4e7}
+.resume-doc.tpl-sales .rd-contact-item b{color:#e3bbc2}
+.resume-doc.tpl-sales .rd-photo-frame{border-color:rgb(255 255 255 / 60%)}
+.resume-doc.tpl-sales .rd-section-title{border-bottom:2px solid #d9b6bc;padding-bottom:6px;color:#6e1f2d;font-size:13px;letter-spacing:.1em}
+.resume-doc.tpl-sales .rd-bullets li::marker{color:#7a2333}
+.resume-doc.tpl-sales .rd-entry-top h3{color:#3b1a20}
+
+.resume-doc.tpl-finance{--rd-accent:#1d3557;--rd-soft:#f1f4f8;--rd-line:#d7dee8;font-family:Georgia,"Songti SC","SimSun",serif}
+.resume-doc.tpl-finance .rd-head{grid-template-columns:minmax(0,1fr);position:relative;padding:20px 0 16px;border-top:3px double #a8862f;border-bottom:3px double #a8862f}
+.resume-doc.tpl-finance .rd-photo-frame{position:absolute;right:0;top:18px;width:72px;height:90px}
+.resume-doc.tpl-finance .rd-identity{text-align:center;padding:0 80px}
+.resume-doc.tpl-finance .rd-eyebrow{font:8px/1.6 "Microsoft YaHei",sans-serif;letter-spacing:.3em;color:#8a7440}
+.resume-doc.tpl-finance .rd-identity h1{font-size:29px;letter-spacing:.16em;color:#16263d}
+.resume-doc.tpl-finance .rd-role{font-size:12px;letter-spacing:.2em;color:#4a5d75}
+.resume-doc.tpl-finance .rd-header-contact{justify-content:center;gap:6px 16px;padding-top:10px;font:9px/1.6 "Microsoft YaHei",sans-serif;color:#4b5c72}
+.resume-doc.tpl-finance .rd-section-title{border-bottom:0;padding-bottom:5px;color:#16263d;font-size:13px;letter-spacing:.18em}
+.resume-doc.tpl-finance .rd-section-title::after{content:"";flex:1;height:1px;margin-left:12px;background:linear-gradient(90deg,#c9b072,#fff)}
+.resume-doc.tpl-finance .rd-period{font-family:"Microsoft YaHei",sans-serif;font-size:9px}
+.resume-doc.tpl-finance .rd-compact-list{grid-template-columns:1fr 1fr;display:grid}
+.resume-doc.tpl-finance .rd-skill-group{grid-template-columns:88px 1fr}
+
+.resume-doc.tpl-hr{--rd-accent:#7b5b43;--rd-soft:#f7f1ea;--rd-line:#e7dbcd;font-family:"Microsoft YaHei","PingFang SC",sans-serif}
+.resume-doc.tpl-hr .rd-head{grid-template-columns:minmax(0,1fr) 72px;padding:18px 20px;border:0;border-radius:10px;background:#f7f1ea}
+.resume-doc.tpl-hr .rd-eyebrow{font:8px/1.6 var(--font-mono,monospace);letter-spacing:.18em;color:#9a7a5e}
+.resume-doc.tpl-hr .rd-identity h1{font-size:30px;font-weight:600;color:#4a3526}
+.resume-doc.tpl-hr .rd-role{color:#7b5b43;font-size:13px}
+.resume-doc.tpl-hr .rd-header-contact{gap:6px 16px;padding-top:10px;border-top:1px solid #e3d5c6;font-size:9px;color:#6d5540}
+.resume-doc.tpl-hr .rd-section-title{border-bottom:0;padding:4px 12px;border-radius:16px;background:#f3eae0;color:#6b4c36;font-size:12px;letter-spacing:.06em}
+.resume-doc.tpl-hr .rd-entry{margin-bottom:14px}
+.resume-doc.tpl-hr .rd-skill-items>span{padding:1px 7px;border-radius:10px;background:#faf5ef;color:#6b4c36;font-size:10px}
+.resume-doc.tpl-hr .rd-skill-items{display:flex;flex-wrap:wrap;gap:4px}
+.resume-doc.tpl-hr .rd-skill-items>span+span::before{content:none}
+
+.resume-doc.tpl-teacher{--rd-accent:#2f6b5f;--rd-soft:#eef5f2;--rd-line:#d5e4de;font-family:"Microsoft YaHei","PingFang SC",sans-serif}
+.resume-doc.tpl-teacher .rd-head{grid-template-columns:minmax(0,1fr) 74px;padding:0 0 15px 18px;border-top:0;border-bottom:1px solid var(--rd-line);border-left:5px solid var(--rd-accent)}
+.resume-doc.tpl-teacher .rd-eyebrow{font:8px/1.6 var(--font-mono,monospace);letter-spacing:.2em;color:#4f7f74}
+.resume-doc.tpl-teacher .rd-identity h1{font-size:30px;font-weight:600;letter-spacing:.02em}
+.resume-doc.tpl-teacher .rd-role{color:#2f6b5f;font-size:13px}
+.resume-doc.tpl-teacher .rd-header-contact{gap:6px 16px;padding-top:10px;font-size:9px}
+.resume-doc.tpl-teacher .rd-section-title{gap:8px;border-bottom:1px solid #cfe0da;padding-bottom:6px;color:#255549;font-size:13px;letter-spacing:.08em}
+.resume-doc.tpl-teacher .rd-section-title::before{content:"";width:4px;height:14px;border-radius:2px;background:var(--rd-accent)}
+.resume-doc.tpl-teacher .rd-entry{margin-bottom:13px}
+
+.resume-doc.tpl-medical{--rd-accent:#1f5f7a;--rd-soft:#eef6f9;--rd-line:#d3e5ec;font-family:"Microsoft YaHei","PingFang SC",sans-serif}
+.resume-doc.tpl-medical .rd-head{grid-template-columns:minmax(0,1fr) 74px;padding:16px 18px;border:0;border-top:4px solid var(--rd-accent);background:#f4fafc}
+.resume-doc.tpl-medical .rd-eyebrow{font:8px/1.6 var(--font-mono,monospace);letter-spacing:.2em;color:#4b7f93}
+.resume-doc.tpl-medical .rd-identity h1{font-size:29px;font-weight:600;letter-spacing:.04em}
+.resume-doc.tpl-medical .rd-role{color:#1f5f7a;font-size:12px;letter-spacing:.08em}
+.resume-doc.tpl-medical .rd-header-contact{gap:5px 16px;padding-top:10px;border-top:1px solid #d9eaf0;font-size:9px;color:#42697b}
+.resume-doc.tpl-medical .rd-section-title{border-bottom:0;padding:5px 10px;background:#1f5f7a;color:#fff;font-size:12px;letter-spacing:.1em}
+.resume-doc.tpl-medical .rd-section-title::after{content:"";flex:1;height:1px;background:rgb(255 255 255 / 35%)}
+.resume-doc.tpl-medical .rd-entry{margin-bottom:13px}
+.resume-doc.tpl-medical .rd-compact-list li::before{content:"✓";color:#1f5f7a;font-size:9px;margin-right:5px}
+.resume-doc.tpl-medical .rd-compact-list li{padding-left:0}
+.resume-doc.tpl-medical .rd-compact-list li::marker{content:""}
+
+.resume-doc.tpl-legal{--rd-accent:#22262b;--rd-soft:#f4f4f2;--rd-line:#d8d8d4;font-family:Georgia,"Songti SC","SimSun",serif}
+.resume-doc.tpl-legal .rd-head{grid-template-columns:minmax(0,1fr);position:relative;padding:18px 0 14px;border-top:0;border-bottom:1px solid #22262b}
+.resume-doc.tpl-legal .rd-photo-frame{position:absolute;right:0;top:16px;width:68px;height:84px;filter:grayscale(1)}
+.resume-doc.tpl-legal .rd-identity{text-align:center}
+.resume-doc.tpl-legal .rd-eyebrow{font:8px/1.6 "Microsoft YaHei",sans-serif;letter-spacing:.36em;color:#77776f}
+.resume-doc.tpl-legal .rd-identity h1{font-size:30px;font-weight:600;letter-spacing:.22em;color:#1b1e22}
+.resume-doc.tpl-legal .rd-role{font-size:12px;letter-spacing:.14em;color:#4c5158}
+.resume-doc.tpl-legal .rd-header-contact{justify-content:center;gap:6px 16px;padding-top:9px;font:9px/1.6 "Microsoft YaHei",sans-serif;color:#4c5158}
+.resume-doc.tpl-legal .rd-section-title{border-bottom:0;padding-bottom:4px;color:#1b1e22;font-size:13px;letter-spacing:.2em}
+.resume-doc.tpl-legal .rd-section-title::after{content:"";flex:1;height:1px;margin-left:12px;background:#c9c9c2}
+.resume-doc.tpl-legal .rd-entry-top h3{font-weight:600}
+.resume-doc.tpl-legal .rd-bullets li::marker{color:#22262b}
+
+.resume-doc.tpl-engineer{--rd-accent:#33465a;--rd-soft:#eff2f5;--rd-line:#d6dee6;font-family:"Microsoft YaHei","PingFang SC",sans-serif;border-left:8px solid #33465a;padding-left:40px}
+.resume-doc.tpl-engineer .rd-head{grid-template-columns:minmax(0,1fr) 74px;padding:0 0 14px;border-top:0;border-bottom:2px solid #33465a}
+.resume-doc.tpl-engineer .rd-eyebrow{font:8px/1.6 var(--font-mono,monospace);letter-spacing:.24em;color:#5d7183}
+.resume-doc.tpl-engineer .rd-identity h1{font-size:30px;font-weight:650}
+.resume-doc.tpl-engineer .rd-role{font:11px/1.6 var(--font-mono,monospace);color:#3f5567;margin-top:5px}
+.resume-doc.tpl-engineer .rd-header-contact{gap:5px 16px;padding-top:9px;font:9px/1.6 var(--font-mono,monospace);color:#5d7183}
+.resume-doc.tpl-engineer .rd-document-content{counter-reset:eng-section}
+.resume-doc.tpl-engineer .rd-section-title{border-bottom:0;padding-bottom:5px;color:#2b3c4d;font-size:13px;letter-spacing:.1em}
+.resume-doc.tpl-engineer .rd-section-title::before{counter-increment:eng-section;content:"0" counter(eng-section);font:9px/1.5 var(--font-mono,monospace);color:#7d8fa1;margin-right:4px}
+.resume-doc.tpl-engineer .rd-section-title::after{content:"";flex:1;height:2px;margin-left:12px;background:#dbe3ea}
+.resume-doc.tpl-engineer .rd-entry{padding-left:12px;border-left:1px solid #dbe3ea;margin-bottom:13px}
+.resume-doc.tpl-engineer .rd-period{font-family:var(--font-mono,monospace);font-size:9px;color:#4a5f72}
+.resume-doc.tpl-engineer .rd-skill-group{grid-template-columns:96px 1fr}
+

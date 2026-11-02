@@ -201,10 +201,27 @@ def register_frontend_assets(app):
 
 
 def register_evidence_filter(app):
-    from app.resume_templates import TEMPLATE_CATALOG
+    from app.resume_samples import sample_for, sample_map
+    from app.resume_templates import (
+        SECTION_LABEL_OVERRIDES,
+        SECTION_TITLES,
+        TEMPLATE_CATALOG,
+        TEMPLATES_BY_ID,
+        templates_by_track,
+    )
     from app.services.diagnosis_evidence import evidence_rows, resume_passages
 
     app.jinja_env.globals["resume_templates"] = TEMPLATE_CATALOG
+    app.jinja_env.globals["resume_tracks"] = templates_by_track()
+    app.jinja_env.globals["resume_sample"] = sample_for
+    app.jinja_env.globals["resume_sample_map"] = sample_map
+    app.jinja_env.globals["resume_section_labels"] = lambda template: {
+        **SECTION_TITLES,
+        **SECTION_LABEL_OVERRIDES.get(template, {}),
+    }
+    app.jinja_env.globals["resume_section_order"] = lambda template: (
+        TEMPLATES_BY_ID.get(template, TEMPLATES_BY_ID["classic"])["guide"]["order"]
+    )
     app.jinja_env.filters["evidence_rows"] = evidence_rows
     app.jinja_env.filters["resume_passages"] = resume_passages
     register_frontend_assets(app)

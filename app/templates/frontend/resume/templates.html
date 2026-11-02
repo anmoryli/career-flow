@@ -1,13 +1,51 @@
 {% extends 'frontend/base.html' %}
-{% from '_ui.html' import icon %}{% from 'resume/_document.html' import resume_document %}{% from 'resume/_sample.html' import sample %}
-{% block title %}简历样式 · 职序{% endblock %}
+{% from '_ui.html' import icon %}{% from 'resume/_document.html' import resume_document %}
+{% block title %}简历模板 · 按岗位分类 · 职序{% endblock %}
 {% block content %}
 <section class="cf-page cf-template-page">
-  <header class="cf-resume-landing-heading"><div><span class="cf-eyebrow">第一步 / 选择表达方式</span><h1>选择简历模板</h1><p>样式让内容更容易被阅读。八种不同的版式，<br>进入编辑器后仍可切换，真实经历始终是主角。</p></div><a class="cf-button is-quiet" href="{{ url_for('web.workspace', view='resumes') }}">回到简历文档 {{ icon('arrow') }}</a></header>
-  <nav class="cf-template-filters cf-tabs" aria-label="模板分类"><button type="button" data-template-filter="all" aria-pressed="true">全部样式</button><button type="button" data-template-filter="classic" aria-pressed="false">经典商务</button><button type="button" data-template-filter="technical" aria-pressed="false">技术项目</button><button type="button" data-template-filter="modern" aria-pressed="false">简约现代</button>{% for item in resume_templates[3:] %}<button type="button" data-template-filter="{{ item.id }}" aria-pressed="false">{{ item.title }}</button>{% endfor %}</nav>
-  <div class="cf-template-sequence">{% for item in resume_templates %}{% set key,title,note,description,benefit=item.id,item.title,item.note,item.description,item.benefit %}
-    <article class="cf-template-chapter" data-template-kind="{{ key }}" data-reveal><div class="cf-template-story"><span class="cf-chapter-number">{{ '%02d'|format(loop.index) }}</span><span class="cf-eyebrow">{{ note }}</span><h2>{{ title }}</h2><p>{{ description }}</p><span class="cf-template-benefit">{{ benefit }}</span><div><a class="cf-button" href="{{ url_for('web.workspace', view='resume-new', template=key, fresh=1) }}">使用这个模板 {{ icon('arrow') }}</a><button type="button" class="cf-button is-quiet" data-template-preview="{{ key }}">{{ icon('eye') }} 完整预览</button></div><small>这里是示例内容，开始后请填写你的真实经历。</small></div><a class="cf-template-chapter-preview" data-document-thumbnail href="{{ url_for('web.workspace', view='resume-new', template=key, fresh=1) }}" aria-label="使用{{ title }}模板">{{ resume_document(key,sample,true) }}</a></article>
-    <dialog class="cf-resume-dialog cf-template-dialog" id="cf-template-{{ key }}" data-template-preview-dialog="{{ key }}" aria-labelledby="cf-template-title-{{ key }}"><button type="button" class="cf-dialog-close" data-dialog-close aria-label="关闭">×</button><header><span class="cf-eyebrow">模板示例 · 不会写入你的简历</span><h2 id="cf-template-title-{{ key }}">{{ title }}</h2></header><div data-document-thumbnail>{{ resume_document(key,sample,true) }}</div><footer><span>先选版式，再填写你的真实经历</span><a class="cf-button is-small" href="{{ url_for('web.workspace', view='resume-new', template=key, fresh=1) }}">使用这个模板 →</a></footer></dialog>
-  {% endfor %}</div>
+  <header class="cf-resume-landing-heading">
+    <div>
+      <span class="cf-eyebrow">第一步 / 选择表达方式</span>
+      <h1>按岗位选模板</h1>
+      <p>{{ resume_templates|length }} 套版式，覆盖 {{ resume_tracks|length }} 个岗位方向。<br>每套模板都带有该岗位的示例与填写要点，进入编辑器后可随时切换。</p>
+    </div>
+    <a class="cf-button is-quiet" href="{{ url_for('web.workspace', view='resumes') }}">回到简历文档 {{ icon('arrow') }}</a>
+  </header>
+
+  <nav class="cf-template-filters cf-tabs" aria-label="岗位分类">
+    <button type="button" data-template-filter="all" aria-pressed="true">全部 <span>{{ resume_templates|length }}</span></button>
+    {% for track in resume_tracks %}<button type="button" data-template-filter="{{ track.id }}" aria-pressed="false">{{ track.title }} <span>{{ track.templates|length }}</span></button>{% endfor %}
+  </nav>
+
+  {% for track in resume_tracks %}
+  <section class="cf-template-track" data-template-track-group="{{ track.id }}" data-reveal>
+    <header class="cf-template-track-head">
+      <div><span class="cf-eyebrow">{{ '%02d'|format(loop.index) }} / 岗位方向</span><h2>{{ track.title }}</h2><p>{{ track.note }}</p></div>
+      <span class="cf-template-track-count">{{ track.templates|length }} 套版式</span>
+    </header>
+    <div class="cf-template-grid">
+      {% for item in track.templates %}{% set preview_data = resume_sample(item.id) %}
+      <article class="cf-template-card" data-template-kind="{{ item.id }}" data-template-track="{{ track.id }}">
+        <a class="cf-template-cover" data-document-thumbnail href="{{ url_for('web.workspace', view='resume-new', template=item.id, fresh=1) }}" aria-label="使用{{ item.title }}模板">{{ resume_document(item.id, preview_data, true) }}</a>
+        <header><h3>{{ item.title }}</h3><span>{{ item.note }}</span></header>
+        <p>{{ item.description }}</p>
+        <details class="cf-template-guide"><summary>{{ icon('info') }} 这个岗位怎么写</summary>
+          <div>
+            <p class="cf-template-guide-focus">{{ item.guide.emphasis }}</p>
+            <p class="cf-template-guide-order"><b>推荐顺序</b><span>{{ item.guide.order_titles|join(' → ') }}</span></p>
+            <ul>{% for tip in item.guide.tips %}<li>{{ tip }}</li>{% endfor %}</ul>
+            <p class="cf-template-guide-avoid"><b>注意</b><span>{{ item.guide.avoid }}</span></p>
+          </div>
+        </details>
+        <footer>
+          <a class="cf-button is-small" href="{{ url_for('web.workspace', view='resume-new', template=item.id, fresh=1) }}">使用这个模板 {{ icon('arrow') }}</a>
+          <button type="button" class="cf-button is-quiet is-small" data-template-preview="{{ item.id }}">完整预览</button>
+        </footer>
+        <dialog class="cf-resume-dialog cf-template-dialog" id="cf-template-{{ item.id }}" data-template-preview-dialog="{{ item.id }}" aria-labelledby="cf-template-title-{{ item.id }}"><button type="button" class="cf-dialog-close" data-dialog-close aria-label="关闭">×</button><header><span class="cf-eyebrow">模板示例 · 不会写入你的简历</span><h2 id="cf-template-title-{{ item.id }}">{{ track.title }} · {{ item.title }}</h2><p>{{ item.guide.emphasis }}</p></header><div data-document-thumbnail data-template-copy></div><footer><span>示例为虚构内容，请填写你的真实经历</span><a class="cf-button is-small" href="{{ url_for('web.workspace', view='resume-new', template=item.id, fresh=1) }}">使用这个模板 →</a></footer></dialog>
+      </article>
+      {% endfor %}
+    </div>
+  </section>
+  {% endfor %}
 </section>
 {% endblock %}
