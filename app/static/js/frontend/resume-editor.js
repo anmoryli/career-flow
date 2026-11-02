@@ -133,7 +133,7 @@
     const normalized=['name','role','phone','email','city','website','github','linkedin','photo','basics'].includes(key)?'basics':key;
     canvas.dataset.previewFocus=normalized;
     if(!scroll)return;
-    const selector=normalized==='basics'?'.rd-head':`[data-rf-section="${CSS.escape(normalized)}"]`;
+    const selector=normalized==='basics'?'.rd-head,.rd-banner,.rd-editorial-head,.rd-split-rail':`[data-rf-section="${CSS.escape(normalized)}"]`;
     const panel=root.querySelector('.cf-editor-preview'),target=canvas.querySelector(`[data-resume-panel="${state.template}"] ${selector}`);
     if(target){const offset=target.getBoundingClientRect().top-panel.getBoundingClientRect().top+panel.scrollTop-110;panel.scrollTo({top:Math.max(0,offset),behavior:matchMedia('(prefers-reduced-motion:reduce)').matches?'instant':'smooth'});}
   }

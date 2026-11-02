@@ -37,23 +37,54 @@
   };
   const templates=JSON.parse(document.body.dataset.templateCatalog||'[]');
   const labelsFor=template=>({...labels,...(templates.find(item=>item.id===template)?.labels||{})});
+  const layoutFor=template=>{const entry=templates.find(item=>item.id===template);return{layout:entry?.layout||'linear',options:entry?.options||{}};};
+  const RAIL_SECTIONS=['skills','certificates','languages'];
+  const BILINGUAL_TITLES={summary:'个人总结 / Profile',experiences:'工作经历 / Experience',projects:'项目经历 / Projects',education:'教育经历 / Education',certificates:'证书与资质 / Certificates',languages:'语言能力 / Languages'};
   const render=(value,template='classic')=>{
-    const data=normalize(value),doc=el('article',`resume-doc tpl-${template}`);doc.dataset.resumeDoc=template;doc.dataset.size=data.size;doc.dataset.accent=data.accent;doc.dataset.photoPosition=data.photo_position;
-    const L=labelsFor(template);
-    const header=el('header','rd-head'),identity=el('div','rd-identity');identity.append(el('p','rd-eyebrow',template==='technical'?'TECHNICAL RESUME':template==='modern'?'CAREER PROFILE':template==='bilingual'?'简历 / Résumé':'个人简历'),el('h1','',data.name||''));if(data.role)identity.append(el('p','rd-role',data.role));header.append(identity);
-    if(data.photo){const frame=el('figure','rd-photo-frame'),image=el('img','rd-photo');image.src=data.photo;image.alt='个人照片';image.dataset.rfPhoto='';frame.append(image);header.append(frame);}
-    const contacts=el('div','rd-header-contact');for(const key of ['phone','email','city','website','github','linkedin'])if(data[key])contacts.append(el('span','rd-contact-item',data[key]));header.append(contacts);doc.append(header);
-    const flow=el('div','rd-document-content');flow.dataset.sectionFlow='';
-    const section=(key,title)=>{const node=el('section','rd-section');node.dataset.rfSection=key;node.append(el('h2','rd-section-title',title));return node;};
-    for(const key of data.section_order){if(data.hidden_sections.includes(key))continue;let node;
-      if(key==='summary'&&data.summary){node=section(key,template==='bilingual'?'个人总结 / Profile':L.summary);node.append(markdown(el('div','rd-markdown rd-summary'),data.summary));}
-      else if(['experiences','projects','education'].includes(key)&&data[key].some(has)){node=section(key,template==='bilingual'?({experiences:'工作经历 / Experience',projects:'项目经历 / Projects',education:'教育经历 / Education',certificates:'证书与资质 / Certificates',languages:'语言能力 / Languages'}[key]):L[key]);data[key].forEach((item,index)=>{if(!has(item))return;const entry=el('article','rd-entry');entry.dataset.rfEntry=`${key}.${index}`;const top=el('div','rd-entry-top');top.append(el('h3','',item.company||item.name||item.school||''));if(item.period)top.append(el('span','rd-period',item.period));entry.append(top);const sub=[item.role,item.degree,item.location,item.tech].filter(Boolean);if(sub.length)entry.append(el('p','rd-entry-sub',sub.join(' · ')));if(item.bullets?.length){const list=el('ul','rd-bullets');item.bullets.forEach(text=>list.append(inline(el('li'),text)));entry.append(list);}if(item.description||item.detail)entry.append(markdown(el('div','rd-markdown'),item.description||item.detail));if(item.link)entry.append(link(item.link,/^https?:\/\//.test(item.link)?item.link:`https://${item.link}`));node.append(entry);});}
-      else if(key==='skills'&&data.skills.some(item=>item.items?.length)){node=section(key,template==='bilingual'?'专业技能 / Skills':L.skills);data.skills.filter(item=>item.items?.length).forEach(item=>{const row=el('div','rd-skill-group');row.append(el('strong','rd-skill-label',item.label),el('span','rd-skill-items',item.items.join(' · ')));node.append(row);});}
-      else if(['certificates','languages'].includes(key)&&data[key].length){node=section(key,template==='bilingual'?({experiences:'工作经历 / Experience',projects:'项目经历 / Projects',education:'教育经历 / Education',certificates:'证书与资质 / Certificates',languages:'语言能力 / Languages'}[key]):L[key]);const list=el('ul','rd-compact-list');data[key].forEach(text=>list.append(el('li','',text)));node.append(list);}
-      else if(key.startsWith('custom:')){const item=data.custom_sections.find(item=>key===`custom:${item.id}`);if(item?.content){node=section(key,item.title||'补充经历');node.append(markdown(el('div','rd-markdown'),item.content));}}
-      if(node)flow.append(node);
+    const data=normalize(value),{layout,options}=layoutFor(template),doc=el('article',`resume-doc tpl-${template} lay-${layout}`);doc.dataset.resumeDoc=template;doc.dataset.layout=layout;doc.dataset.size=data.size;doc.dataset.accent=data.accent;doc.dataset.photoPosition=data.photo_position;
+    const L=labelsFor(template),bilingual=template==='bilingual',title=key=>bilingual?BILINGUAL_TITLES[key]||key:L[key]||key;
+    const photoFrame=()=>{if(!data.photo)return null;const frame=el('figure','rd-photo-frame'),image=el('img','rd-photo');image.src=data.photo;image.alt='个人照片';image.dataset.rfPhoto='';frame.append(image);return frame;};
+    const contactRow=cls=>{const row=el('div',cls||'rd-header-contact');for(const key of ['phone','email','city','website','github','linkedin'])if(data[key])row.append(el('span','rd-contact-item',data[key]));return row;};
+    const section=(key,titleText,no)=>{const node=el('section','rd-section');node.dataset.rfSection=key;const head=el('h2','rd-section-title');if(no!=null)head.append(el('span','rd-section-no',no));head.append(document.createTextNode(titleText));node.append(head);return node;};
+    const entryNode=(key,item,index)=>{const entry=el('article','rd-entry');entry.dataset.rfEntry=`${key}.${index}`;const top=el('div','rd-entry-top');top.append(el('h3','',item.company||item.name||item.school||''));if(item.period)top.append(el('span','rd-period',item.period));entry.append(top);const sub=[item.role,item.degree,item.location,item.tech].filter(Boolean);if(sub.length)entry.append(el('p','rd-entry-sub',sub.join(' · ')));if(item.bullets?.length){const list=el('ul','rd-bullets');item.bullets.forEach(text=>list.append(inline(el('li'),text)));entry.append(list);}if(item.description||item.detail)entry.append(markdown(el('div','rd-markdown'),item.description||item.detail));if(item.link)entry.append(link(item.link,/^https?:\/\//.test(item.link)?item.link:`https://${item.link}`));return entry;};
+    const skillNode=(key,mode)=>{const node=section(key,title(key));const listMode=mode||'list';data.skills.filter(item=>item.items?.length).forEach((item,index)=>{const row=el('div','rd-skill-group');row.dataset.rfEntry=`skills.${index}`;row.append(el('strong','rd-skill-label',item.label));const items=el('span',listMode==='pills'?'rd-pills':listMode==='meter'?'rd-meters':listMode==='dots'?'rd-dots':'rd-skill-items');items.dataset.rfList=`skills.${index}.items`;items.dataset.rfListMode=listMode;item.items.forEach((text,dot)=>{if(listMode==='pills')items.append(el('span','rd-pill',text));else if(listMode==='meter'){const rowM=el('span','rd-meter-row');rowM.append(el('span','rd-meter-text',text));const track=el('i','rd-meter-track');const bar=el('b','rd-meter-bar');track.append(bar);bar.style.setProperty('--value',String([0.92,0.84,0.76,0.68,0.6][dot%5]));rowM.append(track);items.append(rowM);}else if(listMode==='dots'){const item2=el('span','rd-dots-item');item2.append(el('span','rd-dots-text',text));const track=el('i','rd-dots-track');for(let d=0;d<5;d++)track.append(el('b',d<5-(dot%2)?'is-on':'','●'));item2.append(track);items.append(item2);}else items.append(el('span','',text));});row.append(items);node.append(row);});return node;};
+    const listNode=(key,titleText)=>{const node=section(key,titleText);const list=el('ul','rd-compact-list');list.dataset.rfList=key;data[key].forEach(text=>list.append(el('li','',text)));node.append(list);return node;};
+    const summaryNode=no=>{const node=section('summary',title('summary'),no);node.append(markdown(el('div','rd-markdown rd-summary'),data.summary));return node;};
+    const sectionNode=(key,no)=>{if(key==='summary')return data.summary?summaryNode(no):null;
+      if(['experiences','projects','education'].includes(key)&&data[key].some(has)){const node=section(key,title(key),no);data[key].forEach((item,index)=>{if(has(item))node.append(entryNode(key,item,index));});return node;}
+      if(key==='skills')return data.skills.some(item=>item.items?.length)?skillNode(key,'list'):null;
+      if(['certificates','languages'].includes(key)&&data[key].length)return listNode(key,title(key));
+      if(key.startsWith('custom:')){const item=data.custom_sections.find(item=>key===`custom:${item.id}`);if(!item?.content)return null;const node=section(key,item.title||'补充经历',no);node.append(markdown(el('div','rd-markdown'),item.content));return node;}
+      return null;};
+    const flowSections=(order,skip,withNumber)=>{const flow=el('div','rd-document-content');flow.dataset.sectionFlow='';let counter=0;for(const key of order){if(data.hidden_sections.includes(key)||skip?.includes(key))continue;const node=sectionNode(key,withNumber?String(++counter).padStart(2,'0'):null);if(node)flow.append(node);}return flow;};
+    const linearHead=(eyebrow,headCls)=>{const header=el('header',`rd-head${headCls?` ${headCls}`:''}`),identity=el('div','rd-identity');identity.append(el('p','rd-eyebrow',eyebrow),el('h1','',data.name||''));if(data.role)identity.append(el('p','rd-role',data.role));const frame=photoFrame();if(frame)header.append(frame);header.append(identity,contactRow());return header;};
+    if(layout==='split'){
+      const railOrder=data.section_order.filter(key=>RAIL_SECTIONS.includes(key)),mainOrder=data.section_order.filter(key=>!RAIL_SECTIONS.includes(key));
+      const split=el('div',`rd-split rd-split-${options.side||'left'} rd-rail-${options.rail||'soft'} rd-skills-${options.skills||'list'}`);
+      const rail=el('aside','rd-split-rail');const frame=photoFrame();if(frame)rail.append(frame);
+      const identity=el('div','rd-identity');identity.append(el('h1','',data.name||''));if(data.role)identity.append(el('p','rd-role',data.role));rail.append(identity);
+      rail.append(contactRow('rd-rail-contact'));
+      const railFlow=el('div','rd-split-rail-sections');railFlow.dataset.sectionFlow='';
+      railOrder.forEach(key=>{if(data.hidden_sections.includes(key))return;if(key==='skills'&&data.skills.some(item=>item.items?.length)){railFlow.append(skillNode(key,options.skills||'list'));}else if(['certificates','languages'].includes(key)&&data[key].length){railFlow.append(listNode(key,title(key)));}});
+      rail.append(railFlow);
+      const main=el('div','rd-split-main');main.append(flowSections(mainOrder));split.append(rail,main);doc.append(split);return doc;
     }
-    doc.append(flow);return doc;
+    if(layout==='banner'){
+      const lead=data.summary&&data.section_order.includes('summary')&&!data.hidden_sections.includes('summary');
+      const banner=el('header',`rd-banner rd-banner-${options.tone||'solid'}`);const frame=photoFrame();if(frame)banner.append(frame);
+      const text=el('div','rd-banner-text');text.append(el('p','rd-eyebrow','个人简历'),el('h1','',data.name||''));if(data.role)text.append(el('p','rd-role',data.role));if(lead)text.append(el('p','rd-banner-lead',data.summary));banner.append(text,contactRow('rd-banner-contact'));doc.append(banner);
+      doc.append(flowSections(data.section_order,lead?['summary']:null));return doc;
+    }
+    if(layout==='editorial'){
+      const lead=data.summary&&data.section_order.includes('summary')&&!data.hidden_sections.includes('summary');
+      const head=el('header','rd-editorial-head');head.append(el('p','rd-editorial-eyebrow','CURRICULUM VITAE'),el('h1','',data.name||''));if(data.role)head.append(el('p','rd-editorial-role',data.role));head.append(contactRow('rd-editorial-meta'));doc.append(head);
+      if(lead)doc.append(el('p','rd-editorial-lead',data.summary));
+      doc.append(flowSections(data.section_order,lead?['summary']:null,options.numbered!==false));return doc;
+    }
+    doc.append(linearHead(bilingual?'简历 / Résumé':'个人简历',`rd-head-${template}`));
+    doc.append(flowSections(data.section_order,null,false));
+    if(layout==='timeline')doc.querySelector('.rd-document-content')?.classList.add('rd-timeline-body');
+    return doc;
   };
   const fit=host=>{const sheet=host.querySelector('.resume-doc');if(sheet){const s=getComputedStyle(host);const width=host.clientWidth-parseFloat(s.paddingLeft)-parseFloat(s.paddingRight);if(width)sheet.style.zoom=String(Math.min(width/794,1));}};
   const thumbnails=()=>{const observer=new ResizeObserver(entries=>entries.forEach(entry=>fit(entry.target)));document.querySelectorAll('[data-document-thumbnail]').forEach(host=>{observer.observe(host);fit(host);});};

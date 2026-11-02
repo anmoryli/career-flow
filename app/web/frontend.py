@@ -207,6 +207,7 @@ def register_evidence_filter(app):
         SECTION_TITLES,
         TEMPLATE_CATALOG,
         TEMPLATES_BY_ID,
+        layout_for,
         templates_by_track,
     )
     from app.services.diagnosis_evidence import evidence_rows, resume_passages
@@ -222,6 +223,7 @@ def register_evidence_filter(app):
     app.jinja_env.globals["resume_section_order"] = lambda template: (
         TEMPLATES_BY_ID.get(template, TEMPLATES_BY_ID["classic"])["guide"]["order"]
     )
+    app.jinja_env.globals["resume_layout"] = layout_for
     app.jinja_env.filters["evidence_rows"] = evidence_rows
     app.jinja_env.filters["resume_passages"] = resume_passages
     register_frontend_assets(app)

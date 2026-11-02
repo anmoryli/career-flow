@@ -41,11 +41,12 @@ def test_three_templates_have_visible_photo_slots(app):
 
 def test_three_templates_have_distinct_visual_structures(app):
     html = render_editor(app)
-    assert html.count('class="rd-head rd-head-classic"') == 2
-    assert html.count('class="rd-head rd-head-technical"') == 2
-    assert html.count('class="rd-modern-layout"') == 2
-    assert "TECHNICAL RESUME" in html
-    assert "CAREER PROFILE" in html
+    # classic keeps the linear head; technical and modern moved to split rails.
+    assert html.count('class="rd-head rd-head-classic"') >= 2
+    assert html.count('data-layout="linear"') >= 2
+    assert html.count('data-layout="split"') >= 2
+    assert "rd-split-rail" in html
+    assert "rd-skills-pills" in html
 
 def test_sample_and_account_photo_behavior_are_explicit(app):
     html = render_editor(app)

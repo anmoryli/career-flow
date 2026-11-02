@@ -513,6 +513,52 @@ TEMPLATE_CATALOG = (
         ),
     ),
 )
+# Layout skeletons. A template picks one skeleton plus options; the tpl-* skin
+# layer only handles colour and type. This keeps layouts structurally different
+# (two-column rails, timelines, banner headers, editorial numbering) instead of
+# being re-coloured copies of the same single-column flow.
+LAYOUT_LINEAR = "linear"
+LAYOUT_SPLIT = "split"
+LAYOUT_TIMELINE = "timeline"
+LAYOUT_BANNER = "banner"
+LAYOUT_EDITORIAL = "editorial"
+
+# Rail sections live in the sidebar column of split layouts; everything else
+# (summary, experiences, projects, education, custom) stays in the main column.
+RAIL_SECTIONS = ("skills", "certificates", "languages")
+
+LAYOUT_PLAN = {
+    # linear: classic reading flow, ruled head.
+    "classic": dict(layout=LAYOUT_LINEAR, options=dict(head="ruled")),
+    "finance": dict(layout=LAYOUT_LINEAR, options=dict(head="centered")),
+    "legal": dict(layout=LAYOUT_LINEAR, options=dict(head="plain")),
+    "public_sector": dict(layout=LAYOUT_LINEAR, options=dict(head="grid")),
+    "bilingual": dict(layout=LAYOUT_LINEAR, options=dict(head="plain")),
+    # split: identity/skills rail + main column; side and tone vary.
+    "modern": dict(
+        layout=LAYOUT_SPLIT, options=dict(side="left", rail="soft", skills="list")
+    ),
+    "technical": dict(
+        layout=LAYOUT_SPLIT, options=dict(side="right", rail="solid", skills="pills")
+    ),
+    "backend": dict(layout=LAYOUT_SPLIT, options=dict(side="left", rail="solid", skills="list")),
+    "algorithm": dict(layout=LAYOUT_SPLIT, options=dict(side="right", rail="tint", skills="dots")),
+    "sales": dict(layout=LAYOUT_SPLIT, options=dict(side="left", rail="solid", skills="pills")),
+    "hr": dict(layout=LAYOUT_SPLIT, options=dict(side="right", rail="tint", skills="list")),
+    "medical": dict(layout=LAYOUT_SPLIT, options=dict(side="left", rail="tint", skills="list")),
+    "engineer": dict(layout=LAYOUT_SPLIT, options=dict(side="left", rail="soft", skills="meter")),
+    # timeline: dated spine down the body.
+    "product_mgr": dict(layout=LAYOUT_TIMELINE, options=dict(head="left")),
+    "teacher": dict(layout=LAYOUT_TIMELINE, options=dict(head="centered")),
+    "transition": dict(layout=LAYOUT_TIMELINE, options=dict(head="left")),
+    # banner: full-width coloured header band, linear body below.
+    "executive": dict(layout=LAYOUT_BANNER, options=dict(tone="solid")),
+    "graduate": dict(layout=LAYOUT_BANNER, options=dict(tone="band")),
+    # editorial: oversized name, lead paragraph, numbered chapters.
+    "designer": dict(layout=LAYOUT_EDITORIAL, options=dict(numbered=True)),
+    "marketing": dict(layout=LAYOUT_EDITORIAL, options=dict(numbered=True)),
+}
+
 TEMPLATE_IDS = tuple(item["id"] for item in TEMPLATE_CATALOG)
 TEMPLATES_BY_ID = {item["id"]: item for item in TEMPLATE_CATALOG}
 
@@ -520,6 +566,9 @@ for _entry in TEMPLATE_CATALOG:
     _labels = {**SECTION_TITLES, **SECTION_LABEL_OVERRIDES.get(_entry["id"], {})}
     _entry["guide"]["order_titles"] = [_labels.get(key, key) for key in _entry["guide"]["order"]]
     _entry["labels"] = dict(SECTION_LABEL_OVERRIDES.get(_entry["id"], {}))
+    _entry["layout"], _entry["options"] = LAYOUT_PLAN.get(
+        _entry["id"], {"layout": LAYOUT_LINEAR, "options": {}}
+    )["layout"], LAYOUT_PLAN.get(_entry["id"], {"layout": LAYOUT_LINEAR, "options": {}})["options"]
 
 
 def template_entry(template_id: str):
@@ -533,7 +582,18 @@ def template_visual(template_id: str) -> dict:
         "id": entry["id"],
         "title": entry["title"],
         "category": entry["category"],
+        "layout": entry["layout"],
+        "options": entry["options"],
         "labels": SECTION_LABEL_OVERRIDES.get(entry["id"], {}),
+    }
+
+
+def layout_for(template_id: str) -> dict:
+    """Return {layout, options} for a template, defaulting to the linear flow."""
+    plan = LAYOUT_PLAN.get(template_id)
+    return {"layout": plan["layout"], "options": plan["options"]} if plan else {
+        "layout": LAYOUT_LINEAR,
+        "options": {"head": "plain"},
     }
 
 

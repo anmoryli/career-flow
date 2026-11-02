@@ -10,6 +10,24 @@
 {% endfor %}
 {%- endmacro %}
 
+{% macro skill_pills(data) -%}
+{% for group in data.skills %}
+<div class="rd-skill-group" data-rf-entry="skills.{{ loop.index0 }}"><b class="rd-skill-label" data-rf="skills.{{ loop.index0 }}.label">{{ group['label'] }}</b><span class="rd-pills" data-rf-list="skills.{{ loop.index0 }}.items" data-rf-list-mode="pills">{% for item in group['items'] %}<span class="rd-pill">{{ item }}</span>{% endfor %}</span></div>
+{% endfor %}
+{%- endmacro %}
+
+{% macro skill_dots(data) -%}
+{% for group in data.skills %}
+<div class="rd-skill-group" data-rf-entry="skills.{{ loop.index0 }}"><b class="rd-skill-label" data-rf="skills.{{ loop.index0 }}.label">{{ group['label'] }}</b><span class="rd-dots" data-rf-list="skills.{{ loop.index0 }}.items" data-rf-list-mode="dots">{% for item in group['items'] %}<span class="rd-dots-item"><span class="rd-dots-text">{{ item }}</span><i class="rd-dots-track" aria-hidden="true">{% for dot in range(5) %}<b class="{{ 'is-on' if dot < (5 - loop.index0 % 2) else '' }}">●</b>{% endfor %}</i></span>{% endfor %}</span></div>
+{% endfor %}
+{%- endmacro %}
+
+{% macro skill_meter(data) -%}
+{% for group in data.skills %}
+<div class="rd-skill-group" data-rf-entry="skills.{{ loop.index0 }}"><b class="rd-skill-label" data-rf="skills.{{ loop.index0 }}.label">{{ group['label'] }}</b><span class="rd-meters" data-rf-list="skills.{{ loop.index0 }}.items" data-rf-list-mode="meter">{% for item in group['items'] %}<span class="rd-meter-row"><span class="rd-meter-text">{{ item }}</span><i class="rd-meter-track" aria-hidden="true"><b class="rd-meter-bar" style="--value: {{ [0.92, 0.84, 0.76, 0.68, 0.6][loop.index0 % 5] }}"></b></i></span>{% endfor %}</span></div>
+{% endfor %}
+{%- endmacro %}
+
 {% macro experience_list(data, labels, bilingual=false) -%}
 <section class="rd-section" data-rf-section="experiences"><h2 class="rd-section-title">{{ labels.get('experiences', '工作经历') }}{{ ' / Experience' if bilingual else '' }}</h2>
 {% for item in data.experiences %}<article class="rd-entry" data-rf-entry="experiences.{{ loop.index0 }}">
@@ -44,52 +62,104 @@
 <figure class="rd-photo-frame" data-photo-slot aria-label="个人照片"><img class="rd-photo" data-rf-photo alt="个人照片"{% if data.photo %} src="{{ data.photo }}"{% else %} hidden{% endif %}><figcaption class="rd-photo-placeholder" data-photo-placeholder{% if data.photo %} hidden{% endif %}>照片</figcaption></figure>
 {%- endmacro %}
 
-{% macro ordered_sections(template, data, labels, default_order) -%}
-{% set order = data.section_order|default(default_order) %}
-{% for section in order %}{% if section not in data.hidden_sections|default([]) %}
-{% if section == 'summary' %}<section class="rd-section rd-profile-intro" data-rf-section="summary"><h2 class="rd-section-title">{{ '个人简介 / Profile' if template=='bilingual' else labels.get('summary', '个人简介') }}</h2><div class="rd-summary rd-markdown" data-rf="summary">{{ data.summary|resume_markdown }}</div></section>
-{% elif section == 'experiences' %}{{ experience_list(data, labels, template=='bilingual') }}
-{% elif section == 'projects' %}{{ project_list(data, labels, template=='bilingual') }}
-{% elif section == 'education' %}{{ education_list(data, labels, template=='bilingual') }}
-{% elif section == 'skills' %}<section class="rd-section" data-rf-section="skills"><h2 class="rd-section-title">{{ '专业技能 / Skills' if template=='bilingual' else labels.get('skills', '专业技能') }}</h2>{{ skill_groups(data) }}</section>
-{% elif section == 'certificates' %}{{ list_section(data, 'certificates', labels.get('certificates', '证书与资质') ~ (' / Certificates' if template=='bilingual' else '')) }}
-{% elif section == 'languages' %}{{ list_section(data, 'languages', labels.get('languages', '语言能力') ~ (' / Languages' if template=='bilingual' else '')) }}
-{% elif section.startswith('custom:') %}{% for custom in data.custom_sections|default([]) %}{% if section == ('custom:' ~ custom.id) %}<section class="rd-section" data-rf-section="{{ section }}">{% if custom.title|trim and custom.title != '自定义板块' %}<h2 class="rd-section-title"><span>{{ custom.title }}</span></h2>{% endif %}<div class="rd-markdown" data-rf="custom_sections.{{ loop.index0 }}.content">{{ custom.content|resume_markdown }}</div></section>{% endif %}{% endfor %}
+{% macro ordered_sections(template, data, labels, default_order, skip=(), numbered=false, bilingual=false, fixed_order=false) -%}
+{% set order = default_order if fixed_order else data.section_order|default(default_order) %}
+{% for section in order %}{% if section not in data.hidden_sections|default([]) and section not in skip %}
+{% if section == 'summary' %}<section class="rd-section rd-profile-intro" data-rf-section="summary"><h2 class="rd-section-title">{% if numbered %}<span class="rd-section-no">{{ '%02d'|format(loop.index) }}</span>{% endif %}{{ '个人简介 / Profile' if bilingual else labels.get('summary', '个人简介') }}</h2><div class="rd-summary rd-markdown" data-rf="summary">{{ data.summary|resume_markdown }}</div></section>
+{% elif section == 'experiences' %}{{ experience_list(data, labels, bilingual) }}
+{% elif section == 'projects' %}{{ project_list(data, labels, bilingual) }}
+{% elif section == 'education' %}{{ education_list(data, labels, bilingual) }}
+{% elif section == 'skills' %}<section class="rd-section" data-rf-section="skills"><h2 class="rd-section-title">{% if numbered %}<span class="rd-section-no">{{ '%02d'|format(loop.index) }}</span>{% endif %}{{ '专业技能 / Skills' if bilingual else labels.get('skills', '专业技能') }}</h2>{{ skill_groups(data) }}</section>
+{% elif section == 'certificates' %}{{ list_section(data, 'certificates', labels.get('certificates', '证书与资质') ~ (' / Certificates' if bilingual else '')) }}
+{% elif section == 'languages' %}{{ list_section(data, 'languages', labels.get('languages', '语言能力') ~ (' / Languages' if bilingual else '')) }}
+{% elif section.startswith('custom:') %}{% for custom in data.custom_sections|default([]) %}{% if section == ('custom:' ~ custom.id) %}<section class="rd-section" data-rf-section="{{ section }}">{% if custom.title|trim and custom.title != '自定义板块' %}<h2 class="rd-section-title">{% if numbered %}<span class="rd-section-no">{{ '%02d'|format(loop.index) }}</span>{% endif %}<span>{{ custom.title }}</span></h2>{% endif %}<div class="rd-markdown" data-rf="custom_sections.{{ loop.index0 }}.content">{{ custom.content|resume_markdown }}</div></section>{% endif %}{% endfor %}
 {% endif %}{% endif %}{% endfor %}
 {%- endmacro %}
 
+{% macro linear_head(template, data, eyebrow) -%}
+<header class="rd-head rd-head-{{ template }}">
+  <div class="rd-identity"><p class="rd-eyebrow">{{ eyebrow }}</p><h1 data-rf="name">{{ data.name }}</h1><p class="rd-role" data-rf="role">{{ data.role }}</p></div>
+  {{ photo(data) }}
+  <div class="rd-header-contact">{{ contact_items(data) }}</div>
+</header>
+{%- endmacro %}
+
+{% macro split_document(template, data, labels, order, options) -%}
+{% set rail_keys = ['skills', 'certificates', 'languages'] %}
+{% set source_order = data.section_order|default(order) %}
+{% set main_order = source_order|reject('in', rail_keys)|list %}
+{% set rail_order = source_order|select('in', rail_keys)|list %}
+<div class="rd-split rd-split-{{ options.get('side', 'left') }} rd-rail-{{ options.get('rail', 'soft') }} rd-skills-{{ options.get('skills', 'list') }}">
+  <aside class="rd-split-rail">
+    {{ photo(data) }}
+    <div class="rd-identity"><h1 data-rf="name">{{ data.name }}</h1><p class="rd-role" data-rf="role">{{ data.role }}</p></div>
+    <div class="rd-rail-contact">{{ contact_items(data) }}</div>
+    <div class="rd-split-rail-sections" data-section-flow>
+      {% for section in rail_order %}{% if section not in data.hidden_sections|default([]) %}
+      {% if section == 'skills' and data.skills %}<section class="rd-section rd-rail-section" data-rf-section="skills"><h2 class="rd-rail-title">{{ labels.get('skills', '技能特长') }}</h2>{% if options.get('skills') == 'pills' %}{{ skill_pills(data) }}{% elif options.get('skills') == 'dots' %}{{ skill_dots(data) }}{% elif options.get('skills') == 'meter' %}{{ skill_meter(data) }}{% else %}{{ skill_groups(data) }}{% endif %}</section>{% endif %}
+      {% if section == 'certificates' and data.certificates %}<section class="rd-section rd-rail-section" data-rf-section="certificates"><h2 class="rd-rail-title">{{ labels.get('certificates', '证书资质') }}</h2><ul class="rd-compact-list" data-rf-list="certificates">{% for item in data.certificates %}<li>{{ item }}</li>{% endfor %}</ul></section>{% endif %}
+      {% if section == 'languages' and data.languages %}<section class="rd-section rd-rail-section" data-rf-section="languages"><h2 class="rd-rail-title">{{ labels.get('languages', '语言能力') }}</h2><ul class="rd-compact-list" data-rf-list="languages">{% for item in data.languages %}<li>{{ item }}</li>{% endfor %}</ul></section>{% endif %}
+      {% endif %}{% endfor %}
+    </div>
+  </aside>
+  <div class="rd-split-main"><div class="rd-document-content" data-section-flow>{{ ordered_sections(template, data, labels, main_order, fixed_order=true) }}</div></div>
+</div>
+{%- endmacro %}
+
+{% macro timeline_body(template, data, labels, order) -%}
+<div class="rd-timeline-body rd-document-content" data-section-flow>{{ ordered_sections(template, data, labels, order) }}</div>
+{%- endmacro %}
+
+{% macro banner_document(template, data, labels, order, options) -%}
+{% set lead_used = data.summary|trim|length > 0 and 'summary' in order and 'summary' not in data.hidden_sections|default([]) %}
+<header class="rd-banner rd-banner-{{ options.get('tone', 'solid') }}">
+  {{ photo(data) }}
+  <div class="rd-banner-text"><p class="rd-eyebrow">个人简历</p><h1 data-rf="name">{{ data.name }}</h1><p class="rd-role" data-rf="role">{{ data.role }}</p>{% if lead_used %}<p class="rd-banner-lead" data-rf="summary">{{ data.summary }}</p>{% endif %}</div>
+  <div class="rd-banner-contact">{{ contact_items(data) }}</div>
+</header>
+<div class="rd-document-content" data-section-flow>{{ ordered_sections(template, data, labels, order, skip=['summary'] if lead_used else ()) }}</div>
+{%- endmacro %}
+
+{% macro editorial_document(template, data, labels, order, options) -%}
+{% set lead_used = data.summary|trim|length > 0 and 'summary' in order and 'summary' not in data.hidden_sections|default([]) %}
+<header class="rd-editorial-head">
+  <p class="rd-editorial-eyebrow">CURRICULUM VITAE</p>
+  <h1 data-rf="name">{{ data.name }}</h1>
+  <p class="rd-editorial-role" data-rf="role">{{ data.role }}</p>
+  <div class="rd-editorial-meta">{{ contact_items(data) }}</div>
+</header>
+{% if lead_used %}<p class="rd-editorial-lead" data-rf="summary">{{ data.summary }}</p>{% endif %}
+<div class="rd-editorial-body rd-document-content" data-section-flow>{{ ordered_sections(template, data, labels, order, skip=['summary'] if lead_used else (), numbered=options.get('numbered', false)) }}</div>
+{%- endmacro %}
+
 {% macro resume_document(template, data, sample=false) -%}
-{% set labels = resume_section_labels(template) %}{% set default_order = resume_section_order(template) %}
-<article class="resume-doc tpl-{{ template }}" data-resume-doc="{{ template }}"{% if sample %} data-sample="true"{% endif %}>
+{% set labels = resume_section_labels(template) %}{% set default_order = resume_section_order(template) %}{% set plan = resume_layout(template) %}
+<article class="resume-doc tpl-{{ template }} lay-{{ plan.layout }}" data-resume-doc="{{ template }}" data-layout="{{ plan.layout }}"{% if sample %} data-sample="true"{% endif %}>
+  {% if plan.layout == 'split' %}
+  {{ split_document(template, data, labels, default_order, plan.options) }}
+  {% elif plan.layout == 'banner' %}
+  {{ banner_document(template, data, labels, default_order, plan.options) }}
+  {% elif plan.layout == 'editorial' %}
+  {{ editorial_document(template, data, labels, default_order, plan.options) }}
+  {% elif plan.layout == 'timeline' %}
+  {% if template == 'teacher' %}
+  <header class="rd-head rd-head-centered"><div class="rd-identity"><p class="rd-eyebrow">个人简历</p><h1 data-rf="name">{{ data.name }}</h1><p class="rd-role" data-rf="role">{{ data.role }}</p></div>{{ photo(data) }}<div class="rd-header-contact">{{ contact_items(data) }}</div></header>
+  {% else %}
+  {{ linear_head(template, data, '个人简历') }}
+  {% endif %}
+  {{ timeline_body(template, data, labels, default_order) }}
+  {% else %}
   {% if template == 'classic' %}
   <header class="rd-head rd-head-classic">
     <div class="rd-classic-rule" aria-hidden="true"></div>
-    <div class="rd-identity"><p class="rd-eyebrow">个人简历</p><h1 data-rf="name">{{ data.name }}</h1><p class="rd-role" data-rf="role">{{ data.role }}</p></div>
-    {{ photo(data) }}
-    <div class="rd-header-contact">{{ contact_items(data) }}</div>
+    {{ linear_head(template, data, '个人简历') }}
   </header>
-  <div class="rd-document-content" data-section-flow>{{ ordered_sections(template, data, labels, default_order) }}</div>
   {% elif template == 'technical' %}
-  <header class="rd-head rd-head-technical">
-    <div class="rd-tech-label"><span>TECHNICAL RESUME</span><i aria-hidden="true"></i></div>
-    <div class="rd-identity"><p class="rd-eyebrow">技术岗位 · 项目导向</p><h1 data-rf="name">{{ data.name }}</h1><p class="rd-role" data-rf="role">{{ data.role }}</p></div>
-    {{ photo(data) }}
-    <div class="rd-header-contact">{{ contact_items(data) }}</div>
-  </header>
-  <div class="rd-document-content" data-section-flow>{{ ordered_sections(template, data, labels, default_order) }}</div>
-  {% elif template != 'modern' %}
-  <header class="rd-head rd-head-{{ template }}"><div class="rd-identity"><p class="rd-eyebrow">{{ '简历 / Résumé' if template=='bilingual' else '个人简历' }}</p><h1 data-rf="name">{{ data.name }}</h1><p class="rd-role" data-rf="role">{{ data.role }}</p></div>{{ photo(data) }}<div class="rd-header-contact">{{ contact_items(data) }}</div></header><div class="rd-document-content" data-section-flow>{{ ordered_sections(template, data, labels, default_order) }}</div>
+  {{ linear_head(template, data, '技术岗位 · 项目导向') }}
   {% else %}
-  <div class="rd-modern-layout">
-    <aside class="rd-modern-rail">
-      {{ photo(data) }}
-      <p class="rd-eyebrow">CAREER PROFILE</p>
-      <h1 data-rf="name">{{ data.name }}</h1><p class="rd-role" data-rf="role">{{ data.role }}</p>
-      <section class="rd-modern-contact"><h2>联系方式</h2>{{ contact_items(data) }}</section>
-      <div class="rd-modern-rail-mark" aria-hidden="true"></div>
-    </aside>
-    <div class="rd-modern-main"><header class="rd-modern-heading"><span>个人履历</span><i aria-hidden="true"></i></header><div class="rd-document-content" data-section-flow>{{ ordered_sections(template, data, labels, default_order) }}</div></div>
-  </div>
+  {{ linear_head(template, data, '简历 / Résumé' if template == 'bilingual' else '个人简历') }}
+  {% endif %}
+  <div class="rd-document-content" data-section-flow>{{ ordered_sections(template, data, labels, default_order, bilingual=(template == 'bilingual')) }}</div>
   {% endif %}
 </article>
 {%- endmacro %}
