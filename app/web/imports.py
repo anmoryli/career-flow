@@ -1,11 +1,11 @@
 from uuid import UUID
 
-from flask import Blueprint, current_app, g, render_template, request
-from rq import Queue
+from flask import Blueprint, g, render_template, request
 
 from app.career_schemas import CustomSection, ResumeDocument, ResumeSave
 from app.extensions import db
 from app.models import Resume, ResumeImport
+from app.services import task_queue
 from app.services.career import owned, save_resume, version_of
 from app.services.pdf_import import create_import
 from app.web.routes import input_data, login_required
@@ -60,12 +60,7 @@ def upload():
     item = create_import(g.user.id, key, file.read(4 * 1024 * 1024 + 1))
     if item.state == "queued":
         try:
-            Queue("careerflow", connection=current_app.extensions["redis"]).enqueue(
-                "app.jobs.pdf_import_job",
-                item.id,
-                job_timeout=120,
-                job_id=f"pdf-import-{item.id}",
-            )
+            task_queue.enqueue("pdf-import", item.id, 120)
         except Exception:
             item.state = "failed"
             item.content = None

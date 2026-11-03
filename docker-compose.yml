@@ -1,4 +1,4 @@
-# 本地/预发的完整栈：应用 + RQ worker + MySQL 8.4 + Redis + Mailpit + Nginx。
+# 本地/预发的完整栈：应用 + 任务 worker + MySQL 8.4 + Redis + Mailpit + Nginx。
 # 生产请改用受管 MySQL（开启 TLS）、受管 Redis，并把密钥注入 SECRET_KEY /
 # SESSION_ENCRYPTION_KEY；下面的默认值只用于本机演示，绝不能用于公网。
 name: careerflow

@@ -10,6 +10,7 @@ sections), never validation.
 
 import asyncio
 import json
+from uuid import uuid4
 
 from pydantic import Field
 
@@ -132,6 +133,40 @@ def _build_model(snapshot, model_id):
     )
 
 
+_CHECKPOINTER = None
+_CHECKPOINTER_UNAVAILABLE = False
+
+
+def _checkpointer():
+    """One process-wide RedisSaver so orchestrated graph state survives a
+    crashed worker and can be inspected after the fact.
+
+    Best effort: the Redis server must provide the query engine (FT.INFO).
+    Without it orchestration still runs, only without persisted checkpoints.
+    """
+    global _CHECKPOINTER, _CHECKPOINTER_UNAVAILABLE
+    if _CHECKPOINTER_UNAVAILABLE:
+        return None
+    if _CHECKPOINTER is None:
+        try:
+            from langgraph.checkpoint.redis import RedisSaver
+
+            from app.services.task_queue import redis_url
+
+            saver = RedisSaver(redis_url=redis_url())
+            saver.setup()
+            _CHECKPOINTER = saver
+        except Exception as error:
+            import logging
+
+            _CHECKPOINTER_UNAVAILABLE = True
+            logging.getLogger(__name__).warning(
+                "agent_checkpointer_unavailable type=%s", type(error).__name__
+            )
+            return None
+    return _CHECKPOINTER
+
+
 def _section_groups(references):
     """Split evidence into review sections by source and path stem."""
     groups = {}
@@ -188,7 +223,7 @@ def run_diagnosis_agent(snapshot):
     sections = _section_groups(references)
     collector = _UsageCollector()
 
-    def build_agent():
+    def build_agent(checkpointer=None):
         model = _build_model(snapshot, snapshot["model"])
         return create_deep_agent(
             model=model,
@@ -218,6 +253,7 @@ def run_diagnosis_agent(snapshot):
                     "response_format": ReferencedDiagnosis,
                 },
             ],
+            checkpointer=checkpointer,
         )
 
     payload = {
@@ -238,13 +274,13 @@ def run_diagnosis_agent(snapshot):
     }
 
     async def _run():
-        agent = build_agent()
+        agent = build_agent(checkpointer=_checkpointer())
         return await agent.ainvoke(
             {"messages": [{"role": "user", "content": json.dumps(payload, ensure_ascii=False)}]},
             config={
                 "recursion_limit": 120,
                 "callbacks": [collector],
-                "configurable": {"thread_id": f"diag-{snapshot.get('model_revision_id', 0)}"},
+                "configurable": {"thread_id": f"diag-{uuid4()}"},
             },
         )
 
@@ -373,7 +409,7 @@ def run_resume_agent(snapshot, kind):
 
     collector = _UsageCollector()
 
-    def build_agent():
+    def build_agent(checkpointer=None):
         model = _build_model(snapshot, snapshot["model"])
         if kind == "compose":
             system_prompt = COMPOSE_ORCHESTRATOR_INSTRUCTIONS
@@ -436,6 +472,7 @@ def run_resume_agent(snapshot, kind):
             tools=[],
             system_prompt=system_prompt,
             subagents=subagents,
+            checkpointer=checkpointer,
         ), output_cls
 
     if kind == "compose":
@@ -448,15 +485,14 @@ def run_resume_agent(snapshot, kind):
         }
 
     async def _run():
-        agent, output_cls = build_agent()
+        agent, output_cls = build_agent(checkpointer=_checkpointer())
         state = await agent.ainvoke(
             {"messages": [{"role": "user", "content": json.dumps(payload, ensure_ascii=False)}]},
             config={
                 "recursion_limit": 60,
                 "callbacks": [collector],
-                "configurable": {
-                    "thread_id": f"resume-{kind}-{snapshot.get('model_revision_id', 0)}"
-                },
+                "configurable": {"thread_id": f"resume-{kind}-{uuid4()}"},
+                "checkpointer": _checkpointer(),
             },
         )
         return state, output_cls

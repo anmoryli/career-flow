@@ -10,10 +10,10 @@
 - 对话创建/列表/详情/删除、消息保存与重复请求幂等、明确确认的事实记忆。
 - 用户隔离、XSS 转义、CSRF、CSP、请求编号、服务异常脱敏。
 - 共享视觉 Token、浅色/深色/跟随系统、响应式布局与登录用户主题同步。
-- Redis + RQ 原生 Worker；Windows 使用 SpawnWorker，Linux 使用 Worker。
+- Redis Streams 任务队列 + 原生 Worker（`python -m app.worker`），任务体在子进程执行并有硬超时。
 
 - 简历账号保存、版本/副本、动态经历、模板/照片/排版保存、浏览器 A4 打印；冲突恢复和本地备份。
-- 文本与扫描版 PDF 上传、RQ 提取；写入可识别的简历字段、人像与无协议前缀的网址，核对后保存；扫描件 OCR 需 Tesseract 语言包。浏览器 A4 导出按内容自适应压缩。
+- 文本与扫描版 PDF 上传、后台任务提取；写入可识别的简历字段、人像与无协议前缀的网址，核对后保存；扫描件 OCR 需 Tesseract 语言包。浏览器 A4 导出按内容自适应压缩。
 - 诊断/报告持久化、十轮追问、建议核实与副本；费用预估/确认/冻结/结算/释放及失败恢复。
 - PydanticAI 的 OpenAI 兼容适配器已实现；默认关闭。真实模型质量、网络、费用仍需供应商配置和费用授权后验收，不把测试适配器当作真实 AI。
 
@@ -23,7 +23,7 @@
 
 ## 本机运行：Windows + WSL Ubuntu 原生服务
 
-原生运行（2026-10-24 起的本机主路径）：MySQL/Redis 原生运行于已有的 WSL Ubuntu；Flask/RQ/Mailpit 原生运行于 Windows。数据库始终为 MySQL，不使用 SQLite。2026-10-31 起新增并行可选的容器路径（Docker 镜像 + compose + CI/CD），见 [CI/CD 与容器化](docs/CI_CD.md)；两种方式按需选用。
+原生运行（2026-10-24 起的本机主路径）：MySQL/Redis 原生运行于已有的 WSL Ubuntu；Flask/Worker/Mailpit 原生运行于 Windows。数据库始终为 MySQL，不使用 SQLite。2026-10-31 起新增并行可选的容器路径（Docker 镜像 + compose + CI/CD），见 [CI/CD 与容器化](docs/CI_CD.md)；两种方式按需选用。
 
 已验证环境：Windows、WSL Ubuntu 26.04、Python 3.12.13、MySQL 8.4.11、Redis 8.0.5、Mailpit 1.27.10。
 

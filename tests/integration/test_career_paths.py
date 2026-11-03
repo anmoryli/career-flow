@@ -159,7 +159,7 @@ def test_operation_endpoints_and_queue_failure(mysql_app, context, monkeypatch):
     def unavailable(*args, **kwargs):
         raise ConnectionError("private-connection-information")
 
-    monkeypatch.setattr("app.web.diagnosis.Queue.enqueue", unavailable)
+    monkeypatch.setattr("app.services.task_queue.enqueue", unavailable)
     response = client.post(f"/api/operations/{oid}/confirm", json={}, headers=headers)
     assert response.status_code == 503 and "private" not in response.text
     assert client.get(f"/api/operations/{oid}").json["state"] == "cancelled"
@@ -354,7 +354,7 @@ def test_pdf_parse_and_binary_cleanup(mysql_app, context, mode):
 
 def test_pdf_upload_confirm_authorization_and_errors(mysql_app, context, user_factory, monkeypatch):
     client, headers = client_for(mysql_app, context[0])
-    monkeypatch.setattr("app.web.imports.Queue.enqueue", lambda *a, **k: None)
+    monkeypatch.setattr("app.services.task_queue.enqueue", lambda *a, **k: None)
     key = str(uuid4())
 
     def upload(content, request_key=key):

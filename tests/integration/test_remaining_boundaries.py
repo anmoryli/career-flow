@@ -1,7 +1,5 @@
 import base64
-import runpy
 from datetime import timedelta
-from pathlib import Path
 from types import SimpleNamespace
 from uuid import uuid4
 
@@ -161,11 +159,11 @@ def test_late_pdf_result_cannot_replace_recovery(mysql_app, context, monkeypatch
 def test_worker_entrypoint_and_health_timeout(mysql_app, monkeypatch):
     seen = []
     monkeypatch.setattr("app.create_app", lambda: mysql_app)
-    monkeypatch.setattr(
-        "rq.worker.base.BaseWorker.work", lambda worker: seen.extend(worker.queue_names())
-    )
-    runpy.run_path(str(Path(__file__).resolve().parents[2] / "app/worker.py"), run_name="__main__")
-    assert seen == ["careerflow"]
+    monkeypatch.setattr("app.worker.serve", lambda redis_client: seen.append(redis_client))
+    from app.worker import main
+
+    main()
+    assert seen == [mysql_app.extensions["redis"]]
     monkeypatch.setattr(
         "app.cli.readiness", lambda: {"mysql": False, "schema": False, "redis": False}
     )

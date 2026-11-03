@@ -11,7 +11,7 @@ No third-party resume/application repository was copied into this project. The i
 | PyMySQL | MySQL driver | MIT |
 | Flask-WTF / WTForms | CSRF protection | BSD-3-Clause |
 | Pydantic / email-validator | Strict input validation | MIT / Unlicense |
-| redis-py / RQ | Redis client and job queue | MIT / BSD-2-Clause |
+| redis-py | Redis client | MIT |
 | python-dotenv | Local environment configuration | BSD-3-Clause |
 | Gunicorn | Linux production WSGI server | MIT |
 | pydantic-ai-slim 1.107.9 / pydantic-graph | Typed model adapter and structured output | MIT |

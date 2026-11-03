@@ -1,11 +1,10 @@
-from flask import Blueprint, abort, current_app, g, render_template, request
-from rq import Queue
+from flask import Blueprint, abort, g, render_template, request
 from sqlalchemy import select
 
 from app.diagnosis_schemas import AnswerInput, ApplySuggestion, QuoteInput
 from app.extensions import db
 from app.models import AIOperation, Diagnostic, DiagnosticAnswer, JobTarget, Resume, ResumeVersion
-from app.services import diagnosis
+from app.services import diagnosis, task_queue
 from app.services.career import owned
 from app.services.commerce import membership_active
 from app.services.interactions import active_question
@@ -158,11 +157,8 @@ def start(item_id):
     item = diagnosis.confirm(g.user.id, item.id)
     if item.state == "queued":
         try:
-            Queue("careerflow", connection=current_app.extensions["redis"]).enqueue(
-                "app.jobs.diagnosis_job",
-                item.id,
-                job_timeout=diagnosis_job_seconds(item.input_snapshot),
-                job_id=f"diagnosis-{item.id}",
+            task_queue.enqueue(
+                "diagnosis", item.id, diagnosis_job_seconds(item.input_snapshot)
             )
         except Exception:
             diagnosis.cancel(g.user.id, item.id)
@@ -176,11 +172,8 @@ def confirm(item_id):
     item = diagnosis.confirm(g.user.id, item_id)
     if item.state == "queued":
         try:
-            Queue("careerflow", connection=current_app.extensions["redis"]).enqueue(
-                "app.jobs.diagnosis_job",
-                item.id,
-                job_timeout=diagnosis_job_seconds(item.input_snapshot),
-                job_id=f"diagnosis-{item.id}",
+            task_queue.enqueue(
+                "diagnosis", item.id, diagnosis_job_seconds(item.input_snapshot)
             )
         except Exception:
             diagnosis.cancel(g.user.id, item.id)

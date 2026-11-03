@@ -55,7 +55,7 @@ def test_two_confirmations_for_same_diagnostic_only_freeze_once(mysql_app, conte
             barrier.wait(timeout=10)
 
     mysql_app.before_request_funcs[None].append(synchronize)
-    monkeypatch.setattr("app.web.diagnosis.Queue.enqueue", lambda *a, **k: None)
+    monkeypatch.setattr("app.services.task_queue.enqueue", lambda *a, **k: None)
     try:
 
         def post(index):

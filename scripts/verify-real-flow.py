@@ -7,7 +7,7 @@ report, suggestions, export, import and guest parsing.
 
     python scripts/verify-real-flow.py --out output/real-model/flow.json
 
-Requires the real Flask server and an RQ worker on the local development
+Requires the real Flask server and a task worker on the local development
 database; nothing here stubs the provider.
 """
 

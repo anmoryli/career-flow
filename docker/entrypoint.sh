@@ -1,5 +1,5 @@
 #!/bin/sh
-# 容器入口：可选等待数据库就绪并执行迁移，然后交棒给 gunicorn / rq worker。
+# 容器入口：可选等待数据库就绪并执行迁移，然后交棒给 gunicorn / 任务 worker。
 set -eu
 
 if [ "${RUN_MIGRATIONS:-true}" = "true" ]; then

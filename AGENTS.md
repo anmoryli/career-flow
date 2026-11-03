@@ -63,7 +63,7 @@ AI 编程助手获得的权限仅限于当前工作环境实际授予的权限�
 - SQLAlchemy 2.x。
 - PyMySQL。
 - Flask-Migrate + Alembic。
-- Redis + RQ。
+- Redis Streams 任务队列（RQ 已退役）。
 - Jinja2。
 - HTMX + Alpine.js。
 - Tailwind CSS。

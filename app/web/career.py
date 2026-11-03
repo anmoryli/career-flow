@@ -1,12 +1,11 @@
-from flask import Blueprint, current_app, g, render_template, request
-from rq import Queue
+from flask import Blueprint, g, render_template, request
 from sqlalchemy import delete, select
 
 from app.career_schemas import ConfirmDelete, CopyResume, JobSave, ResumeSave
 from app.extensions import db
 from app.models import AIOperation, JobTarget, Resume, ResumeVersion
 from app.resume_ai_schemas import ResumeAIQuote, ResumeComposeQuote
-from app.services import career, resume_ai
+from app.services import career, resume_ai, task_queue
 from app.services.errors import BusinessError
 from app.services.model_runtime import public_ai_error
 from app.web.routes import input_data, login_required
@@ -168,12 +167,7 @@ def quote_resume_compose(item_id):
 def queue_resume_operation(item):
     if item.state == "queued":
         try:
-            Queue("careerflow", connection=current_app.extensions["redis"]).enqueue(
-                "app.jobs.resume_ai_job",
-                item.id,
-                job_timeout=120,
-                job_id=f"resume-ai-{item.id}",
-            )
+            task_queue.enqueue("resume-ai", item.id, 120)
         except Exception:
             from app.services.diagnosis import cancel
 
@@ -215,12 +209,7 @@ def confirm_resume_ai(item_id):
     item = resume_ai.confirm(g.user.id, item_id)
     if item.state == "queued":
         try:
-            Queue("careerflow", connection=current_app.extensions["redis"]).enqueue(
-                "app.jobs.resume_ai_job",
-                item.id,
-                job_timeout=120,
-                job_id=f"resume-ai-{item.id}",
-            )
+            task_queue.enqueue("resume-ai", item.id, 120)
         except Exception:
             from app.services.diagnosis import cancel
 

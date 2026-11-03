@@ -116,13 +116,10 @@ def test_resume_ai_queue_failure_releases_reservation(mysql_app, resume_context,
         operation_id = quote(user_id, resume_id).id
 
     class BrokenQueue:
-        def __init__(self, *args, **kwargs):
-            pass
-
         def enqueue(self, *args, **kwargs):
             raise RuntimeError("queue unavailable")
 
-    monkeypatch.setattr("app.web.career.Queue", BrokenQueue)
+    monkeypatch.setattr("app.services.task_queue.enqueue", BrokenQueue().enqueue)
     client, headers = client_for(mysql_app, user_id)
     response = client.post(f"/api/resume-ai/{operation_id}/confirm", json={}, headers=headers)
     assert response.status_code == 503

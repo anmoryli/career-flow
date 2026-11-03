@@ -6,14 +6,12 @@ import urllib.request
 from uuid import uuid4
 
 import pytest
-from rq import Queue
 from sqlalchemy import delete, select
 
 from app.extensions import db
 from app.models import AIOperation, EmailVerificationCode, ResumeImport, User
 from app.services import auth, diagnosis, pdf_import
 from app.services.errors import BusinessError
-from app.worker import WindowsDevelopmentWorker
 from tests.integration.test_career import client_for, make_operation
 from tests.integration.test_career_paths import minimal_pdf
 
@@ -134,7 +132,7 @@ def test_mail_tls_auth_and_html_redirect(mysql_app, monkeypatch):
         db.session.commit()
 
 
-def test_real_rq_pdf_and_failed_ai_release(mysql_app, context):
+def test_real_worker_pdf_and_failed_ai_release(mysql_app, context):
     uid, _, _, did = context
     with mysql_app.app_context():
         imported = pdf_import.create_import(uid, uuid4(), minimal_pdf())
@@ -142,20 +140,21 @@ def test_real_rq_pdf_and_failed_ai_release(mysql_app, context):
         operation = make_operation(uid, did)
         oid = operation.id
         diagnosis.confirm(uid, oid)
-        queue = Queue(f"careerflow-test-{uuid4().hex}", connection=mysql_app.extensions["redis"])
-        pdf_job = queue.enqueue("app.jobs.pdf_import_job", iid, job_timeout=30)
-        ai_job = queue.enqueue("app.jobs.diagnosis_job", oid, job_timeout=60)
-        worker = WindowsDevelopmentWorker([queue], connection=mysql_app.extensions["redis"])
-        worker.work(burst=True, logging_level="WARNING")
-        assert pdf_job.get_status(refresh=True) == "finished"
-        assert ai_job.get_status(refresh=True) == "finished"
+        from app.services import task_queue
+        from app.worker import run_task
+
+        task_queue.enqueue("pdf-import", iid, 30)
+        task_queue.enqueue("diagnosis", oid, 60)
+        messages = task_queue.claim(block_ms=0, consumer="test-worker")
+        assert {fields["id"] for _, fields in messages} == {str(iid), str(oid)}
+        for message_id, fields in messages:
+            run_task(fields)
+            task_queue.ack(message_id)
         db.session.expire_all()
         assert db.session.get(ResumeImport, iid).state == "ready"
         assert db.session.get(AIOperation, oid).state == "failed"
         operation = db.session.get(AIOperation, oid)
         assert operation.ceiling == operation.charged == 0
-        pdf_job.delete()
-        ai_job.delete()
 
 
 def test_all_write_endpoints_require_csrf_and_auth(mysql_app):
@@ -203,7 +202,7 @@ def test_pdf_upload_queue_unavailable(mysql_app, context, monkeypatch):
     def broken(*a, **kw):
         raise ConnectionError()
 
-    monkeypatch.setattr("app.web.imports.Queue.enqueue", broken)
+    monkeypatch.setattr("app.services.task_queue.enqueue", broken)
     response = client.post(
         "/api/imports",
         data={"request_key": str(uuid4()), "file": (io.BytesIO(minimal_pdf()), "test.pdf")},
@@ -245,25 +244,23 @@ def test_worker_probe_and_startup_maintenance_failure(mysql_app, monkeypatch):
     from sqlalchemy.exc import OperationalError
 
     from app.jobs import infrastructure_probe
-    from app.worker import main
+    from app.worker import run_maintenance, serve
 
     with mysql_app.app_context():
         assert infrastructure_probe() == {"mysql": True, "schema": True, "redis": True}
-    seen = []
-    monkeypatch.setattr("app.worker.create_app", lambda: mysql_app)
+    blocks = []
     monkeypatch.setattr(
-        "rq.worker.base.BaseWorker.work", lambda worker: seen.extend(worker.queue_names())
+        "app.services.task_queue.claim",
+        lambda block_ms=5000, consumer="worker", redis_client=None: blocks.append(block_ms)
+        or [],
     )
-    main()
-    assert seen == ["careerflow"]
     with mysql_app.app_context():
-        worker = WindowsDevelopmentWorker(
-            ["test-maintenance"], connection=mysql_app.extensions["redis"]
-        )
-        monkeypatch.setattr("rq.worker.base.BaseWorker.run_maintenance_tasks", lambda self: None)
+        serve(mysql_app.extensions["redis"], once=True, block_ms=0)
+    assert blocks == [0]
+    with mysql_app.app_context():
 
         def fail():
             raise OperationalError("test", {}, Exception("private"))
 
         monkeypatch.setattr(diagnosis, "recover_stale_tasks", fail)
-        worker.run_maintenance_tasks()  # Recovery failure must roll back without stopping worker.
+        run_maintenance()  # Recovery failure must roll back without stopping worker.

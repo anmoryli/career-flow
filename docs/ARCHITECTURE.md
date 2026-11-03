@@ -20,7 +20,7 @@
 | `app/schemas.py` | 严格输入模型及结构化消息协议的初始子集 |
 | `app/templates/` | Jinja2 服务端页面，默认 HTML 转义 |
 | `app/static/` | 统一 CSS Token、Tailwind 构建、本地 HTMX/Alpine CSP 资源 |
-| `app/worker.py` | RQ 原生 Worker 入口 |
+| `app/worker.py` | Redis Streams 任务 Worker 入口 |
 | `migrations/` | Alembic 修订，不使用启动时 create_all |
 
 MySQL 是唯一业务数据源。Redis 承担限流和队列，不作为消息/记忆的权威存储。匿名首页不依赖数据库；有会话 Cookie 时，业务资源访问先查询服务器会话。
@@ -31,7 +31,7 @@ MySQL 是唯一业务数据源。Redis 承担限流和队列，不作为消息/�
 
 个人记录上下文只包含所属用户当前对话、确认记忆和近期历史，按预算裁剪并封装为 `untrusted_user_data`。诊断独立保存JD/简历版本/真实回答的快照，经PydanticAI适配器输出并校验；没有自动摘要/长期偏好或任意AI工具。服务边界、账务和真实性限制见 `UX_IMPLEMENTATION_2026-10-24.md`。
 
-简历逐条 AI 建议使用 `app/services/resume_ai.py`：操作关联用户简历与保存修订号，引用同一积分冻结/结算/释放流水；RQ Worker 只处理已入队操作，调用模型期间不持有 MySQL 事务。输出经 Pydantic 校验后作为待确认建议存储，用户在弹窗中确认才触发普通简历版本保存。简历板块顺序、显隐和 Markdown 原文都保存在版本 JSON 文档中。
+简历逐条 AI 建议使用 `app/services/resume_ai.py`：操作关联用户简历与保存修订号，引用同一积分冻结/结算/释放流水；任务 Worker 只处理已入队操作，调用模型期间不持有 MySQL 事务。输出经 Pydantic 校验后作为待确认建议存储，用户在弹窗中确认才触发普通简历版本保存。简历板块顺序、显隐和 Markdown 原文都保存在版本 JSON 文档中。
 
 应用工厂和 MySQL 表选项实现分别参考 [Flask 官方说明](https://flask.palletsprojects.com/en/stable/patterns/appfactories/) 与 [SQLAlchemy MySQL 方言说明](https://docs.sqlalchemy.org/en/20/dialects/mysql.html)。
 
@@ -50,3 +50,13 @@ The user-facing plans are monthly CNY 39 and quarterly CNY 99. AI operations use
 - 降级链：编排失败自动重试 1 次；两次均失败则降级到确定性单发管线（原多模型 fallback × 2 次尝试），会员任务绝不因编排层故障而失败。
 - 资源上限：诊断板块分组最多 24 组（超出尾部合并）、每次编排 480 秒超时、`recursion_limit` 诊断 120 / 简历 60；每次 LLM 调用经 callback 收集 input/output/total tokens，与单发路径一样写入 `ModelCallUsage` 计费流水，`attempts` 语义一致。
 - 测试：`tests/test_agent_orchestrator.py` 覆盖分组/合并/用量收集/结构化提取/flag 默认值；`tests/integration/test_diagnosis_transport.py` 与 `tests/integration/test_resume_ai.py` 覆盖编排成功记账与失败降级。编排分支要求测试环境无 provider 注入，存量测试不受影响。
+
+## 2026-11-11 任务队列退役 RQ，改用 Redis Streams + LangGraph checkpoint
+
+RQ 已完全移除（依赖、worker、入队点、测试与脚本）。任务调度改为 `app/services/task_queue.py` 的 Redis Stream（`careerflow:tasks`）+ 消费组：
+
+- 入队幂等：每个任务用 `SET NX EX` 去重键保证一条活消息；Redis 失败仍向调用方返回 503 并取消任务，与原 RQ 行为一致。
+- `app/worker.py` 保持 `python -m app.worker` 入口与 60 秒维护周期不变；任务体在 spawn 子进程执行，超时（原 job_timeout + 30 秒余量）硬终止；消息只在任务进程退出后 ACK，worker 崩溃遗留的 pending 消息由下个维护周期 `XAUTOCLAIM` 重投，任务体内的状态检查保证重投安全。
+- MySQL `AIOperation`/`ResumeImport` 状态仍是唯一权威；`recover_stale_tasks` 兜底逻辑不变，worker 维护周期内继续执行。
+- deepagents 编排图接入 `langgraph-checkpoint-redis` 的 `RedisSaver`（进程级单例，尽力而为：Redis 服务端需提供 Query Engine/`FT.INFO`，缺失时记录告警并继续运行、仅无持久化），编排状态按每次运行唯一的 `thread_id` 持久化到 Redis；编排失败仍走既有降级链。
+- `scripts/verify-worker.py` 改为投递 probe 任务并轮询结果键；PM2/systemd/容器启动命令不变。
