@@ -236,6 +236,59 @@ def confirm(user_id, operation_id):
     return item
 
 
+def _build_result(kind, raw, snapshot, revision):
+    """Validate model output with the deterministic gates shared by the
+    orchestrated and single-shot pipelines; raises on any violation."""
+    if kind == "compose":
+        output = ResumeComposeOutput.model_validate(raw)
+        document = output.document.complete().model_dump()
+        if (
+            document["photo"]
+            or len(document["skills"]) > 4
+            or len(json.dumps(document, ensure_ascii=False)) > 30000
+        ):
+            raise ValueError("简历草稿包含不支持的内容")
+        source_numbers = set(re.findall(r"\d+(?:[.,]\d+)?%?", snapshot["source"]))
+        draft_numbers = set(
+            re.findall(r"\d+(?:[.,]\d+)?%?", json.dumps(document, ensure_ascii=False))
+        )
+        if not draft_numbers.issubset(source_numbers):
+            raise ValueError("简历草稿新增了未经确认的数字")
+        return {"document": document, "reason": output.reason, "revision": revision}
+    output = ResumeAIOutput.model_validate(raw)
+    path = snapshot["path"]
+    limit = (
+        160
+        if path.startswith("education.")
+        else 600
+        if path == "summary"
+        else 2000
+        if path.startswith("projects.")
+        else 3000
+    )
+    if len(output.proposed) > limit:
+        raise ValueError("改写超过字段长度")
+    source_numbers = set(
+        re.findall(
+            r"\d+(?:[.,]\d+)?%?",
+            json.dumps(
+                {"original": snapshot["original"], "context": snapshot["context"]},
+                ensure_ascii=False,
+            ),
+        )
+    )
+    proposed_numbers = set(re.findall(r"\d+(?:[.,]\d+)?%?", output.proposed))
+    if not proposed_numbers.issubset(source_numbers):
+        raise ValueError("改写新增了未经确认的数字")
+    return {
+        "original": snapshot["original"],
+        "proposed": output.proposed,
+        "reason": output.reason,
+        "path": snapshot["path"],
+        "revision": revision,
+    }
+
+
 def run_operation(operation_id):
     record = db.session.get(AIOperation, operation_id)
     if record is None or record.resume_id is None:
@@ -289,7 +342,68 @@ def run_operation(operation_id):
 
     stop_fallback = False
     last_error = None
-    model_ids = candidates(snapshot)
+    orchestrated = provider is None and bool(
+        current_app.config.get("RESUME_AGENT_ENABLED")
+    )
+    if orchestrated:
+        # Deep-agents run: plan, draft per-section, then a single structured
+        # write-back. Validation gates are identical to the single-shot
+        # pipeline; a failed orchestration degrades to it below.
+        from app.services.agent_orchestrator import run_resume_agent
+
+        if kind != "compose":
+            save_partial({"proposed": "", "reason": "正在编排生成……"})
+        for _retry in range(2):
+            try:
+                raw, agent_calls, agent_tokens = run_resume_agent(snapshot, kind)
+                from app.services.product import TokenUsage
+
+                tokens += agent_tokens
+                for offset, call in enumerate(agent_calls):
+                    usage = (
+                        TokenUsage(call["total"], call["input"], call["output"])
+                        if call["total"]
+                        else None
+                    )
+                    calls.append(
+                        call_usage(
+                            attempts + offset + 1,
+                            snapshot["model"],
+                            usage,
+                            usage_policy,
+                            call["outcome"],
+                        )
+                    )
+                attempts += len(agent_calls)
+                result = _build_result(kind, raw, snapshot, revision)
+                break
+            except Exception as error:
+                attempts += 1
+                if not calls or calls[-1]["attempt"] != attempts:
+                    calls.append(
+                        call_usage(
+                            attempts, snapshot["model"], None, usage_policy, "provider_error"
+                        )
+                    )
+                last_error = error
+                current_app.logger.warning(
+                    "resume_agent_failed operation=%s kind=%s type=%s retry=%s",
+                    operation_id,
+                    kind,
+                    type(error).__name__,
+                    _retry + 1,
+                )
+        if result is None:
+            current_app.logger.warning(
+                "resume_agent_degraded operation=%s kind=%s falling_back=single_shot",
+                operation_id,
+                kind,
+            )
+            model_ids = candidates(snapshot)
+        else:
+            model_ids = []
+    else:
+        model_ids = candidates(snapshot)
     for model_index, model_id in enumerate(model_ids):
         for retry in range(2):
             attempts += 1
@@ -312,55 +426,7 @@ def run_operation(operation_id):
                     raise ValueError("费用用量不可用")
                 tokens += usage
                 calls.append(call_usage(attempts,model_id,usage,usage_policy,"returned"))
-                if kind == "compose":
-                    output = ResumeComposeOutput.model_validate(raw)
-                    document = output.document.complete().model_dump()
-                    if (
-                        document["photo"]
-                        or len(document["skills"]) > 4
-                        or len(json.dumps(document, ensure_ascii=False)) > 30000
-                    ):
-                        raise ValueError("简历草稿包含不支持的内容")
-                    source_numbers = set(re.findall(r"\d+(?:[.,]\d+)?%?", snapshot["source"]))
-                    draft_numbers = set(
-                        re.findall(r"\d+(?:[.,]\d+)?%?", json.dumps(document, ensure_ascii=False))
-                    )
-                    if not draft_numbers.issubset(source_numbers):
-                        raise ValueError("简历草稿新增了未经确认的数字")
-                    result = {"document": document, "reason": output.reason, "revision": revision}
-                else:
-                    output = ResumeAIOutput.model_validate(raw)
-                    path = snapshot["path"]
-                    limit = (
-                        160
-                        if path.startswith("education.")
-                        else 600
-                        if path == "summary"
-                        else 2000
-                        if path.startswith("projects.")
-                        else 3000
-                    )
-                    if len(output.proposed) > limit:
-                        raise ValueError("改写超过字段长度")
-                    source_numbers = set(
-                        re.findall(
-                            r"\d+(?:[.,]\d+)?%?",
-                            json.dumps(
-                                {"original": snapshot["original"], "context": snapshot["context"]},
-                                ensure_ascii=False,
-                            ),
-                        )
-                    )
-                    proposed_numbers = set(re.findall(r"\d+(?:[.,]\d+)?%?", output.proposed))
-                    if not proposed_numbers.issubset(source_numbers):
-                        raise ValueError("改写新增了未经确认的数字")
-                    result = {
-                        "original": snapshot["original"],
-                        "proposed": output.proposed,
-                        "reason": output.reason,
-                        "path": snapshot["path"],
-                        "revision": revision,
-                    }
+                result = _build_result(kind, raw, snapshot, revision)
                 break
             except Exception as error:
                 if not calls or calls[-1]["attempt"]!=attempts:

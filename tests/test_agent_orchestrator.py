@@ -68,3 +68,38 @@ def test_usage_collector_records_provider_errors():
 
 def test_orchestrator_flag_defaults_off(app):
     assert not app.config.get("DIAGNOSIS_AGENT_ENABLED")
+
+
+def test_resume_agent_flag_defaults_off(app):
+    assert not app.config.get("RESUME_AGENT_ENABLED")
+
+
+def test_extract_structured_validates_writer_output():
+    from langchain_core.messages import ToolMessage
+
+    from app.resume_ai_schemas import ResumeAIOutput
+    from app.services.agent_orchestrator import _extract_structured
+
+    payload = '{"proposed": "负责产品需求分析", "reason": "表达更清晰"}'
+    state = {
+        "messages": [
+            "human: plan",
+            ToolMessage(content=payload, tool_call_id="x"),
+        ]
+    }
+    output = _extract_structured(state, ResumeAIOutput)
+    assert output.proposed == "负责产品需求分析"
+
+
+def test_extract_structured_ignores_non_json_messages():
+    from langchain_core.messages import ToolMessage
+
+    from app.resume_ai_schemas import ResumeAIOutput
+    from app.services.agent_orchestrator import _extract_structured
+
+    state = {
+        "messages": [
+            ToolMessage(content="plain text reply", tool_call_id="x"),
+        ]
+    }
+    assert _extract_structured(state, ResumeAIOutput) is None
