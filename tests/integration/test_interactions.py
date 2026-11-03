@@ -32,7 +32,7 @@ def test_question_form_survives_reload_and_records_answer(mysql_app, context, us
     assert 'data-diagnosis-chat' in page
     assert "补充真实经历" in page and "再补充一点" in page
     assert 'data-analysis-page="detail"' in page and "本次分析依据" in page
-    assert "关联简历" in page and "审阅修改" in page
+    assert "匹配分析已完成" in page and "版快照" in page
     assert 'data-answer="answer"' in page and "提交并继续" in page
     assert 'data-answer="skip"' in page and "跳过也计入轮数" in page
     other_uid, _ = user_factory()

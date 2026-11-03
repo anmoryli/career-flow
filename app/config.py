@@ -49,6 +49,8 @@ def load_config(overrides: dict | None = None) -> dict:
         ],
         "AI_API_KEY": os.getenv("AI_API_KEY", ""),
         "AI_BASE_URL": os.getenv("AI_BASE_URL", "https://api.openai.com/v1"),
+        "DIAGNOSIS_AGENT_ENABLED": boolean(os.getenv("DIAGNOSIS_AGENT_ENABLED", "false")),
+        "DIAGNOSIS_AGENT_TOKEN_BUDGET": int(os.getenv("DIAGNOSIS_AGENT_TOKEN_BUDGET", "400000")),
         "ADMIN_CONFIG_KEY": os.getenv("ADMIN_CONFIG_KEY", ""),
     }
     config.update(overrides or {})

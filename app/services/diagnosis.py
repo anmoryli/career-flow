@@ -372,7 +372,7 @@ def run_operation(operation_id):
     item.state = "running"
     item.started_at = utcnow()
     snapshot = copy.deepcopy(item.input_snapshot)
-    from app.services.product import call_usage, policy, record_event, store_call_usage
+    from app.services.product import TokenUsage, call_usage, policy, record_event, store_call_usage
     usage_policy, usage_policy_revision = policy()
     calls = []
     db.session.commit()
@@ -384,9 +384,73 @@ def run_operation(operation_id):
     from app.services.model_runtime import provider_error
 
     provider = current_app.extensions.get("diagnosis_provider") if current_app.testing else None
+    orchestrated = (
+        provider is None
+        and bool(current_app.config.get("DIAGNOSIS_AGENT_ENABLED"))
+        and snapshot.get("access_tier") != "free_preview"
+    )
     stop_fallback = False
     last_error = None
-    for model_index, model_id in enumerate(candidates(snapshot)):
+    if orchestrated:
+        # Deep-agents run: plan, delegate per-section evidence audits, then a
+        # single structured write-back. Validation gates are identical to the
+        # single-shot pipeline; a failed orchestration degrades to it below.
+        from app.services.agent_orchestrator import run_diagnosis_agent
+
+        for retry in range(2):
+            attempt_started = time.monotonic()
+            try:
+                raw, agent_calls, agent_tokens = run_diagnosis_agent(snapshot)
+                tokens += agent_tokens
+                for offset, call in enumerate(agent_calls):
+                    usage = (
+                        TokenUsage(call["total"], call["input"], call["output"])
+                        if call["total"]
+                        else None
+                    )
+                    calls.append(
+                        call_usage(
+                            attempts + offset + 1,
+                            snapshot["model"],
+                            usage,
+                            usage_policy,
+                            call["outcome"],
+                        )
+                    )
+                attempts += len(agent_calls)
+                result = validate_output(raw, snapshot)
+                break
+            except Exception as error:
+                attempts += 1
+                if not calls or calls[-1]["attempt"] != attempts:
+                    calls.append(
+                        call_usage(
+                            attempts, snapshot["model"], None, usage_policy, "provider_error"
+                        )
+                    )
+                last_error = provider_error(error)
+                current_app.logger.warning(
+                    "agent_orchestrator_failed operation=%s type=%s cause=%s "
+                    "retry=%s elapsed_seconds=%.3f",
+                    operation_id,
+                    type(error).__name__,
+                    type(last_error).__name__,
+                    retry + 1,
+                    time.monotonic() - attempt_started,
+                )
+        if result is None:
+            # Degrade to the deterministic single-shot pipeline so a member
+            # task never fails because the orchestration layer struggled.
+            current_app.logger.warning(
+                "agent_orchestrator_degraded operation=%s falling_back=single_shot",
+                operation_id,
+            )
+            fallback_models = candidates(snapshot)
+        else:
+            fallback_models = []
+    else:
+        fallback_models = candidates(snapshot)
+    for model_index, model_id in enumerate(fallback_models):
         for retry in range(2):
             attempts += 1
             attempt_started = time.monotonic()

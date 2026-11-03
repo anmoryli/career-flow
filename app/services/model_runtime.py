@@ -5,6 +5,8 @@ from urllib.parse import urlsplit
 DIAGNOSIS_ATTEMPT_SECONDS = 90
 DIAGNOSIS_READ_SECONDS = 45
 DIAGNOSIS_FINALIZE_SECONDS = 30
+# One orchestrated run (planner + section analysts + writer).
+ORCHESTRATOR_SECONDS = 480
 
 
 def diagnosis_job_seconds(snapshot):

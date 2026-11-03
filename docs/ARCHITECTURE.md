@@ -39,3 +39,13 @@ MySQL 是唯一业务数据源。Redis 承担限流和队列，不作为消息/�
 ## 2026-10-27 Membership and billing
 
 The user-facing plans are monthly CNY 39 and quarterly CNY 99. AI operations use membership entitlements and free usage limits; they do not debit points. Existing credit ledger tables and fields are legacy compatibility structures, not the basis for plans or user-facing billing.
+
+## 2026-11-11 deepagents 编排（岗位诊断）
+
+`app/services/agent_orchestrator.py` 基于 deepagents 0.7 / LangGraph 实现岗位诊断的多代理编排，由 `DIAGNOSIS_AGENT_ENABLED`（默认关闭）控制，仅对会员诊断/报告任务生效；免费匹配与注入 `diagnosis_provider` 的测试路径保持单发不变。
+
+- 编排结构：主代理用 `write_todos` 规划并分派 → `section-analyst` 子代理按简历板块分组核对证据（`response_format=SectionFindings`）→ `diagnosis-writer` 子代理合并产出 `ReferencedDiagnosis`。模型经 `langchain-openai` 适配现有管理员模型配置与多模型路由。
+- 准确性不变式：编排层零自由度——子代理强制结构化输出，最终结果仍走既有 `resolve_references`（J/E/T 编号锚定）与 `validate_output`（岗位/简历原文核对、建议路径核对、单问题约束）。任何无出处结论都会让该次编排失败。
+- 降级链：编排失败自动重试 1 次；两次均失败则降级到确定性单发管线（原多模型 fallback × 2 次尝试），会员任务绝不因编排层故障而失败。
+- 资源上限：板块分组最多 24 组（超出尾部合并）、每次编排 480 秒超时、`recursion_limit=120`；每次 LLM 调用经 callback 收集 input/output/total tokens，与单发路径一样写入 `ModelCallUsage` 计费流水，`attempts` 语义一致。
+- 测试：`tests/test_agent_orchestrator.py` 覆盖分组/合并/用量收集/flag 默认值；`tests/integration/test_diagnosis_transport.py` 覆盖编排成功记账与失败降级。编排分支要求测试环境无 `diagnosis_provider` 注入，存量测试不受影响。
