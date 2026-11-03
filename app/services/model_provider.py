@@ -62,10 +62,33 @@ def _json_rules(model_cls):
     )
 
 
-def _chat_model(config, *, model_id, timeout, max_tokens, temperature):
+async def _close_client(client):
+    """Close the HTTP client this call owns.
+
+    The client is created per call instead of using langchain's process-wide
+    cached one: every call runs in its own event loop, and a shared pool keeps
+    a handle on the loop that just finished, which breaks the next call with
+    "Event loop is closed" (or a closed-client error when the pool is reused).
+    Closing is best effort; the response is already parsed.
+    """
+    try:
+        await client.aclose()
+    except Exception:
+        pass
+
+
+def _chat_model(config, *, model_id, timeout, max_tokens, temperature, streaming=True):
+    """Return (model, http_client); the caller closes the client when done."""
+    import httpx
     from langchain_openai import ChatOpenAI
 
-    return ChatOpenAI(
+    # SiliconFlow rejects `stream_options` on non-streaming requests, so the
+    # usage settings are only attached when the call actually streams.
+    usage_settings = (
+        stream_usage_settings(config["base_url"]) if streaming else {"stream_usage": True}
+    )
+    client = httpx.AsyncClient(timeout=timeout, trust_env=True)
+    chat = ChatOpenAI(
         model=model_id,
         api_key=config["secret"],
         base_url=config["base_url"],
@@ -73,8 +96,10 @@ def _chat_model(config, *, model_id, timeout, max_tokens, temperature):
         max_tokens=max_tokens,
         max_retries=0,
         timeout=timeout,
-        **stream_usage_settings(config["base_url"]),
+        http_async_client=client,
+        **usage_settings,
     )
+    return chat, client
 
 
 def generate(snapshot):
@@ -113,13 +138,14 @@ def generate(snapshot):
     async def request():
         from langchain_core.messages import HumanMessage, SystemMessage
 
-        model = _chat_model(
+        chat, client = _chat_model(
             config,
             model_id=snapshot["model"],
             timeout=httpx.Timeout(DIAGNOSIS_READ_SECONDS, connect=10.0, write=10.0, pool=5.0),
             max_tokens=MAX_OUTPUT_TOKENS,
             temperature=0.2,
-        ).bind(response_format={"type": "json_object"})
+        )
+        model = chat.bind(response_format={"type": "json_object"})
         prompt = json.dumps(
             {
                 "untrusted_user_data": {
@@ -131,17 +157,20 @@ def generate(snapshot):
             },
             ensure_ascii=False,
         )
-        # Streaming keeps chunks arriving so the per-read timeout measures stalls,
-        # not the total length of a long structured generation.
-        chunks = []
-        async for chunk in model.astream(
-            [SystemMessage(content=instructions), HumanMessage(content=prompt)]
-        ):
-            chunks.append(chunk)
-        if not chunks:
-            raise ValueError("模型返回为空")
-        output = ReferencedDiagnosis.model_validate_json("".join(_text(c) for c in chunks))
-        return resolve_references(output, references), _usage_from_chunks(chunks)
+        try:
+            # Streaming keeps chunks arriving so the per-read timeout measures
+            # stalls, not the total length of a long structured generation.
+            chunks = []
+            async for chunk in model.astream(
+                [SystemMessage(content=instructions), HumanMessage(content=prompt)]
+            ):
+                chunks.append(chunk)
+            if not chunks:
+                raise ValueError("模型返回为空")
+            output = ReferencedDiagnosis.model_validate_json("".join(_text(c) for c in chunks))
+            return resolve_references(output, references), _usage_from_chunks(chunks)
+        finally:
+            await _close_client(client)
 
     async def run():
         async with asyncio.timeout(DIAGNOSIS_ATTEMPT_SECONDS):
@@ -242,13 +271,14 @@ proposed 是可直接替换原文的完整简历正文，直接以动作、职�
     async def run():
         from langchain_core.messages import HumanMessage, SystemMessage
 
-        model = _chat_model(
+        chat, client = _chat_model(
             config,
             model_id=snapshot["model"],
             timeout=httpx.Timeout(30.0),
             max_tokens=1200,
             temperature=0.2,
-        ).bind(response_format={"type": "json_object"})
+        )
+        model = chat.bind(response_format={"type": "json_object"})
         prompt = json.dumps(
             {
                 "untrusted_user_data": {
@@ -258,30 +288,36 @@ proposed 是可直接替换原文的完整简历正文，直接以动作、职�
             ensure_ascii=False,
         )
         text = ""
+        chunks = []
         last_partial = ""
         last_sent_at = 0.0
-        async for chunk in model.astream(
-            [SystemMessage(content=instructions), HumanMessage(content=prompt)]
-        ):
-            text += _text(chunk)
-            now = asyncio.get_running_loop().time()
-            if (
-                on_progress
-                and text
-                and (len(text) - len(last_partial) >= 8 or now - last_sent_at >= 0.2)
+        try:
+            async for chunk in model.astream(
+                [SystemMessage(content=instructions), HumanMessage(content=prompt)]
             ):
-                on_progress(
-                    {
-                        "proposed": _partial_json_string(text, "proposed"),
-                        "reason": _partial_json_string(text, "reason"),
-                    }
-                )
-                last_partial = text
-                last_sent_at = now
-        if not text:
-            raise ValueError("模型返回为空")
-        output = ResumeAIOutput.model_validate_json(text)
-        return output.model_dump(), _usage_from_chunks([chunk])
+                chunks.append(chunk)
+                text += _text(chunk)
+                now = asyncio.get_running_loop().time()
+                if (
+                    on_progress
+                    and text
+                    and (len(text) - len(last_partial) >= 8 or now - last_sent_at >= 0.2)
+                ):
+                    on_progress(
+                        {
+                            "proposed": _partial_json_string(text, "proposed"),
+                            "reason": _partial_json_string(text, "reason"),
+                        }
+                    )
+                    last_partial = text
+                    last_sent_at = now
+            if not text:
+                raise ValueError("模型返回为空")
+            return ResumeAIOutput.model_validate_json(text).model_dump(), _usage_from_chunks(
+                [chunks[-1]]
+            )
+        finally:
+            await _close_client(client)
 
     return asyncio.run(run())
 
@@ -331,7 +367,7 @@ def summarize_diagnosis(snapshot, result, on_delta):
     async def run():
         from langchain_core.messages import HumanMessage, SystemMessage
 
-        model = _chat_model(
+        chat, client = _chat_model(
             config,
             model_id=snapshot["model"],
             timeout=httpx.Timeout(60.0),
@@ -340,14 +376,17 @@ def summarize_diagnosis(snapshot, result, on_delta):
         )
         prompt = json.dumps({"untrusted_user_data": facts}, ensure_ascii=False)
         chunks = []
-        async for chunk in model.astream(
-            [SystemMessage(content=instructions), HumanMessage(content=prompt)]
-        ):
-            delta = _text(chunk)
-            if delta:
-                on_delta(delta)
-            chunks.append(chunk)
-        return _usage_from_chunks(chunks)
+        try:
+            async for chunk in chat.astream(
+                [SystemMessage(content=instructions), HumanMessage(content=prompt)]
+            ):
+                delta = _text(chunk)
+                if delta:
+                    on_delta(delta)
+                chunks.append(chunk)
+            return _usage_from_chunks(chunks)
+        finally:
+            await _close_client(client)
 
     return asyncio.run(run())
 
@@ -376,19 +415,24 @@ def generate_resume_document(snapshot):
     async def run():
         from langchain_core.messages import HumanMessage, SystemMessage
 
-        model = _chat_model(
+        chat, client = _chat_model(
             config,
             model_id=snapshot["model"],
             timeout=httpx.Timeout(30.0),
             max_tokens=4000,
             temperature=0.1,
-        ).bind(response_format={"type": "json_object"})
+            streaming=False,
+        )
+        model = chat.bind(response_format={"type": "json_object"})
         prompt = json.dumps(
             {"untrusted_user_data": {"source": snapshot["source"]}}, ensure_ascii=False
         )
-        response = await model.ainvoke(
-            [SystemMessage(content=instructions), HumanMessage(content=prompt)],
-        )
+        try:
+            response = await model.ainvoke(
+                [SystemMessage(content=instructions), HumanMessage(content=prompt)],
+            )
+        finally:
+            await _close_client(client)
         text = _text(response)
         if not text:
             raise ValueError("模型返回为空")

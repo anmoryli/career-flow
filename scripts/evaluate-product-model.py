@@ -94,6 +94,13 @@ def main():
     parser.add_argument("--orchestrated", action="store_true")
     parser.add_argument("--budget-cny", type=Decimal)
     parser.add_argument("--output", default="output/product-model-evaluation.json")
+    # Free tiers enforce a tokens-per-minute budget; a full orchestrated run
+    # can exhaust it, so live runs can pace the cases.
+    parser.add_argument("--pace-seconds", type=float, default=0)
+    # The free-model guard exists to make unapproved spend impossible. With an
+    # explicit budget the configured production model may be used instead; the
+    # run then meters every case and stops before the budget is exceeded.
+    parser.add_argument("--allow-paid-model", action="store_true")
     args = parser.parse_args()
     if args.live and (args.budget_cny is None or not 0 < args.budget_cny <= 5):
         parser.error("Live authorization requires 0 < --budget-cny <= 5")
@@ -111,6 +118,8 @@ def main():
         "estimated_cost_cny": "0" if args.live else None,
     }
     prompt = None
+    unit_price = None
+    spent = Decimal("0")
     if args.live:
         import httpx
         from dotenv import load_dotenv
@@ -126,16 +135,31 @@ def main():
         app = create_app()
         with app.app_context():
             model = runtime_model()
-            if model["model_id"] != "Qwen/Qwen2.5-7B-Instruct":
-                raise ValueError(
-                    "Only the explicitly authorized configured Qwen model is supported"
-                )
             profile = runtime_model_profile(model["revision_id"], model["model_id"])
             from urllib.parse import urlsplit
 
-            if urlsplit(profile["base_url"]).hostname != "api.siliconflow.cn":
-                raise ValueError("Unsupported provider: budget cannot be verified")
-            report["pricing_preflight"] = vendor_price(httpx.get)
+            host = urlsplit(profile["base_url"]).hostname
+            free_model = model["model_id"] == "Qwen/Qwen2.5-7B-Instruct"
+            if free_model and host == "api.siliconflow.cn":
+                report["pricing_preflight"] = vendor_price(httpx.get)
+            elif args.allow_paid_model:
+                from app.services.product import policy
+
+                usage_policy, _ = policy()
+                unit_price = usage_policy.model_prices.get(model["model_id"])
+                if unit_price is None:
+                    raise ValueError("该模型未配置单价，无法核算预算")
+                report["pricing_preflight"] = {
+                    "source": "product_policy",
+                    "model": model["model_id"],
+                    "input_per_million_cny": str(unit_price.input_per_million_cny),
+                    "output_per_million_cny": str(unit_price.output_per_million_cny),
+                }
+            else:
+                raise ValueError(
+                    "Only the explicitly authorized configured Qwen model is supported; "
+                    "pass --allow-paid-model with a budget to use the production model"
+                )
             prompt = runtime_diagnosis_prompt()
             report["model_revision"] = model["revision_id"]
             report["prompt_config_version"] = prompt.get("version")
@@ -149,7 +173,9 @@ def main():
                 output, calls, tokens = run_diagnosis_agent(snapshot)
                 return output, calls, tokens
 
-    for case in cases:
+    for index, case in enumerate(cases):
+        if args.live and index and args.pace_seconds > 0:
+            time.sleep(args.pace_seconds)
         document = ResumeDocument.model_validate(case["document"]).model_dump(mode="json")
         snapshot = {
             "document": document,
@@ -203,11 +229,27 @@ def main():
                             output_tokens=usage.output_tokens,
                         )
             except Exception as error:
-                row.update(passed=False, error_type=type(error).__name__)
+                row.update(
+                    passed=False,
+                    error_type=type(error).__name__,
+                    # Our own validators raise short, content-free messages;
+                    # provider errors are reduced to the exception class above.
+                    error_detail=(
+                        str(error)[:200]
+                        if type(error).__module__.startswith("app.")
+                        else None
+                    ),
+                )
             row["latency_seconds"] = round(time.monotonic() - start, 3)
         else:
             row["contract_valid"] = bool(refs["evidence"] and refs["requirements"])
         report["cases"].append(row)
+        if args.live and unit_price is not None and row.get("input_tokens") is not None:
+            spent += (
+                Decimal(row["input_tokens"]) * unit_price.input_per_million_cny
+                + Decimal(row["output_tokens"] or 0) * unit_price.output_per_million_cny
+            ) / Decimal(1000000)
+            report["estimated_cost_cny"] = str(spent.quantize(Decimal("0.000001")))
         target = ROOT / args.output
         target.parent.mkdir(parents=True, exist_ok=True)
         target.write_text(json.dumps(report, ensure_ascii=False, indent=2), encoding="utf8")
@@ -215,6 +257,8 @@ def main():
             json.dumps({k: v for k, v in row.items() if k != "result"}, ensure_ascii=True),
             flush=True,
         )
+        if args.live and spent > args.budget_cny:
+            raise SystemExit("已超出本轮授权预算，按要求停止评测")
     if args.live:
         return int(any(not row["passed"] for row in report["cases"]))
     return 0

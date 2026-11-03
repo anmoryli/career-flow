@@ -4,9 +4,55 @@ from types import SimpleNamespace
 
 from app.services.agent_orchestrator import (
     SECTION_GROUPS_MAX,
+    _requirement_ids,
     _section_groups,
     _UsageCollector,
 )
+
+
+def test_requirement_ids_are_named_for_the_subagents():
+    references = {"requirements": {"J0": "a", "J1": "b", "J2": "c"}, "evidence": {}, "targets": {}}
+    ids, text, overflow = _requirement_ids(references)
+    assert ids == ["J0", "J1", "J2"]
+    assert text == "J0、J1、J2"
+    # the overflow example must be the first id that does NOT exist
+    assert overflow == "J3"
+
+
+def test_target_ids_are_named_for_the_writer():
+    from app.services.agent_orchestrator import _target_ids
+
+    references = {"requirements": {}, "evidence": {}, "targets": {"T0": {}, "T1": {}}}
+    ids, text = _target_ids(references)
+    assert ids == ["T0", "T1"] and text == "T0、T1"
+    assert _target_ids({"requirements": {}, "evidence": {}, "targets": {}})[1] == "无"
+
+
+def test_usage_collector_is_a_real_langchain_callback():
+    # langchain-core 1.x inspects handlers for `run_inline`; a duck-typed
+    # object breaks every orchestrated run before the first model call.
+    from langchain_core.callbacks import BaseCallbackHandler
+
+    collector = _UsageCollector()
+    assert isinstance(collector, BaseCallbackHandler)
+    assert collector.run_inline is True
+
+
+def test_subagent_prompts_carry_the_actual_id_list():
+    from app.services.agent_orchestrator import SECTION_ANALYST_PROMPT, WRITER_PROMPT
+
+    text = WRITER_PROMPT.format(
+        requirements="J0、J1",
+        requirement_count=2,
+        example_overflow="J2",
+        targets="T0",
+        target_count=1,
+    )
+    assert "J0、J1" in text and "J2 之类" in text and "T0" in text
+    analyst = SECTION_ANALYST_PROMPT.format(
+        limit=12, requirements="J0、J1", requirement_count=2, example_overflow="J2"
+    )
+    assert "J0、J1" in analyst and "{requirements}" not in analyst
 
 
 def test_section_groups_split_by_source_and_stem():

@@ -59,7 +59,9 @@ The user-facing plans are monthly CNY 39 and quarterly CNY 99. AI operations use
 - 诊断编排：主代理用 `write_todos` 规划并分派 → `section-analyst` 子代理按简历板块分组核对证据（`response_format=SectionFindings`）→ `diagnosis-writer` 子代理合并产出 `ReferencedDiagnosis`。模型经 `langchain-openai` 适配现有管理员模型配置与多模型路由。
 - 准确性不变式：编排层零自由度——子代理强制结构化输出，最终结果仍走既有 `resolve_references`（J/E/T 编号锚定）与 `validate_output`（岗位/简历原文核对、建议路径核对、单问题约束）。任何无出处结论都会让该次编排失败。
 - 降级链：编排失败自动重试 1 次；两次均失败则降级到确定性单发管线（原多模型 fallback × 2 次尝试），会员任务绝不因编排层故障而失败。
-- 资源上限：板块分组最多 24 组（超出尾部合并）、每次编排 480 秒超时、`recursion_limit=120`；每次 LLM 调用经 callback 收集 input/output/total tokens，与单发路径一样写入 `ModelCallUsage` 计费流水，`attempts` 语义一致。
+- 资源上限：板块分组最多 24 组（超出尾部合并）、每次编排 480 秒超时、`recursion_limit=120`、`max_concurrency=1`（子代理串行，避免小模型/免费额度供应商的并发限流）、单次模型调用 120 秒超时；每次 LLM 调用经 callback 收集 input/output/total tokens，与单发路径一样写入 `ModelCallUsage` 计费流水，`attempts` 语义一致。
+- 编号防幻觉：子代理与写入者的系统提示在每次运行时注入**本次实际存在的 requirement/target 编号清单**（以及第一个不存在的编号作为反面示例），编排者的合并指令同样列明可用编号；写入者被要求覆盖全部岗位要求（无原文的要求以 `missing` 补齐），并保留 analyst 给出的原始证据引用（education/projects/summary 同样算证据）；引用了不存在编号的结论仍按原有 `resolve_references` 判为失败，不做静默修补。
+- 回调与连接生命周期：用量收集器继承 `langchain_core.callbacks.BaseCallbackHandler`（`run_inline=True`），langchain-core 1.x 会检查该属性；每次调用使用独立的 `httpx.AsyncClient`（`http_async_client`）并在结束后关闭，避免进程级缓存连接池跨事件循环复用导致 `Event loop is closed`。
 - 简历 AI 校验：`resume_ai._build_result` 保留字段长度上限、照片/技能数/体积限制与「不得新增未经确认数字」的原文核对，单发与任何未来管线共用同一份门禁。
 - 测试：`tests/test_agent_orchestrator.py` 覆盖分组/合并/用量收集/结构化提取/flag 默认值；`tests/integration/test_diagnosis_transport.py` 覆盖编排成功记账与失败降级。编排分支要求测试环境无 `diagnosis_provider` 注入，存量测试不受影响。
 
