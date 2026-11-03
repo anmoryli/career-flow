@@ -1,5 +1,4 @@
 import pytest
-from pydantic_ai.exceptions import ModelHTTPError
 from sqlalchemy import select
 
 from app.extensions import db
@@ -12,13 +11,17 @@ context = test_career.context
 pytestmark = pytest.mark.integration
 
 
+class ProviderBillingError(Exception):
+    status_code = 402
+
+
 def test_member_can_analyze_without_points_and_provider_failure_preserves_membership(
     mysql_app, context
 ):
     uid, _, _, did = context
 
     def provider(snapshot):
-        raise ModelHTTPError(402, "test-model", {"error": "insufficient_balance_error"})
+        raise ProviderBillingError("insufficient_balance_error")
 
     mysql_app.extensions["diagnosis_provider"] = provider
     with mysql_app.app_context():

@@ -68,7 +68,7 @@ AI 编程助手获得的权限仅限于当前工作环境实际授予的权限�
 - HTMX + Alpine.js。
 - Tailwind CSS。
 - Pydantic + JSON Schema。
-- PydanticAI。
+- deepagents + LangChain/LangGraph（模型统一走 langchain-openai，无第二套 Agent 框架）。
 - pytest。
 - Ruff。
 - Gunicorn。

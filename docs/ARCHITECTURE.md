@@ -29,7 +29,7 @@ MySQL 是唯一业务数据源。Redis 承担限流和队列，不作为消息/�
 
 消息写入锁定当前对话行，用 `(conversation_id, request_key)` 唯一约束消除重试重复；同一请求键携带不同内容返回 409。对话删除采用数据库级联，消息和记忆同步失效。
 
-个人记录上下文只包含所属用户当前对话、确认记忆和近期历史，按预算裁剪并封装为 `untrusted_user_data`。诊断独立保存JD/简历版本/真实回答的快照，经PydanticAI适配器输出并校验；没有自动摘要/长期偏好或任意AI工具。服务边界、账务和真实性限制见 `UX_IMPLEMENTATION_2026-10-24.md`。
+个人记录上下文只包含所属用户当前对话、确认记忆和近期历史，按预算裁剪并封装为 `untrusted_user_data`。诊断独立保存JD/简历版本/真实回答的快照，经 langchain-openai 结构化输出并校验；没有自动摘要/长期偏好或任意AI工具。服务边界、账务和真实性限制见 `UX_IMPLEMENTATION_2026-10-24.md`。
 
 简历逐条 AI 建议使用 `app/services/resume_ai.py`：操作关联用户简历与保存修订号，引用同一积分冻结/结算/释放流水；任务 Worker 只处理已入队操作，调用模型期间不持有 MySQL 事务。输出经 Pydantic 校验后作为待确认建议存储，用户在弹窗中确认才触发普通简历版本保存。简历板块顺序、显隐和 Markdown 原文都保存在版本 JSON 文档中。
 
@@ -44,7 +44,17 @@ The user-facing plans are monthly CNY 39 and quarterly CNY 99. AI operations use
 
 `app/services/agent_orchestrator.py` 基于 deepagents 0.7 / LangGraph 实现岗位诊断的多代理编排，由 `DIAGNOSIS_AGENT_ENABLED`（默认关闭）控制，仅对会员诊断/报告任务生效；免费匹配与注入 provider 的测试路径保持单发不变。
 
-简历 AI（编辑器里的润色改写与粘贴资料整理）**不走编排**：一次改写就是一次模型调用，经 pydantic_ai 结构化输出加确定性校验，链路更短、延迟和令牌成本更低。
+简历 AI（编辑器里的润色改写与粘贴资料整理）**不走编排**：一次改写就是一次模型调用，经 langchain-openai JSON 模式结构化输出加确定性校验，链路更短、延迟和令牌成本更低。
+
+## 2026-11-03 pydantic-ai 移除，模型层统一到 langchain 栈
+
+`app/services/model_provider.py` 的四条链路（诊断单发、段落改写、总结复盘、粘贴整理）全部改用 `langchain-openai`（deepagents 编排的底层栈），`pydantic-ai-slim` 依赖与虚拟环境已移除：
+
+- 结构化输出：JSON Schema 嵌入系统提示 + `response_format=json_object`，响应经 Pydantic 模型 `model_validate_json` 校验后走既有 `resolve_references`/`_build_result` 门禁；校验失败是 `ValidationError`/`ValueError`，`model_unavailable` 据此判断是否切换备用模型。
+- 流式行为不变：诊断单发与段落改写保持流式接收（读空闲超时只测卡顿不测总时长），改写进度用既有 `_partial_json_string` 从累积 JSON 中提取部分内容推送；总结复盘仍是纯文本增量。
+- 用量：`stream_usage_settings` 返回 `stream_usage`/`stream_options`（SiliconFlow 继续带 `continuous_usage_stats`），从最终 chunk 的 `usage_metadata` 读取，`TokenUsage` 语义不变。
+- 错误映射：langchain-openai 把 openai SDK 错误包装为 `OpenAITimeoutError` 等联合类型；`provider_error` 解包链扩展覆盖这些类名，`model_unavailable` 用 `langchain_core.exceptions` 的 `Model*Error` 分类（认证/计费错误仍不切换备用模型）。
+- deepagents 诊断编排不受影响；`DIAGNOSIS_AGENT_ENABLED` 开关与降级链语义不变。
 
 - 诊断编排：主代理用 `write_todos` 规划并分派 → `section-analyst` 子代理按简历板块分组核对证据（`response_format=SectionFindings`）→ `diagnosis-writer` 子代理合并产出 `ReferencedDiagnosis`。模型经 `langchain-openai` 适配现有管理员模型配置与多模型路由。
 - 准确性不变式：编排层零自由度——子代理强制结构化输出，最终结果仍走既有 `resolve_references`（J/E/T 编号锚定）与 `validate_output`（岗位/简历原文核对、建议路径核对、单问题约束）。任何无出处结论都会让该次编排失败。

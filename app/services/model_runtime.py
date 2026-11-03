@@ -17,10 +17,21 @@ def diagnosis_job_seconds(snapshot):
 
 def provider_error(error):
     """Unwrap SDK errors without exposing messages, payloads, or credentials."""
+    # langchain-openai re-raises provider faults as joint classes
+    # (OpenAITimeoutError etc.); unwrap them down to the raw SDK/transport
+    # error so status codes and timeout names stay inspectable.
+    unwrappable = {
+        "ModelAPIError",
+        "APIConnectionError",
+        "APITimeoutError",
+        "OpenAIAPIError",
+        "OpenAIConnectionError",
+        "OpenAITimeoutError",
+    }
     seen = set()
     while error is not None and id(error) not in seen:
         seen.add(id(error))
-        if type(error).__name__ not in {"ModelAPIError", "APIConnectionError", "APITimeoutError"}:
+        if type(error).__name__ not in unwrappable:
             return error
         cause = error.__cause__
         if cause is None or id(cause) in seen:
@@ -43,7 +54,18 @@ def public_ai_error(message):
 
 
 def stream_usage_settings(base_url):
-    """SiliconFlow reports cumulative counters in every streamed chunk."""
+    """Token usage for streamed responses.
+
+    Streaming requests only report usage when the client asks for it, and
+    SiliconFlow additionally reports cumulative counters inside every chunk
+    when `stream_options.continuous_usage_stats` is set. The SiliconFlow entry
+    carries the whole `stream_options` object because the OpenAI SDK merges
+    `extra_body` over typed parameters at the top level.
+    """
     if urlsplit(base_url).hostname in {"api.siliconflow.cn", "api.siliconflow.com"}:
-        return {"openai_continuous_usage_stats": True}
-    return {}
+        return {
+            "extra_body": {
+                "stream_options": {"include_usage": True, "continuous_usage_stats": True}
+            }
+        }
+    return {"stream_usage": True}

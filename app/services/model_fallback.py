@@ -24,7 +24,28 @@ def model_unavailable(error):
         return True
     if isinstance(error, ValueError) or type(error).__name__ == "ValidationError":
         return True
-    if type(error).__name__ == "UnexpectedModelBehavior":
+    # langchain-wrapped provider faults; auth/billing already excluded above
+    # (ModelAuthenticationError is a ModelError sibling, not a ModelAPIError).
+    from langchain_core.exceptions import (
+        ModelAPIError,
+        ModelConnectionError,
+        ModelInvalidRequestError,
+        ModelNotFoundError,
+        ModelRateLimitError,
+        ModelTimeoutError,
+    )
+
+    if isinstance(
+        error,
+        (
+            ModelAPIError,
+            ModelConnectionError,
+            ModelTimeoutError,
+            ModelInvalidRequestError,
+            ModelNotFoundError,
+            ModelRateLimitError,
+        ),
+    ):
         return True
     module = type(error).__module__
     return module.startswith(("httpx", "httpcore")) or type(error).__name__ in {

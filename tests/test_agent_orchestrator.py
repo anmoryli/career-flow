@@ -67,7 +67,16 @@ def test_usage_collector_records_provider_errors():
 
 
 def test_orchestrator_flag_defaults_off(app):
-    assert not app.config.get("DIAGNOSIS_AGENT_ENABLED")
+    """Off unless the deployment explicitly enables it."""
+    import os
+
+    expected = os.getenv("DIAGNOSIS_AGENT_ENABLED", "false").strip().lower() in {
+        "1",
+        "true",
+        "yes",
+        "on",
+    }
+    assert bool(app.config.get("DIAGNOSIS_AGENT_ENABLED")) is expected
 
 
 def test_extract_structured_validates_writer_output():

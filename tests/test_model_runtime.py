@@ -3,8 +3,8 @@ import json
 
 import httpx
 import pytest
+from langchain_core.exceptions import ModelAPIError
 from openai import APITimeoutError
-from pydantic_ai.exceptions import ModelAPIError
 
 from app.services.model_fallback import model_unavailable
 from app.services.model_runtime import diagnosis_job_seconds, provider_error
@@ -49,7 +49,10 @@ def sse_output(output):
                 "choices": [
                     {
                         "index": 0,
-                        "delta": {"content": content[offset : offset + 45]},
+                        "delta": {
+                            "role": "assistant",
+                            "content": content[offset : offset + 45],
+                        },
                         "finish_reason": None,
                     }
                 ],
@@ -86,10 +89,11 @@ def test_wrapped_timeout_reaches_fallback_without_exposing_exception_text():
 
 
 def test_wrapped_account_error_still_does_not_fail_over():
-    from pydantic_ai.exceptions import ModelHTTPError
+    class AccountError(Exception):
+        status_code = 401
 
     error = ModelAPIError("test-model", "do-not-log")
-    error.__cause__ = ModelHTTPError(401, "test-model", "secret")
+    error.__cause__ = AccountError("secret")
     assert not model_unavailable(error)
 
 
@@ -117,6 +121,7 @@ def test_stream_has_a_wall_clock_deadline(app, monkeypatch):
         raise AssertionError("deadline failed")
 
     def client(**kwargs):
+        kwargs.pop("http_client", None)
         return client_class(
             **kwargs, http_client=httpx.AsyncClient(transport=httpx.MockTransport(stalled))
         )
@@ -169,6 +174,7 @@ def test_long_stream_exceeds_read_timeout_while_chunks_keep_arriving(app, monkey
     client_class = openai.AsyncOpenAI
 
     def client(**kwargs):
+        kwargs.pop("http_client", None)
         return client_class(
             **kwargs, http_client=httpx.AsyncClient(trust_env=False, timeout=kwargs["timeout"])
         )

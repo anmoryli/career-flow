@@ -23,7 +23,7 @@ def snapshot():
     }
 
 
-def test_pydantic_ai_adapter_contract_without_external_request(app, monkeypatch):
+def test_single_shot_contract_without_external_request(app, monkeypatch):
     import openai
 
     client_class = openai.AsyncOpenAI
@@ -45,6 +45,7 @@ def test_pydantic_ai_adapter_contract_without_external_request(app, monkeypatch)
         )
 
     def client(**kwargs):
+        kwargs.pop("http_client", None)
         return client_class(
             **kwargs, http_client=httpx.AsyncClient(transport=httpx.MockTransport(respond))
         )
@@ -66,13 +67,16 @@ def test_pydantic_ai_adapter_contract_without_external_request(app, monkeypatch)
 
 
 def test_invalid_structured_output_is_eligible_for_model_fallback():
-    class UnexpectedModelBehavior(Exception):
+    class ValidationError(ValueError):
         pass
 
     class ProviderError(Exception):
         status_code = 402
 
-    assert model_unavailable(UnexpectedModelBehavior())
+    from langchain_core.exceptions import ModelConnectionError
+
+    assert model_unavailable(ValidationError("bad output"))
+    assert model_unavailable(ModelConnectionError("connection dropped"))
     assert not model_unavailable(ProviderError())
 
 

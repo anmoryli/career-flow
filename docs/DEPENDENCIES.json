@@ -22,6 +22,15 @@
     ]
   },
   {
+    "name": "anthropic",
+    "version": "2.4.0",
+    "license": "Apache-2.0",
+    "project_urls": [
+      "Homepage, https://github.com/anthropics/anthropic-sdk-python",
+      "Repository, https://github.com/anthropics/anthropic-sdk-python"
+    ]
+  },
+  {
     "name": "anyio",
     "version": "4.15.1",
     "license": "MIT",
@@ -40,6 +49,14 @@
       "Chat, https://discord.gg/pallets",
       "Documentation, https://blinker.readthedocs.io",
       "Source, https://github.com/pallets-eco/blinker/"
+    ]
+  },
+  {
+    "name": "bracex",
+    "version": "3.2",
+    "license": "MIT",
+    "project_urls": [
+      "Homepage, https://github.com/facelessuser/bracex"
     ]
   },
   {
@@ -87,14 +104,6 @@
     ]
   },
   {
-    "name": "croniter",
-    "version": "6.2.4",
-    "license": "MIT",
-    "project_urls": [
-      "Homepage, https://github.com/pallets-eco/croniter"
-    ]
-  },
-  {
     "name": "cryptography",
     "version": "50.0.2",
     "license": "Apache-2.0 OR BSD-3-Clause",
@@ -105,6 +114,26 @@
       "issues, https://github.com/pyca/cryptography/issues",
       "source, https://github.com/pyca/cryptography/"
     ]
+  },
+  {
+    "name": "deepagents",
+    "version": "0.7.32",
+    "license": "MIT",
+    "project_urls": [
+      "Homepage, https://docs.langchain.com/oss/python/deepagents/overview",
+      "Documentation, https://reference.langchain.com/python/deepagents/",
+      "Repository, https://github.com/langchain-ai/deepagents",
+      "Issues, https://github.com/langchain-ai/deepagents/issues",
+      "Twitter, https://x.com/langchain_oss",
+      "Slack, https://www.langchain.com/join-community",
+      "Reddit, https://www.reddit.com/r/LangChain/"
+    ]
+  },
+  {
+    "name": "distro",
+    "version": "1.9.0",
+    "license": "Apache License, Version 2.0",
+    "project_urls": []
   },
   {
     "name": "dnspython",
@@ -118,9 +147,25 @@
     ]
   },
   {
+    "name": "docstring-parser",
+    "version": "0.18.0",
+    "license": "MIT",
+    "project_urls": [
+      "homepage, https://github.com/rr-/docstring_parser",
+      "repository, https://github.com/rr-/docstring_parser",
+      "changelog, https://github.com/rr-/docstring_parser/blob/master/CHANGELOG.md"
+    ]
+  },
+  {
     "name": "email-validator",
     "version": "2.3.0",
     "license": "Unlicense",
+    "project_urls": []
+  },
+  {
+    "name": "filetype",
+    "version": "1.2.0",
+    "license": "MIT",
     "project_urls": []
   },
   {
@@ -170,13 +215,17 @@
     ]
   },
   {
-    "name": "genai-prices",
-    "version": "0.0.73",
-    "license": "MIT",
+    "name": "google-auth",
+    "version": "2.62.1",
+    "license": "Apache 2.0",
+    "project_urls": []
+  },
+  {
+    "name": "google-genai",
+    "version": "2.34.0",
+    "license": "Apache-2.0",
     "project_urls": [
-      "Homepage, https://github.com/pydantic/genai-prices",
-      "Source, https://github.com/pydantic/genai-prices",
-      "Changelog, https://github.com/pydantic/genai-prices/releases"
+      "Homepage, https://github.com/googleapis/python-genai"
     ]
   },
   {
@@ -189,21 +238,6 @@
       "Repository, https://github.com/python-greenlet/greenlet",
       "Issues, https://github.com/python-greenlet/greenlet/issues",
       "Changelog, https://greenlet.readthedocs.io/en/latest/changes.html"
-    ]
-  },
-  {
-    "name": "griffelib",
-    "version": "2.4.1",
-    "license": "ISC",
-    "project_urls": [
-      "Homepage, https://mkdocstrings.github.io/griffe",
-      "Documentation, https://mkdocstrings.github.io/griffe",
-      "Changelog, https://mkdocstrings.github.io/griffe/changelog",
-      "Repository, https://github.com/mkdocstrings/griffe",
-      "Issues, https://github.com/mkdocstrings/griffe/issues",
-      "Discussions, https://github.com/mkdocstrings/griffe/discussions",
-      "Gitter, https://gitter.im/mkdocstrings/griffe",
-      "Funding, https://github.com/sponsors/pawamoy"
     ]
   },
   {
@@ -306,10 +340,179 @@
     "project_urls": []
   },
   {
-    "name": "logfire-api",
-    "version": "5.3.0",
-    "license": "MIT",
+    "name": "jsonpatch",
+    "version": "1.41",
+    "license": "BSD-3-Clause",
+    "project_urls": [
+      "Website, https://github.com/stefankoegl/python-json-patch",
+      "Repository, https://github.com/stefankoegl/python-json-patch.git",
+      "Documentation, https://python-json-patch.readthedocs.org/",
+      "PyPI, https://pypi.org/pypi/jsonpatch",
+      "Tests, https://github.com/stefankoegl/python-json-patch/actions",
+      "Test Coverage, https://coveralls.io/github/stefankoegl/python-json-patch"
+    ]
+  },
+  {
+    "name": "jsonpath-ng",
+    "version": "1.15.0",
+    "license": "Apache-2.0",
+    "project_urls": [
+      "Source, https://github.com/jsonpath-ng/jsonpath-ng"
+    ]
+  },
+  {
+    "name": "jsonpointer",
+    "version": "3.8",
+    "license": "Modified BSD License",
     "project_urls": []
+  },
+  {
+    "name": "langchain",
+    "version": "1.4.8",
+    "license": "MIT",
+    "project_urls": [
+      "Homepage, https://docs.langchain.com/",
+      "Documentation, https://reference.langchain.com/python/langchain/langchain/",
+      "Repository, https://github.com/langchain-ai/langchain",
+      "Issues, https://github.com/langchain-ai/langchain/issues",
+      "Changelog, https://github.com/langchain-ai/langchain/releases?q=tag%3A%22langchain%3D%3D1%22",
+      "Twitter, https://x.com/langchain_oss",
+      "Slack, https://www.langchain.com/join-community",
+      "Reddit, https://www.reddit.com/r/LangChain/"
+    ]
+  },
+  {
+    "name": "langchain-anthropic",
+    "version": "1.7.9",
+    "license": "MIT",
+    "project_urls": [
+      "Homepage, https://docs.langchain.com/oss/python/integrations/providers/anthropic",
+      "Documentation, https://reference.langchain.com/python/integrations/langchain_anthropic/",
+      "Repository, https://github.com/langchain-ai/langchain",
+      "Issues, https://github.com/langchain-ai/langchain/issues",
+      "Changelog, https://github.com/langchain-ai/langchain/releases?q=%22langchain-anthropic%22",
+      "Twitter, https://x.com/langchain_oss",
+      "Slack, https://www.langchain.com/join-community",
+      "Reddit, https://www.reddit.com/r/LangChain/"
+    ]
+  },
+  {
+    "name": "langchain-core",
+    "version": "1.7.4",
+    "license": "MIT",
+    "project_urls": [
+      "Homepage, https://docs.langchain.com/",
+      "Documentation, https://reference.langchain.com/python/langchain_core/",
+      "Repository, https://github.com/langchain-ai/langchain",
+      "Issues, https://github.com/langchain-ai/langchain/issues",
+      "Changelog, https://github.com/langchain-ai/langchain/releases?q=%22langchain-core%3D%3D1%22",
+      "Twitter, https://x.com/langchain_oss",
+      "Slack, https://www.langchain.com/join-community",
+      "Reddit, https://www.reddit.com/r/LangChain/"
+    ]
+  },
+  {
+    "name": "langchain-google-genai",
+    "version": "4.4.2",
+    "license": "MIT",
+    "project_urls": [
+      "Homepage, https://docs.langchain.com/oss/python/integrations/providers/google",
+      "Documentation, https://reference.langchain.com/python/integrations/langchain_google_genai/",
+      "Source, https://github.com/langchain-ai/langchain-google/tree/master/libs/genai",
+      "Changelog, https://github.com/langchain-ai/langchain-google/releases?q=%22genai%22",
+      "Twitter, https://x.com/LangChainAI",
+      "Slack, https://www.langchain.com/join-community",
+      "Reddit, https://www.reddit.com/r/LangChain/"
+    ]
+  },
+  {
+    "name": "langchain-openai",
+    "version": "1.7.3",
+    "license": "MIT",
+    "project_urls": [
+      "Homepage, https://docs.langchain.com/oss/python/integrations/providers/openai",
+      "Documentation, https://reference.langchain.com/python/integrations/langchain_openai/",
+      "Repository, https://github.com/langchain-ai/langchain",
+      "Issues, https://github.com/langchain-ai/langchain/issues",
+      "Changelog, https://github.com/langchain-ai/langchain/releases?q=%22langchain-openai%22",
+      "Twitter, https://x.com/langchain_oss",
+      "Slack, https://www.langchain.com/join-community",
+      "Reddit, https://www.reddit.com/r/LangChain/"
+    ]
+  },
+  {
+    "name": "langchain-protocol",
+    "version": "0.0.20",
+    "license": "MIT",
+    "project_urls": [
+      "Homepage, https://github.com/langchain-ai/agent-protocol/tree/main/streaming",
+      "Repository, https://github.com/langchain-ai/agent-protocol",
+      "Issues, https://github.com/langchain-ai/agent-protocol/issues"
+    ]
+  },
+  {
+    "name": "langgraph",
+    "version": "1.2.19",
+    "license": "MIT",
+    "project_urls": [
+      "Homepage, https://docs.langchain.com/oss/python/langgraph/overview",
+      "Documentation, https://reference.langchain.com/python/langgraph/",
+      "Source, https://github.com/langchain-ai/langgraph/tree/main/libs/langgraph",
+      "Changelog, https://github.com/langchain-ai/langgraph/releases",
+      "Twitter, https://x.com/langchain_oss",
+      "Slack, https://www.langchain.com/join-community",
+      "Reddit, https://www.reddit.com/r/LangChain/"
+    ]
+  },
+  {
+    "name": "langgraph-checkpoint",
+    "version": "4.3.1",
+    "license": "MIT",
+    "project_urls": [
+      "Source, https://github.com/langchain-ai/langgraph/tree/main/libs/checkpoint",
+      "Twitter, https://x.com/langchain_oss",
+      "Slack, https://www.langchain.com/join-community",
+      "Reddit, https://www.reddit.com/r/LangChain/"
+    ]
+  },
+  {
+    "name": "langgraph-checkpoint-redis",
+    "version": "0.6.0",
+    "license": "MIT",
+    "project_urls": [
+      "Repository, https://www.github.com/redis-developer/langgraph-redis"
+    ]
+  },
+  {
+    "name": "langgraph-prebuilt",
+    "version": "1.1.1",
+    "license": "MIT",
+    "project_urls": [
+      "Source, https://github.com/langchain-ai/langgraph/tree/main/libs/prebuilt",
+      "Twitter, https://x.com/langchain_oss",
+      "Slack, https://www.langchain.com/join-community",
+      "Reddit, https://www.reddit.com/r/LangChain/"
+    ]
+  },
+  {
+    "name": "langgraph-sdk",
+    "version": "0.4.11",
+    "license": "MIT",
+    "project_urls": [
+      "Source, https://github.com/langchain-ai/langgraph/tree/main/libs/sdk-py",
+      "Twitter, https://x.com/langchain_oss",
+      "Slack, https://www.langchain.com/join-community",
+      "Reddit, https://www.reddit.com/r/LangChain/"
+    ]
+  },
+  {
+    "name": "langsmith",
+    "version": "0.14.17",
+    "license": "MIT",
+    "project_urls": [
+      "Homepage, https://github.com/langchain-ai/langsmith-python",
+      "Repository, https://github.com/langchain-ai/langsmith-python"
+    ]
   },
   {
     "name": "mako",
@@ -334,6 +537,28 @@
     ]
   },
   {
+    "name": "ml-dtypes",
+    "version": "0.6.0",
+    "license": "Apache-2.0",
+    "project_urls": [
+      "homepage, https://github.com/jax-ml/ml_dtypes",
+      "repository, https://github.com/jax-ml/ml_dtypes"
+    ]
+  },
+  {
+    "name": "numpy",
+    "version": "2.5.4",
+    "license": "BSD-3-Clause AND 0BSD AND MIT AND Zlib AND CC0-1.0",
+    "project_urls": [
+      "homepage, https://numpy.org",
+      "documentation, https://numpy.org/doc/",
+      "source, https://github.com/numpy/numpy",
+      "download, https://pypi.org/project/numpy/#files",
+      "tracker, https://github.com/numpy/numpy/issues",
+      "release notes, https://numpy.org/doc/stable/release"
+    ]
+  },
+  {
     "name": "openai",
     "version": "3.37.0",
     "license": "Apache-2.0",
@@ -349,6 +574,24 @@
     "project_urls": [
       "Homepage, https://github.com/open-telemetry/opentelemetry-python/tree/main/opentelemetry-api",
       "Repository, https://github.com/open-telemetry/opentelemetry-python"
+    ]
+  },
+  {
+    "name": "orjson",
+    "version": "3.13.0",
+    "license": "MPL-2.0 AND (Apache-2.0 OR MIT)",
+    "project_urls": [
+      "changelog, https://github.com/ijl/orjson/blob/master/CHANGELOG.md",
+      "documentation, https://github.com/ijl/orjson",
+      "source, https://github.com/ijl/orjson"
+    ]
+  },
+  {
+    "name": "ormsgpack",
+    "version": "1.13.0",
+    "license": "Apache-2.0 OR MIT",
+    "project_urls": [
+      "Homepage, https://github.com/ormsgpack/ormsgpack"
     ]
   },
   {
@@ -390,6 +633,28 @@
     ]
   },
   {
+    "name": "pyasn1",
+    "version": "0.6.5",
+    "license": "BSD-2-Clause",
+    "project_urls": [
+      "Homepage, https://github.com/pyasn1/pyasn1",
+      "Documentation, https://pyasn1.readthedocs.io",
+      "Source, https://github.com/pyasn1/pyasn1",
+      "Issues, https://github.com/pyasn1/pyasn1/issues",
+      "Changelog, https://pyasn1.readthedocs.io/en/latest/changelog.html"
+    ]
+  },
+  {
+    "name": "pyasn1-modules",
+    "version": "0.4.2",
+    "license": "BSD",
+    "project_urls": [
+      "Source, https://github.com/pyasn1/pyasn1-modules",
+      "Issues, https://github.com/pyasn1/pyasn1-modules/issues",
+      "Changelog, https://github.com/pyasn1/pyasn1-modules/blob/master/CHANGES.txt"
+    ]
+  },
+  {
     "name": "pycparser",
     "version": "3.11",
     "license": "BSD-3-Clause",
@@ -410,17 +675,6 @@
     ]
   },
   {
-    "name": "pydantic-ai-slim",
-    "version": "1.107.9",
-    "license": "MIT",
-    "project_urls": [
-      "Homepage, https://github.com/pydantic/pydantic-ai/tree/main/pydantic_ai_slim",
-      "Source, https://github.com/pydantic/pydantic-ai/tree/main/pydantic_ai_slim",
-      "Documentation, https://ai.pydantic.dev/install/#slim-install",
-      "Changelog, https://github.com/pydantic/pydantic-ai/releases"
-    ]
-  },
-  {
     "name": "pydantic-core",
     "version": "2.50.1",
     "license": "MIT",
@@ -428,17 +682,6 @@
       "Funding, https://github.com/sponsors/samuelcolvin",
       "Homepage, https://github.com/pydantic",
       "Source, https://github.com/pydantic/pydantic/tree/main/pydantic-core"
-    ]
-  },
-  {
-    "name": "pydantic-graph",
-    "version": "1.107.9",
-    "license": "MIT",
-    "project_urls": [
-      "Homepage, https://ai.pydantic.dev/graph/tree/main/pydantic_graph",
-      "Source, https://github.com/pydantic/pydantic-ai",
-      "Documentation, https://ai.pydantic.dev/graph",
-      "Changelog, https://github.com/pydantic/pydantic-ai/releases"
     ]
   },
   {
@@ -463,20 +706,36 @@
     ]
   },
   {
-    "name": "python-dateutil",
-    "version": "2.9.0.post0",
-    "license": "Dual License",
-    "project_urls": [
-      "Documentation, https://dateutil.readthedocs.io/en/stable/",
-      "Source, https://github.com/dateutil/dateutil"
-    ]
-  },
-  {
     "name": "python-dotenv",
     "version": "1.2.4",
     "license": "BSD-3-Clause",
     "project_urls": [
       "Source, https://github.com/theskumar/python-dotenv"
+    ]
+  },
+  {
+    "name": "python-ulid",
+    "version": "4.1.0",
+    "license": "MIT",
+    "project_urls": [
+      "Homepage, https://github.com/mdomke/python-ulid",
+      "Documentation, https://python-ulid.readthedocs.io",
+      "Changelog, https://python-ulid.readthedocs.io/en/latest/changelog.html",
+      "Issues, https://github.com/mdomke/python-ulid/issues",
+      "CI, https://github.com/mdomke/python-ulid/actions",
+      "Repository, https://github.com/mdomke/python-ulid"
+    ]
+  },
+  {
+    "name": "pyyaml",
+    "version": "6.0.3",
+    "license": "MIT",
+    "project_urls": [
+      "Bug Tracker, https://github.com/yaml/pyyaml/issues",
+      "CI, https://github.com/yaml/pyyaml/actions",
+      "Documentation, https://pyyaml.org/wiki/PyYAMLDocumentation",
+      "Mailing lists, http://lists.sourceforge.net/lists/listinfo/yaml-core",
+      "Source Code, https://github.com/yaml/pyyaml"
     ]
   },
   {
@@ -489,6 +748,16 @@
       "Documentation, https://redis.readthedocs.io/en/latest/",
       "Homepage, https://github.com/redis/redis-py",
       "Issue tracker, https://github.com/redis/redis-py/issues"
+    ]
+  },
+  {
+    "name": "redisvl",
+    "version": "0.30.0",
+    "license": "MIT",
+    "project_urls": [
+      "Homepage, https://github.com/redis/redis-vl-python",
+      "Repository, https://github.com/redis/redis-vl-python",
+      "Documentation, https://docs.redisvl.com"
     ]
   },
   {
@@ -509,21 +778,13 @@
     ]
   },
   {
-    "name": "rq",
-    "version": "2.12.0",
-    "license": "BSD-2-Clause",
+    "name": "requests-toolbelt",
+    "version": "1.0.0",
+    "license": "Apache 2.0",
     "project_urls": [
-      "changelog, https://github.com/rq/rq/blob/master/CHANGES.md",
-      "documentation, https://python-rq.org/docs/",
-      "homepage, https://python-rq.org/",
-      "repository, https://github.com/rq/rq/"
+      "Changelog, https://github.com/requests/toolbelt/blob/master/HISTORY.rst",
+      "Source, https://github.com/requests/toolbelt"
     ]
-  },
-  {
-    "name": "six",
-    "version": "1.17.0",
-    "license": "MIT",
-    "project_urls": []
   },
   {
     "name": "sniffio",
@@ -543,6 +804,12 @@
       "Documentation, https://docs.sqlalchemy.org",
       "Issue Tracker, https://github.com/sqlalchemy/sqlalchemy/"
     ]
+  },
+  {
+    "name": "tenacity",
+    "version": "9.1.4",
+    "license": "Apache 2.0",
+    "project_urls": []
   },
   {
     "name": "tiktoken",
@@ -600,6 +867,36 @@
     ]
   },
   {
+    "name": "uuid-utils",
+    "version": "0.19.0",
+    "license": "BSD-3-Clause",
+    "project_urls": [
+      "Documentation, https://github.com/aminalaee/uuid-utils",
+      "Issues, https://github.com/aminalaee/uuid-utils/issues",
+      "Source, https://github.com/aminalaee/uuid-utils"
+    ]
+  },
+  {
+    "name": "wcmatch",
+    "version": "11.2",
+    "license": "MIT",
+    "project_urls": [
+      "Homepage, https://github.com/facelessuser/wcmatch"
+    ]
+  },
+  {
+    "name": "websockets",
+    "version": "17.4",
+    "license": "BSD-3-Clause",
+    "project_urls": [
+      "Homepage, https://github.com/python-websockets/websockets",
+      "Changelog, https://websockets.readthedocs.io/en/stable/project/changelog.html",
+      "Documentation, https://websockets.readthedocs.io/",
+      "Funding, https://tidelift.com/subscription/pkg/pypi-websockets?utm_source=pypi-websockets&utm_medium=referral&utm_campaign=readme",
+      "Tracker, https://github.com/python-websockets/websockets/issues"
+    ]
+  },
+  {
     "name": "werkzeug",
     "version": "3.1.9",
     "license": "BSD-3-Clause",
@@ -621,6 +918,21 @@
       "Source Code, https://github.com/pallets-eco/wtforms/",
       "Issue Tracker, https://github.com/pallets-eco/wtforms/issues",
       "Chat, https://discord.gg/pallets"
+    ]
+  },
+  {
+    "name": "xxhash",
+    "version": "4.0.2",
+    "license": "BSD-2-Clause",
+    "project_urls": []
+  },
+  {
+    "name": "zstandard",
+    "version": "0.25.0",
+    "license": "BSD-3-Clause",
+    "project_urls": [
+      "Homepage, https://github.com/indygreg/python-zstandard",
+      "Documentation, https://python-zstandard.readthedocs.io/en/latest/"
     ]
   }
 ]

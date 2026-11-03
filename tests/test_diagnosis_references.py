@@ -98,6 +98,7 @@ def test_cumulative_siliconflow_usage_is_not_added_per_chunk(app, monkeypatch):
         return httpx.Response(200, headers={"content-type": "text/event-stream"}, content=payload)
 
     def client(**kwargs):
+        kwargs.pop("http_client", None)
         return original_client(
             **kwargs, http_client=httpx.AsyncClient(transport=httpx.MockTransport(respond))
         )

@@ -14,7 +14,6 @@ No third-party resume/application repository was copied into this project. The i
 | redis-py | Redis client | MIT |
 | python-dotenv | Local environment configuration | BSD-3-Clause |
 | Gunicorn | Linux production WSGI server | MIT |
-| pydantic-ai-slim 1.107.9 / pydantic-graph | Typed model adapter and structured output | MIT |
 | OpenAI Python SDK / HTTPX | Configured OpenAI-compatible transport | Apache-2.0 / BSD-3-Clause |
 | cryptography 50.0.2 | Encrypt administrator-managed service credentials at rest | Apache-2.0 OR BSD-3-Clause |
 | pdfplumber 0.11.10 / pdfminer.six | Bounded text PDF extraction | MIT |

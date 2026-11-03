@@ -4,6 +4,10 @@ Live mode requires --budget-cny (0 < budget <= 5). The current supported live
 preflight accepts only the configured SiliconFlow Qwen free model, rechecks the
 vendor's current public price on every run and aborts if it is no longer free.
 No fallback, SDK retry, operation creation or paid provider is permitted.
+
+--orchestrated runs the same cases through the deepagents diagnosis
+orchestrator (planner + section analysts + writer) instead of the single-shot
+call; the graded gates are identical.
 """
 
 import argparse
@@ -87,24 +91,26 @@ def grade(case, output, snapshot):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--live", action="store_true")
+    parser.add_argument("--orchestrated", action="store_true")
     parser.add_argument("--budget-cny", type=Decimal)
     parser.add_argument("--output", default="output/product-model-evaluation.json")
     args = parser.parse_args()
     if args.live and (args.budget_cny is None or not 0 < args.budget_cny <= 5):
         parser.error("Live authorization requires 0 < --budget-cny <= 5")
     from app.career_schemas import ResumeDocument
-    from app.services.diagnosis_references import REFERENCE_INSTRUCTIONS, build_references
+    from app.services.diagnosis_references import build_references
 
     cases = json.loads((ROOT / "tests/fixtures/product_eval.json").read_text(encoding="utf8"))
     report = {
         "mode": "live" if args.live else "offline_contract_only",
+        "orchestrated": bool(args.orchestrated),
         "at": datetime.now(UTC).isoformat(),
         "synthetic_only": True,
         "budget_cny": str(args.budget_cny) if args.live else None,
-        "prompt_sha256": hashlib.sha256(REFERENCE_INSTRUCTIONS.encode()).hexdigest(),
         "cases": [],
         "estimated_cost_cny": "0" if args.live else None,
     }
+    prompt = None
     if args.live:
         import httpx
         from dotenv import load_dotenv
@@ -116,7 +122,6 @@ def main():
             runtime_model,
             runtime_model_profile,
         )
-        from app.services.model_provider import generate
 
         app = create_app()
         with app.app_context():
@@ -137,6 +142,13 @@ def main():
             report["configured_prompt_sha256"] = hashlib.sha256(
                 prompt["instructions"].encode()
             ).hexdigest()
+        if args.orchestrated:
+            from app.services.agent_orchestrator import run_diagnosis_agent
+
+            def run(snapshot):
+                output, calls, tokens = run_diagnosis_agent(snapshot)
+                return output, calls, tokens
+
     for case in cases:
         document = ResumeDocument.model_validate(case["document"]).model_dump(mode="json")
         snapshot = {
@@ -163,15 +175,33 @@ def main():
             start = time.monotonic()
             try:
                 with app.app_context():
-                    output, usage = generate(snapshot)
-                    checks, result = grade(case, output, snapshot)
-                row.update(
-                    checks=checks,
-                    passed=all(checks.values()),
-                    result=result,
-                    input_tokens=usage.input_tokens,
-                    output_tokens=usage.output_tokens,
-                )
+                    if args.orchestrated:
+                        output, calls, total = run(snapshot)
+                        checks, result = grade(case, output, snapshot)
+                        row.update(
+                            checks=checks,
+                            passed=all(checks.values()),
+                            result=result,
+                            llm_calls=len(calls),
+                            provider_errors=sum(
+                                1 for call in calls if call["outcome"] != "returned"
+                            ),
+                            input_tokens=sum(call["input"] or 0 for call in calls),
+                            output_tokens=sum(call["output"] or 0 for call in calls),
+                            total_tokens=total,
+                        )
+                    else:
+                        from app.services.model_provider import generate
+
+                        output, usage = generate(snapshot)
+                        checks, result = grade(case, output, snapshot)
+                        row.update(
+                            checks=checks,
+                            passed=all(checks.values()),
+                            result=result,
+                            input_tokens=usage.input_tokens,
+                            output_tokens=usage.output_tokens,
+                        )
             except Exception as error:
                 row.update(passed=False, error_type=type(error).__name__)
             row["latency_seconds"] = round(time.monotonic() - start, 3)
