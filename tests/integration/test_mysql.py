@@ -52,18 +52,22 @@ def new_conversation(app, user_id):
 def test_mysql_version_schema_engine_charset(mysql_app):
     with mysql_app.app_context():
         assert db.session.scalar(text("SELECT VERSION()")).startswith("8.4.")
-        assert db.session.scalar(text("SELECT version_num FROM alembic_version")) == "e8a431c02d9f"
+        assert db.session.scalar(text("SELECT version_num FROM alembic_version")) == "f1c2d3e4a5b6"
         rows = db.session.execute(
             text(
                 "SELECT ENGINE,TABLE_COLLATION FROM information_schema.TABLES "
                 "WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME != 'alembic_version'"
             )
         ).all()
-        assert len(rows) == len(db.metadata.tables) == 30
+        assert len(rows) == len(db.metadata.tables) == 29
         assert all(
             engine == "InnoDB" and collation == "utf8mb4_0900_ai_ci" for engine, collation in rows
         )
         assert len(inspect(db.engine).get_foreign_keys("conversation_memories")) == 1
+        # 扁平化后版本表消失，简历文档直接落在 resumes 上
+        assert not inspect(db.engine).has_table("resume_versions")
+        resume_columns = {column["name"] for column in inspect(db.engine).get_columns("resumes")}
+        assert {"template", "document", "created_at", "last_save_key"} <= resume_columns
     assert mysql_app.test_client().get("/health/ready").status_code == 200
 
 

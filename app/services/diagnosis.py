@@ -16,7 +16,7 @@ from app.models import (
     Diagnostic,
     DiagnosticAnswer,
     JobTarget,
-    ResumeVersion,
+    Resume,
     utcnow,
 )
 from app.services.career import owned, save_resume
@@ -99,13 +99,13 @@ def quote(user_id, diagnostic_id, data):
     if data.kind == "analysis" and diagnostic.rounds >= 10:
         raise BusinessError("追问已达十轮，请生成报告。", 409)
     job = owned(JobTarget, user_id, diagnostic.job_id)
-    version = db.session.get(ResumeVersion, job.resume_version_id)
+    resume = owned(Resume, user_id, job.resume_id)
     answers = db.session.scalars(
         select(DiagnosticAnswer)
         .where(DiagnosticAnswer.diagnostic_id == diagnostic.id)
         .order_by(DiagnosticAnswer.round)
     ).all()
-    document = dict(version.document)
+    document = dict(resume.document)
     document.pop("photo", None)  # A text model never needs the user's photo.
     hidden_sections = document.get("hidden_sections", [])
     hidden_custom_ids = {
@@ -558,8 +558,8 @@ def apply_suggestions(user_id, operation_id, data):
         raise BusinessError("任务尚未完成。", 409)
     diagnostic = owned(Diagnostic, user_id, item.diagnostic_id)
     job = owned(JobTarget, user_id, diagnostic.job_id)
-    version = db.session.get(ResumeVersion, job.resume_version_id)
-    document = copy.deepcopy(version.document)
+    resume = owned(Resume, user_id, job.resume_id)
+    document = copy.deepcopy(resume.document)
     from app.services.product import ensure_full_access
     ensure_full_access(user_id,item)
     suggestions = item.result["suggestions"]
@@ -575,7 +575,7 @@ def apply_suggestions(user_id, operation_id, data):
         parent[key] = data.edits.get(index, suggestion["proposed"])
     from app.services.diagnosis_references import editable_targets
 
-    allowed = {target["path"] for target in editable_targets(version.document).values()}
+    allowed = {target["path"] for target in editable_targets(resume.document).values()}
     if not set(data.paragraph_edits).issubset(allowed):
         raise BusinessError("只能修改本次简历中已有的可编辑段落。", 422)
     selected_paths = {suggestions[index]["path"] for index in data.indices}
@@ -598,16 +598,16 @@ def apply_suggestions(user_id, operation_id, data):
             )
             sections.append({"id": section_id, "title": "岗位相关补充", "content": content})
             document.setdefault("section_order", []).append(f"custom:{section_id}")
-    document["photo"] = version.document.get("photo", "")
+    document["photo"] = resume.document.get("photo", "")
     return save_resume(
         user_id,
         ResumeSave(
             request_key=data.request_key,
             title=data.title,
-            template=version.template,
+            template=resume.template,
             document=document,
         ),
-        parent_id=version.resume_id,
+        parent_id=resume.id,
         source_operation_id=item.id,
     )
 

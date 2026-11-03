@@ -10,18 +10,17 @@ from app.models import AIOperation, ModelCallUsage, ProductEvent, User, utcnow
 from app.services.product import record_event
 
 
-def resume_saved(user_id, resume, version):
-    if version.revision == 1:
+def resume_saved(user_id, resume):
+    if resume.revision == 1:
         record_event(user_id, "resume_created", f"resume-created:{resume.id}", resume_id=resume.id)
     record_event(
         user_id,
         "resume_saved",
-        f"resume-saved:{version.id}",
+        f"resume-saved:{resume.id}:{resume.revision}",
         resume_id=resume.id,
-        version_id=version.id,
-        revision=version.revision,
+        revision=resume.revision,
     )
-    doc = version.document
+    doc = resume.document
     if doc.get("name") and (
         doc.get("summary") or any(doc.get(key) for key in ("experiences", "projects", "education"))
     ):
@@ -30,7 +29,6 @@ def resume_saved(user_id, resume, version):
             "resume_completed",
             f"resume-completed:{resume.id}",
             resume_id=resume.id,
-            version_id=version.id,
         )
     from app.services.resume_ai import field_value
 
@@ -60,7 +58,6 @@ def resume_saved(user_id, resume, version):
                 f"ai-adopted:{op.id}",
                 operation_id=op.id,
                 resume_id=resume.id,
-                version_id=version.id,
                 path=op.result["path"],
             )
         elif any(event.properties.get("operation_id") == op.id for event in adopted):
@@ -70,7 +67,6 @@ def resume_saved(user_id, resume, version):
                 f"ai-edited:{op.id}",
                 operation_id=op.id,
                 resume_id=resume.id,
-                version_id=version.id,
             )
 
 

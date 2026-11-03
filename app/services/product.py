@@ -12,7 +12,6 @@ from app.models import (
     ModelCallUsage,
     ProductEvent,
     ResumeExportGrant,
-    ResumeVersion,
     utcnow,
 )
 from app.product_schemas import ProductPolicy
@@ -37,7 +36,6 @@ EVENTS = {
 }
 PROPERTIES = {
     "resume_id",
-    "version_id",
     "revision",
     "operation_id",
     "diagnostic_id",
@@ -265,17 +263,13 @@ def public_result(user_id, operation):
 
 def export_info(user_id):
     grant = db.session.get(ResumeExportGrant, user_id)
-    version = (
-        db.session.get(ResumeVersion, grant.version_id) if grant and grant.version_id else None
-    )
     return dict(
         free_export_remaining=0 if grant else 1,
-        free_export_resume_id=version.resume_id if version else None,
-        free_export_revision=version.revision if version else None,
+        free_export_resume_id=grant.resume_id if grant else None,
     )
 
 
-def authorize_export(user_id, version, *, consume=False):
+def authorize_export(user_id, resume, *, consume=False):
     from app.services.commerce import lock_user, membership_active
 
     lock_user(user_id)
@@ -286,20 +280,19 @@ def authorize_export(user_id, version, *, consume=False):
             .with_for_update()
             .execution_options(populate_existing=True)
         )
-        if grant and grant.version_id != version.id:
-            raise BusinessError("一次免费PDF导出已使用；原版本可重复下载，其他版本需会员。", 403)
+        if grant and grant.resume_id != resume.id:
+            raise BusinessError("一次免费PDF导出已使用；这份简历可重复下载，其他简历需会员。", 403)
         if grant is None:
             if not consume:
                 raise BusinessError("请先通过编辑器的“首次免费导出”领取本次PDF。", 403)
-            db.session.add(ResumeExportGrant(user_id=user_id, version_id=version.id))
+            db.session.add(ResumeExportGrant(user_id=user_id, resume_id=resume.id))
     if consume:
         record_event(
             user_id,
             "pdf_exported",
-            f"export:{version.id}",
-            resume_id=version.resume_id,
-            version_id=version.id,
-            revision=version.revision,
+            f"export:{resume.id}:{resume.revision}",
+            resume_id=resume.id,
+            revision=resume.revision,
         )
     db.session.commit()
 

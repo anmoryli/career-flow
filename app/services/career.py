@@ -8,7 +8,7 @@ from sqlalchemy.exc import IntegrityError
 
 from app.career_schemas import ResumeSave
 from app.extensions import db
-from app.models import AIOperation, JobTarget, Resume, ResumeVersion, User
+from app.models import AIOperation, JobTarget, Resume, User
 from app.services.errors import BusinessError
 
 
@@ -22,29 +22,14 @@ def owned(model, user_id, item_id, lock=False):
     return item
 
 
-def version_of(resume, revision=None):
-    item = db.session.scalar(
-        select(ResumeVersion)
-        .where(
-            ResumeVersion.resume_id == resume.id,
-            ResumeVersion.revision == (revision if revision is not None else resume.revision),
-        )
-        .with_for_update(read=True)
-    )
-    if item is None:
-        raise BusinessError("简历版本不存在。", 404)
-    return item
-
-
-def serialize_resume(item, version=None):
-    version = version or version_of(item)
+def serialize_resume(item):
     return {
         "id": item.id,
-        "title": version.title,
-        "revision": version.revision,
-        "template": version.template,
-        "document": version.document,
-        "created_at": version.created_at.isoformat() + "Z",
+        "title": item.title,
+        "revision": item.revision,
+        "template": item.template,
+        "document": item.document,
+        "created_at": item.created_at.isoformat() + "Z",
         "parent_id": item.parent_id,
         "updated_at": item.updated_at.isoformat() + "Z",
     }
@@ -102,19 +87,16 @@ def save_resume(user_id, data, resume_id=None, parent_id=None, *, source_operati
         if item:
             if resume_id is None and item.parent_id != parent_id:
                 raise BusinessError("复制来源与重复请求不一致。", 409)
-            previous = db.session.scalar(
-                select(ResumeVersion)
-                .where(ResumeVersion.resume_id == item.id, ResumeVersion.request_key == key)
-                .with_for_update()
-            )
-            if previous:
+            # A retried save (same request key) is idempotent; another save
+            # since then must have bumped the revision and conflict.
+            if item.last_save_key == key:
                 if (
-                    previous.document != document
-                    or previous.title != data.title
-                    or previous.template != data.template
+                    item.document != document
+                    or item.title != data.title
+                    or item.template != data.template
                 ):
                     raise BusinessError("重复请求的内容不一致。", 409)
-                result = serialize_resume(item, previous)
+                result = serialize_resume(item)
                 db.session.commit()
                 return result
             if data.revision != item.revision:
@@ -126,31 +108,42 @@ def save_resume(user_id, data, resume_id=None, parent_id=None, *, source_operati
 
             ensure_resume_capacity(user_id)
             item = Resume(
-                user_id=user_id, request_key=key, title=data.title, revision=0, parent_id=parent_id
+                user_id=user_id,
+                request_key=key,
+                title=data.title,
+                template=data.template,
+                document=document,
+                revision=0,
+                parent_id=parent_id,
             )
             db.session.add(item)
             db.session.flush()
         item.revision += 1
         item.title = data.title
-        version = ResumeVersion(
-            resume_id=item.id,
-            revision=item.revision,
-            request_key=key,
-            title=data.title,
-            template=data.template,
-            document=document,
-        )
-        db.session.add(version)
+        item.template = data.template
+        item.document = document
+        item.last_save_key = key
         db.session.flush()
         from app.services.product_metrics import resume_saved
-        resume_saved(user_id,item,version)
+
+        resume_saved(user_id, item)
         if source_operation_id is not None:
             from app.services.product import record_event
-            operation=owned(AIOperation,user_id,source_operation_id)
-            record_event(user_id,"job_version_saved",f"job-version:{item.id}",resume_id=item.id,parent_id=item.parent_id,version_id=version.id,operation_id=operation.id,diagnostic_id=operation.diagnostic_id)
+
+            operation = owned(AIOperation, user_id, source_operation_id)
+            record_event(
+                user_id,
+                "job_version_saved",
+                f"job-version:{item.id}",
+                resume_id=item.id,
+                parent_id=item.parent_id,
+                operation_id=operation.id,
+                diagnostic_id=operation.diagnostic_id,
+                revision=item.revision,
+            )
         db.session.commit()
         db.session.refresh(item)
-        return serialize_resume(item, version)
+        return serialize_resume(item)
     except IntegrityError:
         db.session.rollback()
         raise BusinessError("保存冲突，请重试。", 409) from None
@@ -158,14 +151,13 @@ def save_resume(user_id, data, resume_id=None, parent_id=None, *, source_operati
 
 def copy_resume(user_id, resume_id, data):
     original = owned(Resume, user_id, resume_id)
-    version = version_of(original)
     return save_resume(
         user_id,
         ResumeSave(
             request_key=data.request_key,
             title=data.title,
-            template=version.template,
-            document=version.document,
+            template=original.template,
+            document=original.document,
         ),
         parent_id=original.id,
     )
@@ -174,7 +166,8 @@ def copy_resume(user_id, resume_id, data):
 def save_job(user_id, data):
     db.session.scalar(select(User).where(User.id == user_id).with_for_update())
     resume = owned(Resume, user_id, data.resume_id, True)
-    version = version_of(resume, data.resume_revision)
+    if resume.revision != data.resume_revision:
+        raise BusinessError("简历已更新，请刷新后重新创建岗位。", 409)
     if data.url and not data.url.startswith(("https://", "http://")):
         raise BusinessError("来源链接必须以 http:// 或 https:// 开头。", 422)
     values = {
@@ -182,7 +175,8 @@ def save_job(user_id, data):
         "company": data.company,
         "description": data.description,
         "url": data.url,
-        "resume_version_id": version.id,
+        "resume_id": resume.id,
+        "resume_revision": resume.revision,
         "is_saved": data.save_for_later,
     }
     item = db.session.scalar(

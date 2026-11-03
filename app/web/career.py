@@ -1,9 +1,9 @@
-from flask import Blueprint, g, render_template, request
+from flask import Blueprint, g, render_template
 from sqlalchemy import delete, select
 
 from app.career_schemas import ConfirmDelete, CopyResume, JobSave, ResumeSave
 from app.extensions import db
-from app.models import AIOperation, JobTarget, Resume, ResumeVersion
+from app.models import AIOperation, JobTarget, Resume
 from app.resume_ai_schemas import ResumeAIQuote, ResumeComposeQuote
 from app.services import career, resume_ai, task_queue
 from app.services.errors import BusinessError
@@ -38,19 +38,6 @@ def copy_resume(item_id):
     return career.copy_resume(g.user.id, item_id, CopyResume.model_validate(input_data())), 201
 
 
-@career_web.get("/api/resumes/<int:item_id>/versions")
-@login_required
-def versions(item_id):
-    item = career.owned(Resume, g.user.id, item_id)
-    rows = db.session.scalars(
-        select(ResumeVersion)
-        .where(ResumeVersion.resume_id == item.id)
-        .order_by(ResumeVersion.revision.desc())
-        .limit(100)
-    ).all()
-    return {"versions": [career.serialize_resume(item, version) for version in rows]}
-
-
 @career_web.post("/api/resumes/<int:item_id>/delete")
 @login_required
 def delete_resume(item_id):
@@ -60,10 +47,7 @@ def delete_resume(item_id):
     owner_lock(g.user.id)
     item = career.owned(Resume, g.user.id, item_id, True)
     linked = db.session.scalar(
-        select(JobTarget.id)
-        .join(ResumeVersion, JobTarget.resume_version_id == ResumeVersion.id)
-        .where(ResumeVersion.resume_id == item.id)
-        .limit(1)
+        select(JobTarget.id).where(JobTarget.resume_id == item.id).limit(1)
     )
     if linked:
         raise BusinessError("这份简历已关联岗位，请先删除对应岗位再删除简历。", 409)
@@ -88,8 +72,7 @@ def create_job():
 @login_required
 def get_job(item_id):
     item = career.owned(JobTarget, g.user.id, item_id)
-    version = db.session.get(ResumeVersion, item.resume_version_id)
-    resume = career.owned(Resume, g.user.id, version.resume_id)
+    resume = career.owned(Resume, g.user.id, item.resume_id)
     return {
         "id": item.id,
         "title": item.title,
@@ -98,7 +81,7 @@ def get_job(item_id):
         "url": item.url,
         "is_saved": item.is_saved,
         "resume_id": resume.id,
-        "resume_revision": version.revision,
+        "resume_revision": item.resume_revision,
     }
 
 
@@ -122,10 +105,10 @@ def delete_job(item_id):
 @login_required
 def print_resume(item_id):
     item = career.owned(Resume, g.user.id, item_id)
-    version = career.version_of(item, request.args.get("revision", type=int))
     from app.services.product import authorize_export
-    authorize_export(g.user.id,version)
-    return render_template("frontend/resume/print.html", resume=item, version=version)
+
+    authorize_export(g.user.id, item)
+    return render_template("frontend/resume/print.html", resume=item)
 
 
 def resume_operation_json(item):

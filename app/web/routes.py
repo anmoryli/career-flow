@@ -233,7 +233,6 @@ def workspace():
         JobTarget,
         Membership,
         Resume,
-        ResumeVersion,
     )
     from app.services import commerce
     from app.services.career import owned, serialize_resume
@@ -248,7 +247,7 @@ def workspace():
         guest_entitlements = SimpleNamespace(
             resume_count=0, resume_limit=10, free_resume_limit=2,
             can_create_resume=True, can_export_resume=True,
-            free_export_remaining=1,free_export_resume_id=None,free_export_revision=None,
+            free_export_remaining=1,free_export_resume_id=None,
             is_member=False, plan_name="免费版", expires_at=None,
             resume_ai_remaining=5,
         )
@@ -269,12 +268,7 @@ def workspace():
     ).all()
     resume_previews = {}
     if view in {"dashboard", "resumes"} and resumes:
-        versions = db.session.scalars(
-            select(ResumeVersion)
-            .join(Resume, ResumeVersion.resume_id == Resume.id)
-            .where(Resume.user_id == g.user.id, ResumeVersion.revision == Resume.revision)
-        ).all()
-        resume_previews = {version.resume_id: version for version in versions}
+        resume_previews = {resume.id: resume for resume in resumes}
     jobs = db.session.scalars(
         select(JobTarget)
         .where(JobTarget.user_id == g.user.id)

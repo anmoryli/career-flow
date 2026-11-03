@@ -27,8 +27,8 @@ class ResumeExportGrant(db.Model):
     user_id: Mapped[int] = mapped_column(
         ForeignKey("users.id", ondelete="CASCADE"), primary_key=True
     )
-    version_id: Mapped[int | None] = mapped_column(
-        ForeignKey("resume_versions.id", ondelete="SET NULL")
+    resume_id: Mapped[int | None] = mapped_column(
+        ForeignKey("resumes.id", ondelete="SET NULL")
     )
     created_at: Mapped[datetime] = mapped_column(default=utcnow, index=True)
 

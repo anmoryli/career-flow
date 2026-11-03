@@ -1,4 +1,4 @@
-"""Relational ownership/version links with immutable structured document snapshots."""
+"""Relational ownership links plus the one current structured document per resume."""
 
 from datetime import datetime
 
@@ -10,32 +10,23 @@ from app.models import TABLE_OPTIONS, utcnow
 
 
 class Resume(db.Model):
+    """One current document per resume: saving overwrites, no version history."""
+
     __tablename__ = "resumes"
     __table_args__ = (UniqueConstraint("user_id", "request_key"), TABLE_OPTIONS)
     id: Mapped[int] = mapped_column(primary_key=True)
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
     request_key: Mapped[str] = mapped_column(String(36))
     title: Mapped[str] = mapped_column(String(120))
+    template: Mapped[str] = mapped_column(String(16), default="classic")
+    document: Mapped[dict] = mapped_column(JSON, default=dict)
+    # Monotonic counter for optimistic concurrency and analysis provenance;
+    # it is not a version history.
     revision: Mapped[int] = mapped_column(default=0)
+    last_save_key: Mapped[str | None] = mapped_column(String(36), nullable=True)
     parent_id: Mapped[int | None] = mapped_column(ForeignKey("resumes.id", ondelete="SET NULL"))
-    updated_at: Mapped[datetime] = mapped_column(default=utcnow, onupdate=utcnow)
-
-
-class ResumeVersion(db.Model):
-    __tablename__ = "resume_versions"
-    __table_args__ = (
-        UniqueConstraint("resume_id", "revision", name="uq_resume_versions_revision"),
-        UniqueConstraint("resume_id", "request_key", name="uq_resume_versions_request"),
-        TABLE_OPTIONS,
-    )
-    id: Mapped[int] = mapped_column(primary_key=True)
-    resume_id: Mapped[int] = mapped_column(ForeignKey("resumes.id", ondelete="CASCADE"), index=True)
-    revision: Mapped[int]
-    request_key: Mapped[str] = mapped_column(String(36))
-    title: Mapped[str] = mapped_column(String(120))
-    template: Mapped[str] = mapped_column(String(16))
-    document: Mapped[dict] = mapped_column(JSON)
     created_at: Mapped[datetime] = mapped_column(default=utcnow)
+    updated_at: Mapped[datetime] = mapped_column(default=utcnow, onupdate=utcnow)
 
 
 class JobTarget(db.Model):
@@ -44,9 +35,10 @@ class JobTarget(db.Model):
     id: Mapped[int] = mapped_column(primary_key=True)
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
     request_key: Mapped[str] = mapped_column(String(36))
-    resume_version_id: Mapped[int] = mapped_column(
-        ForeignKey("resume_versions.id", ondelete="RESTRICT"), index=True
+    resume_id: Mapped[int] = mapped_column(
+        ForeignKey("resumes.id", ondelete="RESTRICT"), index=True
     )
+    resume_revision: Mapped[int] = mapped_column(default=0)
     title: Mapped[str] = mapped_column(String(160))
     company: Mapped[str] = mapped_column(String(160))
     description: Mapped[str] = mapped_column(Text)

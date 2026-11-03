@@ -63,7 +63,9 @@ def test_free_preview_cannot_bypass_review_report_or_question(mysql_app, context
     }
 
 
-def test_free_pdf_grant_is_serialized_and_same_version_repeatable(mysql_app, user_factory):
+def test_free_pdf_grant_is_serialized_and_same_resume_repeatable(mysql_app, user_factory):
+    from app.models import Resume
+
     uid, _ = user_factory()
     with mysql_app.app_context():
         original = career.save_resume(
@@ -77,36 +79,42 @@ def test_free_pdf_grant_is_serialized_and_same_version_repeatable(mysql_app, use
             ),
             rid,
         )
+        other = career.save_resume(
+            uid,
+            ResumeSave(request_key=uuid4(), title="另一份", document={"name": "另一份测试"}),
+        )
+        other_id = other["id"]
 
-    def export(revision):
+    def export(resume_id, revision):
         with mysql_app.app_context():
             try:
-                version = career.version_of(
-                    career.owned(__import__("app.models", fromlist=["Resume"]).Resume, uid, rid),
-                    revision,
-                )
-                product.authorize_export(uid, version, consume=True)
-                return revision, 200
+                resume = career.owned(Resume, uid, resume_id)
+                if resume.revision != revision:
+                    return resume_id, 409
+                product.authorize_export(uid, resume, consume=True)
+                return resume_id, 200
             except BusinessError as error:
                 db.session.rollback()
-                return revision, error.status
+                return resume_id, error.status
 
     with ThreadPoolExecutor(max_workers=2) as pool:
-        responses = list(pool.map(export, [1, 2]))
-    assert sorted(status for _, status in responses) == [200, 403]
-    winner = next(revision for revision, status in responses if status == 200)
-    assert export(winner) == (winner, 200)
+        responses = list(pool.map(lambda args: export(*args), [(rid, 2), (rid, 2)]))
+    # The free grant binds to the resume, so repeats on the same resume work.
+    assert [status for _, status in responses] == [200, 200]
+    # A different resume must fall back to membership.
+    assert export(other_id, 1) == (other_id, 403)
     client, headers = client_for(mysql_app, uid)
-    assert client.get(f"/resumes/{rid}/print?revision={winner}").status_code == 200
+    assert client.get(f"/resumes/{rid}/print").status_code == 200
     assert (
         client.post(
             f"/api/resumes/{rid}/export",
-            json={"request_key": str(uuid4()), "revision": winner},
+            json={"request_key": str(uuid4()), "revision": 2},
             headers=headers,
         ).status_code
         == 200
     )
     with mysql_app.app_context():
+        # 同一个 resume_id + revision 的导出事件按 event_key 去重，只落一条。
         assert (
             db.session.scalar(
                 select(func.count())
@@ -115,6 +123,13 @@ def test_free_pdf_grant_is_serialized_and_same_version_repeatable(mysql_app, use
             )
             == 1
         )
+        event = db.session.scalar(
+            select(ProductEvent).where(
+                ProductEvent.user_id == uid, ProductEvent.name == "pdf_exported"
+            )
+        )
+        assert event.event_key == f"export:{rid}:2"
+        assert event.properties == {"resume_id": rid, "revision": 2}
 
 
 def test_failure_releases_analysis_quota_and_retry_is_idempotent(mysql_app, context):

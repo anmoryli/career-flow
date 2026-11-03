@@ -165,7 +165,6 @@ def route_requests(ids):
         "product.invitations": ("GET", "/invitations", None),
         # 简历与岗位 API
         "career.get_resume": ("GET", f"/api/resumes/{rid}", None),
-        "career.versions": ("GET", f"/api/resumes/{rid}/versions", None),
         "career.get_job": ("GET", f"/api/jobs/{jid}", None),
         "career.update_resume": (
             "POST",
@@ -350,7 +349,6 @@ def test_cross_account_access_is_denied(mysql_app, graph):
     probes = [
         ("GET", f"/api/resumes/{ids['resume_id']}"),
         ("GET", f"/api/jobs/{ids['job_id']}"),
-        ("GET", f"/api/resumes/{ids['resume_id']}/versions"),
         ("GET", f"/api/operations/{ids['operation_id']}"),
         ("GET", f"/jobs/{ids['job_id']}"),
         ("GET", f"/imports/{ids['import_id']}"),

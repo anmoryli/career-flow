@@ -41,7 +41,7 @@
     const syncReadiness=()=>{
       const selected=resumeSelect?.selectedOptions[0],hasResume=Boolean(resumeSelect?.value||guestResume),hasDescription=Boolean(description.value.trim());
       text(page.querySelector('#jd-character-count'),`${description.value.length.toLocaleString()} / 20,000 字`);
-      text(page.querySelector('[data-job-source-summary]'),hasResume?(resumeSelect?`${selected.textContent} · 第 ${selected.dataset.revision} 版`:guestResume.title||'已读取 PDF'):guestReading?'正在提取 PDF…':'使用保存的简历版本');
+      text(page.querySelector('[data-job-source-summary]'),hasResume?(resumeSelect?`${selected.textContent}`:guestResume.title||'已读取 PDF'):guestReading?'正在提取 PDF…':'使用保存的简历版本');
       const states={resume:hasResume?'complete':'current',description:hasResume?(hasDescription?'complete':'current'):'pending',analysis:hasResume&&hasDescription?'current':'pending'};
       page.querySelectorAll('[data-job-step]').forEach(step=>{step.dataset.state=states[step.dataset.jobStep];if(states[step.dataset.jobStep]==='current')step.setAttribute('aria-current','step');else step.removeAttribute('aria-current');});
       text(page.querySelector('[data-job-ready-hint]'),guestReading?'正在提取简历，完成后即可继续。':!hasResume?'先选择本次使用的简历。':!hasDescription?'简历已就绪，粘贴岗位描述后开始。':`已准备好 · ${description.value.trim().length.toLocaleString()} 字岗位描述`);

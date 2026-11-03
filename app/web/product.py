@@ -57,9 +57,10 @@ def private_response(template, **context):
 def export_resume(resume_id):
     data = ExportInput.model_validate(input_data())
     resume = career.owned(Resume, g.user.id, resume_id)
-    version = career.version_of(resume, data.revision)
-    authorize_export(g.user.id, version, consume=True)
-    return {"url": url_for("career.print_resume", item_id=resume.id, revision=version.revision)}
+    if data.revision != resume.revision:
+        raise BusinessError("简历已更新，请刷新后重新导出。", 409)
+    authorize_export(g.user.id, resume, consume=True)
+    return {"url": url_for("career.print_resume", item_id=resume.id)}
 
 
 @product_web.post("/api/resumes/<int:resume_id>/adoptions")

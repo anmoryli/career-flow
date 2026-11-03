@@ -6,7 +6,7 @@ from app.career_schemas import CustomSection, ResumeDocument, ResumeSave
 from app.extensions import db
 from app.models import Resume, ResumeImport
 from app.services import task_queue
-from app.services.career import owned, save_resume, version_of
+from app.services.career import owned, save_resume
 from app.services.pdf_import import create_import
 from app.web.routes import input_data, login_required
 
@@ -76,7 +76,7 @@ def detail(item_id):
     resume_id = request.args.get("resume_id", type=int)
     resume_revision = 0
     if resume_id:
-        resume_revision = version_of(owned(Resume, g.user.id, resume_id)).revision
+        resume_revision = owned(Resume, g.user.id, resume_id).revision
     return render_template(
         "frontend/resume/import_review.html",
         item=owned(ResumeImport, g.user.id, item_id),
@@ -117,7 +117,7 @@ def confirm(item_id):
     })
     resume_data = resume_data.model_copy(update={"document": extracted_document})
     if resume_id:
-        previous = version_of(owned(Resume, g.user.id, resume_id))
+        previous = owned(Resume, g.user.id, resume_id)
         custom_sections = [
             CustomSection.model_validate(section)
             for section in previous.document.get("custom_sections", [])

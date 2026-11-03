@@ -16,7 +16,6 @@ from app.models import (
     Diagnostic,
     Membership,
     Resume,
-    ResumeVersion,
     User,
     utcnow,
 )
@@ -127,11 +126,9 @@ def test_resume_save_retry_versions_conflict_and_copy(mysql_app, context):
         assert copied["document"]["summary"] == "新内容"
         assert (
             db.session.scalar(
-                select(func.count())
-                .select_from(ResumeVersion)
-                .where(ResumeVersion.resume_id == rid)
+                select(func.count()).select_from(Resume).where(Resume.parent_id == rid)
             )
-            == 2
+            == 1
         )
 
 
@@ -251,7 +248,7 @@ def test_success_billing_report_readonly_and_apply(mysql_app, context):
         copied = diagnosis.apply_suggestions(uid, oid, data)
         assert copied["parent_id"] == rid and copied["document"]["summary"]
         assert diagnosis.apply_suggestions(uid, oid, data)["id"] == copied["id"]
-        assert career.version_of(career.owned(Resume, uid, rid)).document["summary"]
+        assert career.owned(Resume, uid, rid).document["summary"]
         assert not db.session.scalars(
             select(CreditEntry).where(CreditEntry.operation_id == oid)
         ).all()

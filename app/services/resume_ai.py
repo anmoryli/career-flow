@@ -11,7 +11,7 @@ from sqlalchemy import select
 from app.extensions import db
 from app.models import AIOperation, Resume, utcnow
 from app.resume_ai_schemas import ResumeAIOutput, ResumeComposeOutput
-from app.services.career import owned, version_of
+from app.services.career import owned
 from app.services.commerce import lock_user
 from app.services.diagnosis import is_configured, release
 from app.services.errors import BusinessError
@@ -139,10 +139,9 @@ def quote(user_id, resume_id, data):
         raise BusinessError("这份简历已有 AI 任务正在执行。", 409)
     if not is_configured():
         raise BusinessError("AI 服务尚未配置。", 503)
-    version = version_of(resume)
     try:
-        original = field_value(version.document, data.path)
-        context = field_context(version.document, data.path)
+        original = field_value(resume.document, data.path)
+        context = field_context(resume.document, data.path)
     except (KeyError, IndexError, ValueError, TypeError):
         raise BusinessError("简历条目不存在，请刷新页面。", 422) from None
     if data.source_facts.strip():

@@ -3,7 +3,7 @@ from sqlalchemy import select
 
 from app.diagnosis_schemas import AnswerInput, ApplySuggestion, QuoteInput
 from app.extensions import db
-from app.models import AIOperation, Diagnostic, DiagnosticAnswer, JobTarget, Resume, ResumeVersion
+from app.models import AIOperation, Diagnostic, DiagnosticAnswer, JobTarget, Resume
 from app.services import diagnosis, task_queue
 from app.services.career import owned
 from app.services.commerce import membership_active
@@ -89,8 +89,7 @@ def detail(job_id):
     can_review=bool(suggestion_operation and full_access(g.user.id,suggestion_operation))
     if not can_review:
         suggestion_operation=None
-    resume_version = db.session.get(ResumeVersion, job.resume_version_id)
-    resume = db.session.get(Resume, resume_version.resume_id) if resume_version else None
+    resume = db.session.get(Resume, job.resume_id)
     return render_template(
         "frontend/analysis/detail.html",
         job=job,
@@ -106,7 +105,6 @@ def detail(job_id):
         latest_failed_operation=latest_failed_operation,
         active_jobs=active_jobs,
         resume=resume,
-        resume_version=resume_version,
         configured=diagnosis.is_configured(),
         question_form=active_question(diagnostic.conversation_id),
     )
@@ -126,8 +124,7 @@ def suggestions(job_id):
         or operation.state != "succeeded"
     ):
         abort(404)
-    resume_version = db.session.get(ResumeVersion, job.resume_version_id)
-    resume = db.session.get(Resume, resume_version.resume_id) if resume_version else None
+    resume = db.session.get(Resume, job.resume_id)
     from app.services.product import ensure_full_access
     ensure_full_access(g.user.id,operation)
     from app.services.diagnosis_review import review_paragraphs
@@ -138,7 +135,6 @@ def suggestions(job_id):
         diagnostic=diagnostic,
         operation=operation,
         resume=resume,
-        resume_version=resume_version,
     )
 
 

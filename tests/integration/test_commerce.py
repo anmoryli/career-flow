@@ -141,25 +141,18 @@ def test_checkout_page_and_single_step_local_activation(mysql_app, checkout):
 
 
 def test_free_export_requires_explicit_grant(mysql_app, checkout):
-    from app.models import ResumeVersion
-
     with mysql_app.app_context():
-        resume = Resume(user_id=checkout, request_key=str(uuid4()), title="Private Resume")
-        db.session.add(resume)
-        db.session.flush()
-        db.session.add(
-            ResumeVersion(
-                resume_id=resume.id,
-                revision=1,
-                request_key=str(uuid4()),
-                title=resume.title,
-                template="classic",
-                document={},
-            )
+        resume = Resume(
+            user_id=checkout,
+            request_key=str(uuid4()),
+            title="Private Resume",
+            template="classic",
+            document={},
+            revision=1,
         )
-        resume.revision = 1
-        resume_id = resume.id
+        db.session.add(resume)
         db.session.commit()
+        resume_id = resume.id
         assert commerce.entitlements(checkout)["can_export_resume"]
 
     client, _ = login_client(mysql_app, checkout)

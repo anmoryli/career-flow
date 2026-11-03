@@ -35,7 +35,7 @@ def test_all_paragraphs_are_editable_without_ai_suggestions(mysql_app, context):
         assert copied["id"] != rid
         assert diagnosis.apply_suggestions(uid, oid, data)["id"] == copied["id"]
         assert (
-            career.version_of(career.owned(test_career.Resume, uid, rid)).document["summary"]
+            career.owned(test_career.Resume, uid, rid).document["summary"]
             == "产品经验"
         )
     client, _ = client_for(mysql_app, uid)
@@ -92,9 +92,7 @@ def test_verified_addition_saves_new_version_and_is_idempotent(mysql_app, contex
             in copied["document"]["section_order"][-1]
         )
         assert diagnosis.apply_suggestions(uid, operation.id, data)["id"] == copied["id"]
-        assert not career.version_of(career.owned(test_career.Resume, uid, rid)).document[
-            "custom_sections"
-        ]
+        assert not career.owned(test_career.Resume, uid, rid).document["custom_sections"]
 
 
 def test_supplement_ai_uses_user_facts_and_checks_duplicate_payload(mysql_app, context):

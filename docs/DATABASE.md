@@ -45,7 +45,11 @@ uv run flask --app wsgi db current
 
 `e6a291a24b51` 将 `ai_operations.diagnostic_id` 放宽为空，并新增可空的 `resume_id` 外键、索引与互斥约束；每条 AI 操作必须且只能归属诊断或简历之一。未新增业务表，当前仍为 24 张业务表。已有诊断记录无需重写。降级前若存在简历 AI 操作会主动拒绝，以防删除积分关联记录。隔离 MySQL 库已验证升级和 Alembic 无差异，专用恢复库已完成升级、降级、备份恢复；本地开发库升级前的备份为忽略提交的 `output/careerflow-before-resume-ai-2026-10-25.sql`。
 
-简历版本文档为不可变JSON快照，其他业务关联为独立外键；岗位指向具体版本。用户行锁串行化账务和幂等写入，关键读取使用MySQL当前读，避免认证查询建立的旧快照导致并发重扣。账本的冻结/结算/释放分别记录，任务/流水有唯一约束。
+`e8a431c02d9f` 新增 `product_events`、`resume_export_grants`、`report_shares`、`referral_codes`、`referral_attributions`、`model_call_usage` 六张表，head 处共 30 张业务表。
+
+`f1c2d3e4a5b6` 将简历文档扁平化：`resumes` 直接持有 `template`/`document`/`created_at`/`last_save_key`，`job_targets` 改为 `resume_id` 外键并记录 `resume_revision`，`resume_export_grants` 改为 `resume_id` 外键，随后删除 `resume_versions`，业务表降为 29 张。升级时按每个 `resumes.id` 的最大 `revision` 回填文档与排版，降级可反向重建版本表并还原各表外键。隔离 MySQL 测试库已验证升级成功且 Alembic 差异检查无输出。
+
+简历文档直接存于 `resumes.document`（JSON）与 `resumes.template`，保存即覆盖并递增 `resumes.revision`；`revision` 仅作乐观并发控制与导出事件去重键，不再保留历史版本表。`job_targets` 通过 `resume_id` 指向简历并以 `resume_revision` 标记分析时的内容戳。用户行锁串行化账务和幂等写入，关键读取使用MySQL当前读，避免认证查询建立的旧快照导致并发重扣。账本的冻结/结算/释放分别记录，任务/流水有唯一约束。
 
 PDF二进制仅在受限导入任务完成前暂存在MEDIUMBLOB；完成/失败/恢复后清空，提取文字和核实后的简历单独保存。应用不在启动时create_all。
 

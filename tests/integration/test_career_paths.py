@@ -56,14 +56,14 @@ def test_api_resume_job_success_and_replay(mysql_app, context):
     assert result.status_code == 201
     assert client.get(f"/api/resumes/{rid}").json["document"]["summary"] == "内容"
     assert client.post("/api/resumes", json=data, headers=headers).json["id"] == rid
-    assert client.get(f"/api/resumes/{rid}/versions").json["versions"][0]["revision"] == 1
-    assert client.get(f"/resumes/{rid}/print?revision=12345").status_code == 404
+    assert client.get(f"/api/resumes/{rid}").json["revision"] == 1
     data.update(revision=1, request_key=str(uuid4()), title="新版")
     assert client.post(f"/api/resumes/{rid}", json=data, headers=headers).json["revision"] == 2
+    assert client.get(f"/api/resumes/{rid}").json["title"] == "新版"
     job = {
         "request_key": str(uuid4()),
         "resume_id": rid,
-        "resume_revision": 1,
+        "resume_revision": 2,
         "description": "原始 JD",
     }
     result = client.post("/api/jobs", json=job, headers=headers)
@@ -74,7 +74,7 @@ def test_api_resume_job_success_and_replay(mysql_app, context):
     assert saved_job.json["description"] == job["description"]
     assert saved_job.json["is_saved"] is True
     assert saved_job.json["resume_id"] == rid
-    assert saved_job.json["resume_revision"] == 1
+    assert saved_job.json["resume_revision"] == 2
     assert client.post("/api/jobs", json=job, headers=headers).json["id"] == jid
     unsaved_job = {
         **job,
