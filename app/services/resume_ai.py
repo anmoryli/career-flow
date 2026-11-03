@@ -342,68 +342,8 @@ def run_operation(operation_id):
 
     stop_fallback = False
     last_error = None
-    orchestrated = provider is None and bool(
-        current_app.config.get("RESUME_AGENT_ENABLED")
-    )
-    if orchestrated:
-        # Deep-agents run: plan, draft per-section, then a single structured
-        # write-back. Validation gates are identical to the single-shot
-        # pipeline; a failed orchestration degrades to it below.
-        from app.services.agent_orchestrator import run_resume_agent
-
-        if kind != "compose":
-            save_partial({"proposed": "", "reason": "正在编排生成……"})
-        for _retry in range(2):
-            try:
-                raw, agent_calls, agent_tokens = run_resume_agent(snapshot, kind)
-                from app.services.product import TokenUsage
-
-                tokens += agent_tokens
-                for offset, call in enumerate(agent_calls):
-                    usage = (
-                        TokenUsage(call["total"], call["input"], call["output"])
-                        if call["total"]
-                        else None
-                    )
-                    calls.append(
-                        call_usage(
-                            attempts + offset + 1,
-                            snapshot["model"],
-                            usage,
-                            usage_policy,
-                            call["outcome"],
-                        )
-                    )
-                attempts += len(agent_calls)
-                result = _build_result(kind, raw, snapshot, revision)
-                break
-            except Exception as error:
-                attempts += 1
-                if not calls or calls[-1]["attempt"] != attempts:
-                    calls.append(
-                        call_usage(
-                            attempts, snapshot["model"], None, usage_policy, "provider_error"
-                        )
-                    )
-                last_error = error
-                current_app.logger.warning(
-                    "resume_agent_failed operation=%s kind=%s type=%s retry=%s",
-                    operation_id,
-                    kind,
-                    type(error).__name__,
-                    _retry + 1,
-                )
-        if result is None:
-            current_app.logger.warning(
-                "resume_agent_degraded operation=%s kind=%s falling_back=single_shot",
-                operation_id,
-                kind,
-            )
-            model_ids = candidates(snapshot)
-        else:
-            model_ids = []
-    else:
-        model_ids = candidates(snapshot)
+    # Resume AI is deliberately single-shot: one rewrite is one model call.
+    model_ids = candidates(snapshot)
     for model_index, model_id in enumerate(model_ids):
         for retry in range(2):
             attempts += 1

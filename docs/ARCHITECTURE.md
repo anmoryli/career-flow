@@ -40,16 +40,18 @@ MySQL 是唯一业务数据源。Redis 承担限流和队列，不作为消息/�
 
 The user-facing plans are monthly CNY 39 and quarterly CNY 99. AI operations use membership entitlements and free usage limits; they do not debit points. Existing credit ledger tables and fields are legacy compatibility structures, not the basis for plans or user-facing billing.
 
-## 2026-11-11 deepagents 编排（岗位诊断与简历 AI）
+## 2026-11-11 deepagents 编排（仅岗位诊断）
 
-`app/services/agent_orchestrator.py` 基于 deepagents 0.7 / LangGraph 实现岗位诊断与简历 AI 的多代理编排，分别由 `DIAGNOSIS_AGENT_ENABLED`、`RESUME_AGENT_ENABLED`（默认均关闭）控制；编排仅对会员任务生效，免费匹配与注入 provider 的测试路径保持单发不变。
+`app/services/agent_orchestrator.py` 基于 deepagents 0.7 / LangGraph 实现岗位诊断的多代理编排，由 `DIAGNOSIS_AGENT_ENABLED`（默认关闭）控制，仅对会员诊断/报告任务生效；免费匹配与注入 provider 的测试路径保持单发不变。
+
+简历 AI（编辑器里的润色改写与粘贴资料整理）**不走编排**：一次改写就是一次模型调用，经 pydantic_ai 结构化输出加确定性校验，链路更短、延迟和令牌成本更低。
 
 - 诊断编排：主代理用 `write_todos` 规划并分派 → `section-analyst` 子代理按简历板块分组核对证据（`response_format=SectionFindings`）→ `diagnosis-writer` 子代理合并产出 `ReferencedDiagnosis`。模型经 `langchain-openai` 适配现有管理员模型配置与多模型路由。
-- 简历编排：单条改写由主代理分派 `rewrite-writer` 子代理（`response_format=ResumeAIOutput`）；简历整理（compose）由主代理分派四个板块起草子代理（profile/experience/project/credential，各自结构化输出）再由 `compose-compiler` 合并为 `ResumeComposeOutput`。
-- 准确性不变式：编排层零自由度——子代理强制结构化输出；诊断走既有 `resolve_references`（J/E/T 编号锚定）与 `validate_output`；简历改写/整理走 `resume_ai._build_result`（字段长度上限、照片/技能数/体积限制、未经确认数字子集校验）。编排与单发共用同一份确定性门禁，任何违规都让该次编排失败。
+- 准确性不变式：编排层零自由度——子代理强制结构化输出，最终结果仍走既有 `resolve_references`（J/E/T 编号锚定）与 `validate_output`（岗位/简历原文核对、建议路径核对、单问题约束）。任何无出处结论都会让该次编排失败。
 - 降级链：编排失败自动重试 1 次；两次均失败则降级到确定性单发管线（原多模型 fallback × 2 次尝试），会员任务绝不因编排层故障而失败。
-- 资源上限：诊断板块分组最多 24 组（超出尾部合并）、每次编排 480 秒超时、`recursion_limit` 诊断 120 / 简历 60；每次 LLM 调用经 callback 收集 input/output/total tokens，与单发路径一样写入 `ModelCallUsage` 计费流水，`attempts` 语义一致。
-- 测试：`tests/test_agent_orchestrator.py` 覆盖分组/合并/用量收集/结构化提取/flag 默认值；`tests/integration/test_diagnosis_transport.py` 与 `tests/integration/test_resume_ai.py` 覆盖编排成功记账与失败降级。编排分支要求测试环境无 provider 注入，存量测试不受影响。
+- 资源上限：板块分组最多 24 组（超出尾部合并）、每次编排 480 秒超时、`recursion_limit=120`；每次 LLM 调用经 callback 收集 input/output/total tokens，与单发路径一样写入 `ModelCallUsage` 计费流水，`attempts` 语义一致。
+- 简历 AI 校验：`resume_ai._build_result` 保留字段长度上限、照片/技能数/体积限制与「不得新增未经确认数字」的原文核对，单发与任何未来管线共用同一份门禁。
+- 测试：`tests/test_agent_orchestrator.py` 覆盖分组/合并/用量收集/结构化提取/flag 默认值；`tests/integration/test_diagnosis_transport.py` 覆盖编排成功记账与失败降级。编排分支要求测试环境无 `diagnosis_provider` 注入，存量测试不受影响。
 
 ## 2026-11-11 任务队列退役 RQ，改用 Redis Streams + LangGraph checkpoint
 
