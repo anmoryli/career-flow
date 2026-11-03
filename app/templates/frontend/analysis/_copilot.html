@@ -1,0 +1,19 @@
+{# Copilot thread and composer: the right-hand conversation column.
+   Rendered on first paint and re-rendered by analysis.js after each run. #}
+{% from '_ui.html' import icon %}
+{% set can_ask = diagnostic.question and diagnostic.state != 'completed' and not active_operation %}
+<ol class="cfa-copilot-thread" data-copilot-thread aria-live="polite" aria-relevant="additions text">
+  <li class="cfa-copilot-msg is-ai" data-copilot-msg="ai"><p>已读入简历「{{ resume.title if resume else '关联简历' }}」与岗位「{{ job.title or '目标岗位' }}」。我会逐条对照岗位要求与简历证据说明判断依据；要补充真实经历时，再补充一点具体做法和结果，匹配会更准。</p></li>
+  {% for item in answers %}<li class="cfa-copilot-msg is-ai" data-copilot-msg="ai"><p>{{ item.question }}</p></li><li class="cfa-copilot-msg is-user" data-copilot-msg="user"><p>{{ '（本轮已跳过）' if item.skipped else item.answer }}</p></li>{% endfor %}
+  {% if latest_note %}<li class="cfa-copilot-msg is-ai" data-copilot-msg="ai" data-copilot-note><p>{{ latest_note }}</p></li>{% endif %}
+  {% if can_ask %}<li class="cfa-copilot-msg is-ai" data-copilot-msg="ai" data-copilot-question><p>{{ question_form.definition.message if question_form else diagnostic.question }}</p></li>{% endif %}
+  <li class="cfa-copilot-msg is-ai is-live" data-copilot-msg="ai" data-copilot-live hidden><p data-copilot-live-text></p></li>
+</ol>
+<div class="cfa-copilot-composer" data-copilot-composer>
+{% if can_ask %}
+  <label class="cf-field" for="diagnostic-answer"><span>你的补充</span><textarea id="diagnostic-answer" rows="3" maxlength="2000" placeholder="写下实际做过的工作、项目与结果…"></textarea></label>
+  <div class="cfa-copilot-actions"><p>第 {{ diagnostic.rounds + 1 }} / 10 轮 · 跳过也计入轮数 · Ctrl / ⌘ + Enter 提交</p><div><button class="cf-button is-quiet is-small" type="button" data-answer="skip">跳过</button><button class="cf-button is-small" type="button" data-answer="answer">提交并继续 {{ icon('arrow') }}</button></div></div>
+{% else %}
+  <p class="cfa-copilot-idle">{% if diagnostic.state == 'completed' %}这份报告已完成，内容保持只读，可以回到「审阅并修改简历」。{% elif active_operation %}正在分析，结论会逐字出现在这里。{% else %}{% if not configured %}AI 服务暂不可用，稍后可以再试。{% else %}可以点左侧「继续分析」再走一轮核对。{% endif %}{% endif %}</p>
+{% endif %}
+</div>

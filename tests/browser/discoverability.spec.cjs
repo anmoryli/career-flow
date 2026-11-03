@@ -7,7 +7,7 @@ const inViewport=async(page,locator)=>{const box=await locator.boundingBox();exp
 test('frequent destinations and editor actions have visible labels',async({page})=>{
  await page.goto('/workspace');for(const name of ['我的简历','岗位分析','分析报告'])await expect(page.locator('.cf-product-nav').getByRole('link',{name,exact:true})).toBeVisible();
  await page.goto('/workspace?view=resume-new&fresh=1');
- for(const selector of ['[data-editor-analyze]','[data-save-resume]','[data-version-history]','[data-dialog-open="cf-resume-source"]']){const control=page.locator(selector);await expect(control).toBeVisible();await inViewport(page,control);}
+ for(const selector of ['[data-editor-analyze]','[data-save-resume]','[data-dialog-open="cf-resume-help"]','[data-dialog-open="cf-resume-source"]']){const control=page.locator(selector);await expect(control).toBeVisible();await inViewport(page,control);}
  await expect(page.locator('[data-editor-analyze] span')).toHaveText('岗位分析');await expect(page.locator('[data-editor-analyze] span')).toBeVisible();await expect(page.locator('[data-save-resume]')).toHaveText('保存简历');expect(await page.locator('[data-save-resume]').getAttribute('class')).not.toContain('is-secondary');
  await page.screenshot({path:`output/actions-editor-${test.info().project.name}.png`,animations:'disabled'});
 });

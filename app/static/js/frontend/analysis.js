@@ -138,40 +138,178 @@
   }
   const journal=page.querySelector('.cfa-journal-composer textarea');
   if(journal){const update=()=>text(page.querySelector('[data-journal-length]'),`${journal.value.length.toLocaleString()} / 10000 字`);journal.addEventListener('input',update);update();}
-  page.querySelectorAll('[data-evidence-filter]').forEach(button=>button.addEventListener('click',()=>{
-    const scope=button.closest('.cfa-evidence');let visible=0;
+  // Delegated so the buttons keep working after the result slot is swapped for
+  // a freshly rendered panel; a per-node binding would die with the old nodes.
+  const applyEvidenceFilter=button=>{
+    const scope=button.closest('.cfa-evidence');if(!scope)return;let visible=0;
     scope.querySelectorAll('[data-evidence-filter]').forEach(other=>other.setAttribute('aria-pressed',String(other===button)));
     scope.querySelectorAll('[data-evidence-category]').forEach(row=>{row.hidden=button.dataset.evidenceFilter!=='all'&&row.dataset.evidenceCategory!==button.dataset.evidenceFilter;if(!row.hidden)visible++;});scope.querySelector('[data-evidence-empty]').hidden=visible>0;
-  }));
+  };
+  page.addEventListener('click',event=>{const button=event.target.closest?.('[data-evidence-filter]');if(button)applyEvidenceFilter(button);});
+  const pressedEvidenceFilter=()=>page.querySelector('[data-evidence-filter][aria-pressed="true"]')?.dataset.evidenceFilter||'all';
 
   const diagnostic=page.dataset.analysisPage==='detail'?page:null;
   if(diagnostic){
-    const feedback=page.querySelector('#diagnosis-feedback');let starting=false;const keys=new Map();
-    const start=async button=>{
-      if(starting||button.disabled)return;starting=true;text(feedback,'');
-      const kind=button.dataset.startAi;keys.set(kind,keys.get(kind)||crypto.randomUUID());
-      const startButtons=[...page.querySelectorAll('[data-start-ai]')],disabledBefore=new Map(startButtons.map(item=>[item,item.disabled]));startButtons.forEach(item=>lock(item,true));
-      const panel=button.closest('[data-start-panel],.cfa-failure,.cfa-next-actions,.cfa-finish-shortcut');
-      const running=page.querySelector('#diagnosis-running-template').content.firstElementChild.cloneNode(true);
-      if(panel){panel.hidden=true;panel.after(running);}else page.querySelector('.cfa-diagnostic-main').prepend(running);
-      try {await window.cfApi(`/api/diagnostics/${page.dataset.diagnostic}/start`,{kind,request_key:keys.get(kind)});location.reload();}
-      catch(error){text(feedback,error.message);running.remove();if(panel)panel.hidden=false;startButtons.forEach(item=>{item.disabled=disabledBefore.get(item);item.setAttribute('aria-busy','false');});feedback.dataset.feedbackState='error';feedback.focus();starting=false;}
+    const feedback=page.querySelector('#diagnosis-feedback');
+    const copilot=page.querySelector('[data-copilot]');
+    const thread=copilot?.querySelector('[data-copilot-thread]');
+    const liveBubble=copilot?.querySelector('[data-copilot-live]');
+    const liveText=copilot?.querySelector('[data-copilot-live-text]');
+    const copilotState=copilot?.querySelector('[data-copilot-state]');
+    const resultSlot=page.querySelector('[data-result-slot]');
+    const column=page.querySelector('.cfa-diagnostic-column');
+    let starting=false,answering=false,source=null,streamText='',streaming=false,answerKey=crypto.randomUUID();
+    const setCopilotState=value=>{if(copilotState)copilotState.textContent=value;};
+    const scrollThread=()=>{if(thread)thread.scrollTop=thread.scrollHeight;};
+    const setLive=(visible,value)=>{if(!liveBubble)return;liveBubble.hidden=!visible;if(value!==undefined&&liveText)liveText.textContent=value;if(visible)scrollThread();};
+    const pushBubble=(role,content)=>{if(!thread||!content)return;const item=document.createElement('li');item.className=`cfa-copilot-msg is-${role}`;item.dataset.copilotMsg=role;const paragraph=document.createElement('p');paragraph.textContent=content;item.append(paragraph);thread.insertBefore(item,liveBubble||null);scrollThread();};
+
+    const closeStream=()=>{if(source){source.close();source=null;}};
+
+    // The left column is server-rendered, so the panel swap reuses exactly the
+    // markup the first paint used; no rendering rules are duplicated here.
+    const applyResultPanel=async operationId=>{
+      if(!resultSlot||!operationId)return;
+      // The user may already be filtering while the run finishes; a swap that
+      // silently reset the tabs would look like the click was ignored.
+      const filter=pressedEvidenceFilter();
+      try{
+        const response=await fetch(`/api/operations/${operationId}/panel`,{credentials:'same-origin',redirect:'error'});
+        if(response.ok){
+          resultSlot.innerHTML=await response.text();
+          const restored=resultSlot.querySelector(`[data-evidence-filter="${filter}"]`);
+          if(restored&&filter!=='all')applyEvidenceFilter(restored);
+        }
+      }catch{}
+      page.querySelector('[data-copilot-running]')?.remove();
     };
-    page.querySelectorAll('[data-start-ai]').forEach(button=>button.addEventListener('click',()=>start(button)));
-    page.querySelectorAll('[data-cancel-operation]').forEach(button=>button.addEventListener('click',async()=>{
+
+    const attachStream=url=>{
+      closeStream();
+      if(!url||typeof EventSource==='undefined')return;
+      streamText='';streaming=false;setLive(true,'');setCopilotState('正在分析');
+      source=new EventSource(url);
+      source.addEventListener('stage',event=>{
+        if(streaming)return;
+        let payload={};try{payload=JSON.parse(event.data);}catch{return;}
+        if(payload.message)setLive(true,payload.message);
+      });
+      source.addEventListener('delta',event=>{
+        let payload={};try{payload=JSON.parse(event.data);}catch{return;}
+        if(!streaming){streaming=true;streamText='';setLive(true);}
+        streamText+=payload.text||'';setLive(true,streamText);
+      });
+      source.addEventListener('delta_reset',()=>{streamText='';streaming=false;setLive(true,'');});
+      source.addEventListener('result',event=>{
+        let payload={};try{payload=JSON.parse(event.data);}catch{}
+        setCopilotState('正在整理说明');
+        applyResultPanel(payload.operation_id||copilot?.dataset.copilotOperation);
+      });
+      source.addEventListener('done',()=>{
+        closeStream();setLive(false);setCopilotState('已完成');
+        // The recap is persisted with the operation, so a reload replays the
+        // whole conversation instead of dropping the text just streamed in.
+        setTimeout(()=>location.reload(),900);
+      });
+      source.addEventListener('failed',event=>{
+        closeStream();setLive(false);setCopilotState('需要重试');
+        let payload={};try{payload=JSON.parse(event.data);}catch{}
+        pushBubble('ai',payload.message||'本次分析没有完成，可以重试。');
+        refreshChat();
+      });
+      source.onerror=()=>{
+        // A stream closed right after a terminal event is normal; only a
+        // still-open connection that the browser gave up on is a real error.
+        if(!source)return;
+        closeStream();setLive(false);setCopilotState('连接中断');
+        pushBubble('ai','与服务器的连接中断了，可以刷新本页查看最新结果。');
+      };
+    };
+
+    const refreshChat=async()=>{
+      const body=copilot?.querySelector('[data-copilot-body]'),url=copilot?.dataset.copilotChat;
+      if(!body||!url)return;
+      try{
+        const response=await fetch(url,{credentials:'same-origin',redirect:'error'});
+        if(response.ok)body.innerHTML=await response.text();
+      }catch{}
+    };
+
+    const startKind=async(kind,button)=>{
+      if(starting)return;
+      starting=true;text(feedback,'');
+      const startButtons=[...page.querySelectorAll('[data-start-ai]')];
+      const disabledBefore=new Map(startButtons.map(item=>[item,item.disabled]));
+      startButtons.forEach(item=>lock(item,true));
+      const panel=button?.closest('[data-start-panel],.cfa-failure,.cfa-next-actions,.cfa-finish-shortcut');
+      const running=page.querySelector('#diagnosis-running-template').content.firstElementChild.cloneNode(true);
+      if(panel){panel.hidden=true;running.setAttribute('data-copilot-running','');panel.after(running);}
+      else if(column)column.prepend(running);
+      try{
+        // A fresh request key per start: reusing one would replay the previous
+        // operation instead of running a new round.
+        const result=await window.cfApi(`/api/diagnostics/${page.dataset.diagnostic}/start`,{kind,request_key:crypto.randomUUID()});
+        starting=false;startButtons.forEach(item=>lock(item,false));
+        if(copilot)copilot.dataset.copilotOperation=String(result.id);
+        pushBubble('user',kind==='report'?'生成完整报告。':'开始岗位分析。');
+        attachStream(`/api/operations/${result.id}/stream`);
+      }catch(error){
+        text(feedback,error.message);
+        running.remove();
+        if(panel)panel.hidden=false;
+        startButtons.forEach(item=>{item.disabled=disabledBefore.get(item);item.setAttribute('aria-busy','false');});
+        feedback.dataset.feedbackState='error';feedback.focus();starting=false;
+      }
+    };
+
+    const submitAnswer=async skipped=>{
+      if(answering)return;
+      const field=copilot?.querySelector('#diagnostic-answer');
+      if(!skipped&&!field?.value.trim()){field?.setCustomValidity('请补充真实经历，或跳过本轮。');field?.reportValidity();return;}
+      answering=true;text(feedback,'');
+      page.querySelectorAll('[data-answer]').forEach(item=>lock(item,true));
+      const content=field?.value.trim()||'';
+      try{
+        const result=await window.cfApi(`/api/diagnostics/${page.dataset.diagnostic}/answer`,{request_key:answerKey,revision:Number(page.dataset.revision),skipped,answer:content});
+        page.dataset.revision=String(result.revision);
+        answerKey=crypto.randomUUID();
+        pushBubble('user',skipped?'（本轮已跳过）':content);
+        copilot?.querySelector('[data-copilot-question]')?.remove();
+        if(field)field.value='';
+        answering=false;
+        page.querySelectorAll('[data-answer]').forEach(item=>lock(item,false));
+        await startKind('analysis');
+      }catch(error){
+        text(feedback,error.message);answering=false;
+        page.querySelectorAll('[data-answer]').forEach(item=>lock(item,false));
+      }
+    };
+
+    const cancelOperation=async button=>{
       if(!await confirmAction('取消本次分析任务？已完成的记录仍会保留。','取消任务'))return;
-      lock(button,true);try{await window.cfApi(`/api/operations/${button.dataset.cancelOperation}/cancel`,{});location.reload();}catch(error){text(feedback,error.message);lock(button,false);}
-    }));
-    const answer=page.querySelector('#diagnostic-answer');let answerKey=crypto.randomUUID(),answering=false;
-    answer?.addEventListener('input',()=>{answerKey=crypto.randomUUID();answer.setCustomValidity('');});
-    answer?.addEventListener('keydown',event=>{if((event.ctrlKey||event.metaKey)&&event.key==='Enter'){if(window.cfImeGuard?.(event))return;event.preventDefault();page.querySelector('[data-answer="answer"]')?.click();}});
-    page.querySelectorAll('[data-answer]').forEach(button=>button.addEventListener('click',async()=>{
-      if(answering)return;const skipped=button.dataset.answer==='skip';
-      if(!skipped&&!answer.value.trim()){answer.setCustomValidity('请补充真实经历，或跳过本轮。');answer.reportValidity();return;}
-      answering=true;page.querySelectorAll('[data-answer]').forEach(item=>lock(item,true));text(feedback,'');
-      try{await window.cfApi(`/api/diagnostics/${page.dataset.diagnostic}/answer`,{request_key:answerKey,revision:Number(page.dataset.revision),skipped,answer:answer.value});location.reload();}
-      catch(error){text(feedback,error.message);answering=false;page.querySelectorAll('[data-answer]').forEach(item=>lock(item,false));}
-    }));
+      lock(button,true);
+      try{await window.cfApi(`/api/operations/${button.dataset.cancelOperation}/cancel`,{});location.reload();}
+      catch(error){text(feedback,error.message);lock(button,false);}
+    };
+
+    // Delegated so a refreshed composer keeps working without rebinding.
+    page.addEventListener('click',event=>{
+      const startButton=event.target.closest('[data-start-ai]');
+      if(startButton){startKind(startButton.dataset.startAi,startButton);return;}
+      const answerButton=event.target.closest('[data-answer]');
+      if(answerButton){submitAnswer(answerButton.dataset.answer==='skip');return;}
+      const cancelButton=event.target.closest('[data-cancel-operation]');
+      if(cancelButton)cancelOperation(cancelButton);
+    });
+    page.addEventListener('input',event=>{if(event.target.id==='diagnostic-answer'){answerKey=crypto.randomUUID();event.target.setCustomValidity('');}});
+    page.addEventListener('keydown',event=>{
+      if(event.target.id!=='diagnostic-answer'||!(event.ctrlKey||event.metaKey)||event.key!=='Enter')return;
+      if(window.cfImeGuard?.(event))return;
+      event.preventDefault();
+      copilot?.querySelector('[data-answer="answer"]')?.click();
+    });
+
+    if(copilot?.dataset.copilotStream)attachStream(copilot.dataset.copilotStream);
     if(new URLSearchParams(location.search).get('start')==='analysis'){
       history.replaceState(null,'',location.pathname);
       if(!page.querySelector('[data-operation-state="queued"],[data-operation-state="running"]'))requestAnimationFrame(()=>page.querySelector('[data-start-ai="analysis"]')?.click());
@@ -179,6 +317,8 @@
   }
 
   // One visibility-aware poller per page, with no overlapping network ticks.
+  // The detail page is driven by its event stream instead, so it is excluded.
+  if(!page.querySelector('[data-copilot]')){
   const active=[...page.querySelectorAll('[data-active-operation],[data-report-operation],[data-operation]')].filter(card=>['queued','running'].includes(card.dataset.operationState));
   if(active.length){
     let timer=null,stopped=false,errors=0;const abort=new AbortController();
@@ -196,5 +336,6 @@
       timer=setTimeout(tick,errors?5000:2000);
     };
     timer=setTimeout(tick,1200);window.addEventListener('pagehide',()=>{stopped=true;clearTimeout(timer);abort.abort();},{once:true});
+  }
   }
 })();

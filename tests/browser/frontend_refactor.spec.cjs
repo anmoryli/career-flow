@@ -43,7 +43,7 @@ test('new resume library and editor persist real edits and design',async({page})
  await page.locator('[data-design-tab="colors"]').click();await page.locator('[data-design-accent="navy"]').click();
  await page.locator('[data-studio-tab="content"]').click();await page.locator('[data-save-resume]').click();await expect(page.locator('[data-resume-editor]')).toHaveAttribute('data-dirty','false');
  const designed=await (await page.request.get(`/api/resumes/${resume.id}`)).json();expect(designed.template).toBe('technical');expect(designed.document.accent).toBe('navy');
- await page.locator('[data-version-history]').click();await expect(page.locator('#version-history button').first()).toBeVisible();
+ await page.reload();await expect(page.locator('#resume-template-quick')).toHaveValue('technical');await page.locator('[data-studio-tab="design"]').click();await page.locator('[data-design-tab="colors"]').click();await expect(page.locator('[data-design-accent="navy"]')).toHaveAttribute('aria-pressed','true');
 });
 test('new analysis and paragraph review preserve the original resume',async({page})=>{
  await member(page);const resume=await create(page);await page.goto(`/workspace?view=jobs&resume_id=${resume.id}`);

@@ -52,7 +52,7 @@ def new_conversation(app, user_id):
 def test_mysql_version_schema_engine_charset(mysql_app):
     with mysql_app.app_context():
         assert db.session.scalar(text("SELECT VERSION()")).startswith("8.4.")
-        assert db.session.scalar(text("SELECT version_num FROM alembic_version")) == "f1c2d3e4a5b6"
+        assert db.session.scalar(text("SELECT version_num FROM alembic_version")) == "a1b2c3d4e5f7"
         rows = db.session.execute(
             text(
                 "SELECT ENGINE,TABLE_COLLATION FROM information_schema.TABLES "
@@ -68,6 +68,11 @@ def test_mysql_version_schema_engine_charset(mysql_app):
         assert not inspect(db.engine).has_table("resume_versions")
         resume_columns = {column["name"] for column in inspect(db.engine).get_columns("resumes")}
         assert {"template", "document", "created_at", "last_save_key"} <= resume_columns
+        # The streamed recap lives with the operation so a reload can replay it.
+        operation_columns = {
+            column["name"] for column in inspect(db.engine).get_columns("ai_operations")
+        }
+        assert "note" in operation_columns
     assert mysql_app.test_client().get("/health/ready").status_code == 200
 
 

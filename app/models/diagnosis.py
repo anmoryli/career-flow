@@ -80,6 +80,9 @@ class AIOperation(db.Model):
     charged: Mapped[int] = mapped_column(default=0)
     input_snapshot: Mapped[dict] = mapped_column(JSON)
     result: Mapped[dict | None] = mapped_column(JSON)
+    # Short conversational recap streamed to the analysis panel. Kept next to
+    # the structured result so a reload can rebuild the conversation.
+    note: Mapped[str] = mapped_column(Text, default="")
     error: Mapped[str] = mapped_column(String(200), default="")
     attempts: Mapped[int] = mapped_column(default=0)
     tokens: Mapped[int] = mapped_column(default=0)

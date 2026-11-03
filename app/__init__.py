@@ -88,7 +88,9 @@ def create_app(overrides: dict | None = None) -> Flask:
         )
         if app.config["APP_ENV"] == "production":
             response.headers["Strict-Transport-Security"] = "max-age=31536000"
-        if not request.path.startswith("/static/"):
+        if not request.path.startswith("/static/") and not response.mimetype.startswith(
+            "text/event-stream"
+        ):
             response.headers["Cache-Control"] = "no-store"
         return response
 

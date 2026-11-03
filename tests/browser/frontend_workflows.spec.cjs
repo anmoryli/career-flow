@@ -30,14 +30,14 @@ test('document library operations and text import complete in the new frontend',
  await page.locator('[data-create-resume="paste"]').first().click();await page.locator('[data-create-form] [name=title]').fill('文字导入');await page.locator('[data-create-form] [name=source]').fill('真实姓名，产品经理，负责用户访谈与产品需求分析，跟进功能迭代上线。');await page.locator('[data-create-submit]').click();
  await expect(page.locator('[data-compose-accept]')).toBeEnabled({timeout:20000});await expect(page.locator('#resume-name')).toHaveValue('');await page.locator('[data-compose-accept]').click();await expect(page.locator('#resume-name')).toHaveValue('林测试');
 });
-test('inline AI, repeat fields, custom sections, photo and history preserve document state',async({page})=>{
+test('inline AI, repeat fields, custom sections and photo survive a reload',async({page})=>{
  await member(page);const resume=await create(page);await page.goto(`/workspace?view=resume-new&resume_id=${resume.id}`);
  await page.locator('[data-section-tab="summary"]').click();await page.locator('#resume-summary').fill('负责用户访谈与需求分析');await page.locator('#resume-summary-section [data-resume-ai-mode="professional"]').click();
  await expect(page.locator('[data-resume-ai-accept]')).toBeEnabled({timeout:15000});await expect(page.locator('#resume-summary')).toHaveValue('负责用户访谈与需求分析');await page.locator('[data-resume-ai-accept]').click();await expect(page.locator('#resume-summary')).toHaveValue('负责用户访谈与需求分析，表达更清晰');
  await page.locator('[data-add-custom-section]').click();await page.locator('[data-rf-field="custom_sections.0.title"]').fill('真实奖项');await page.locator('[data-rf-field="custom_sections.0.content"]').fill('获得校级奖学金');
  await page.locator('[data-section-tab="photo"]').click();const png=await page.evaluate(()=>{const canvas=document.createElement('canvas');canvas.width=120;canvas.height=160;canvas.getContext('2d').fillRect(0,0,120,160);return canvas.toDataURL('image/png').split(',')[1];});await page.locator('#resume-photo').setInputFiles({name:'test.png',mimeType:'image/png',buffer:Buffer.from(png,'base64')});await expect(page.locator('[data-photo-control-image]')).toBeVisible();
  await page.locator('[data-save-resume]').click();await expect(page.locator('[data-resume-editor]')).toHaveAttribute('data-dirty','false',{timeout:10000});const stored=await (await page.request.get(`/api/resumes/${resume.id}`)).json();expect(stored.document.custom_sections[0].title).toBe('真实奖项');expect(stored.document.photo).toMatch(/^data:image\//);
- await page.locator('[data-version-history]').click();await expect(page.locator('#version-history button').first()).toBeVisible();await page.keyboard.press('Escape');
+ await page.reload();await expect(page.locator('[data-photo-control-image]')).toBeVisible();await page.locator('[data-section-tab="summary"]').click();await expect(page.locator('#resume-summary')).toHaveValue('负责用户访谈与需求分析，表达更清晰');
 });
 test('PDF import and actual export produce a clean printable resume',async({page})=>{
  const source=await page.context().newPage();await source.setContent('<h1>Resume Candidate</h1><p>candidate@example.com</p><p>Verified product experience.</p>');const pdf=await source.pdf();await source.close();

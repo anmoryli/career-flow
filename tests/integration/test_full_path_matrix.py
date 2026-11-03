@@ -165,6 +165,8 @@ def route_requests(ids):
         "product.invitations": ("GET", "/invitations", None),
         # 简历与岗位 API
         "career.get_resume": ("GET", f"/api/resumes/{rid}", None),
+        "diagnosis.panel": ("GET", f"/api/operations/{oid}/panel", None),
+        "diagnosis.chat": ("GET", f"/api/diagnostics/{did}/chat", None),
         "career.get_job": ("GET", f"/api/jobs/{jid}", None),
         "career.update_resume": (
             "POST",
@@ -296,8 +298,17 @@ def route_requests(ids):
     }
 
 
+# Server-Sent Events never finish on their own, so a request-per-route pass
+# would hang. The stream is covered by its own frame-format test below.
+STREAMING_ENDPOINTS = {"diagnosis.stream"}
+
+
 def registered_routes(app):
-    return {rule.endpoint for rule in app.url_map.iter_rules() if rule.endpoint != "static"}
+    return {
+        rule.endpoint
+        for rule in app.url_map.iter_rules()
+        if rule.endpoint != "static" and rule.endpoint not in STREAMING_ENDPOINTS
+    }
 
 
 def test_matrix_covers_every_registered_route(mysql_app, graph):

@@ -107,6 +107,9 @@ def detail(job_id):
         resume=resume,
         configured=diagnosis.is_configured(),
         question_form=active_question(diagnostic.conversation_id),
+        latest_note=next(
+            (item.note for item in operations if item.state == "succeeded" and item.note), ""
+        ),
     )
 
 
@@ -150,30 +153,33 @@ def quote(item_id):
 @login_required
 def start(item_id):
     item = diagnosis.quote(g.user.id, item_id, QuoteInput.model_validate(input_data()))
-    item = diagnosis.confirm(g.user.id, item.id)
-    if item.state == "queued":
-        try:
-            task_queue.enqueue(
-                "diagnosis", item.id, diagnosis_job_seconds(item.input_snapshot)
-            )
-        except Exception:
-            diagnosis.cancel(g.user.id, item.id)
-            return {"error": "任务队列暂不可用，请重试。"}, 503
-    return operation_json(item)
+    return _dispatch(diagnosis.confirm(g.user.id, item.id))
 
 
 @diagnosis_web.post("/api/operations/<int:item_id>/confirm")
 @login_required
 def confirm(item_id):
-    item = diagnosis.confirm(g.user.id, item_id)
-    if item.state == "queued":
-        try:
-            task_queue.enqueue(
-                "diagnosis", item.id, diagnosis_job_seconds(item.input_snapshot)
-            )
-        except Exception:
-            diagnosis.cancel(g.user.id, item.id)
-            return {"error": "任务队列暂不可用，请重试。"}, 503
+    return _dispatch(diagnosis.confirm(g.user.id, item_id))
+
+
+def _dispatch(item):
+    """Queue a confirmed analysis and announce the wait in the chat panel.
+
+    The queue notice is published before the hand-off so it cannot land after
+    the worker's first stage event and make the panel step backwards.
+    """
+    from app.services.diagnosis import STAGE_MESSAGES
+    from app.services.operation_events import publish
+
+    if item.state != "queued":
+        return operation_json(item)
+    publish(item.id, "stage", {"message": STAGE_MESSAGES["queued"], "kind": "analysis"})
+    try:
+        task_queue.enqueue("diagnosis", item.id, diagnosis_job_seconds(item.input_snapshot))
+    except Exception:
+        publish(item.id, "failed", {"message": "任务队列暂不可用，请重试。"})
+        diagnosis.cancel(g.user.id, item.id)
+        return {"error": "任务队列暂不可用，请重试。"}, 503
     return operation_json(item)
 
 
@@ -187,6 +193,107 @@ def cancel(item_id):
 @login_required
 def operation(item_id):
     return operation_json(owned(AIOperation, g.user.id, item_id))
+
+
+@diagnosis_web.get("/api/operations/<int:item_id>/stream")
+@login_required
+def stream(item_id):
+    """Server-Sent Events for one operation: stage, delta, result, done, failed."""
+    import json
+
+    from flask import Response, stream_with_context
+
+    from app.services import operation_events
+
+    operation_id = owned(AIOperation, g.user.id, item_id).id
+
+    def events():
+        # An SSE response can live for minutes; it must not pin a MySQL
+        # connection for that long. Redis carries everything it needs.
+        db.session.remove()
+        yield "retry: 3000\n\n"
+        for record in operation_events.subscribe(operation_id):
+            if record is None:
+                yield ": ping\n\n"
+                continue
+            payload = json.dumps(record["data"], ensure_ascii=False)
+            yield f"id: {record['seq']}\nevent: {record['event']}\ndata: {payload}\n\n"
+
+    response = Response(stream_with_context(events()), mimetype="text/event-stream")
+    response.headers["Cache-Control"] = "no-cache, no-transform"
+    # Reverse proxies must not buffer the stream into one late blob.
+    response.headers["X-Accel-Buffering"] = "no"
+    return response
+
+
+@diagnosis_web.get("/api/operations/<int:item_id>/panel")
+@login_required
+def panel(item_id):
+    """Server-rendered result panel, swapped in as soon as an analysis lands."""
+    from app.services.product import full_access
+
+    item = owned(AIOperation, g.user.id, item_id)
+    if item.diagnostic_id is None:
+        abort(404)
+    diagnostic = owned(Diagnostic, g.user.id, item.diagnostic_id)
+    job = owned(JobTarget, g.user.id, diagnostic.job_id)
+    return render_template(
+        "frontend/analysis/_panel.html",
+        operation=item,
+        job_id=job.id,
+        can_review=bool(item.result and full_access(g.user.id, item)),
+    )
+
+
+@diagnosis_web.get("/api/diagnostics/<int:item_id>/chat")
+@login_required
+def chat(item_id):
+    """Copilot thread and composer, re-rendered after a run finishes."""
+    diagnostic = owned(Diagnostic, g.user.id, item_id)
+    return render_template(
+        "frontend/analysis/_copilot.html", **copilot_context(g.user.id, diagnostic)
+    )
+
+
+def copilot_context(user_id, diagnostic):
+    """Shared context for the conversation column, used on paint and refresh."""
+    from app.services.product import full_access
+
+    job = owned(JobTarget, user_id, diagnostic.job_id)
+    resume = db.session.get(Resume, job.resume_id)
+    operations = db.session.scalars(
+        select(AIOperation)
+        .where(AIOperation.diagnostic_id == diagnostic.id)
+        .order_by(AIOperation.id.desc())
+        .limit(100)
+    ).all()
+    answers = db.session.scalars(
+        select(DiagnosticAnswer)
+        .where(DiagnosticAnswer.diagnostic_id == diagnostic.id)
+        .order_by(DiagnosticAnswer.round)
+    ).all()
+    suggestion_operation = next(
+        (item for item in operations if item.state == "succeeded" and item.result), None
+    )
+    return {
+        "job": job,
+        "resume": resume,
+        "answers": answers,
+        "diagnostic": diagnostic,
+        "operations": operations,
+        "active_operation": next(
+            (item for item in operations if item.state in {"queued", "running"}), None
+        ),
+        "suggestion_operation": suggestion_operation,
+        "can_review": bool(suggestion_operation and full_access(user_id, suggestion_operation)),
+        "question_form": active_question(diagnostic.conversation_id),
+        "configured": diagnosis.is_configured(),
+        # The newest recap already persisted; a reload replays it instead of
+        # losing what the user just watched arrive.
+        "latest_note": next(
+            (item.note for item in operations if item.state == "succeeded" and item.note), ""
+        ),
+    }
 
 
 @diagnosis_web.post("/api/diagnostics/<int:item_id>/answer")

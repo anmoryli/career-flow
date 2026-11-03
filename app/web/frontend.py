@@ -180,9 +180,12 @@ def register_frontend_assets(app):
     )
 
     def prepare_page(_sender, template, context, **_extra):
-        if not template.name or not template.name.startswith("frontend/"):
+        name = template.name or ""
+        # Files starting with "_" are fragments rendered on their own (a result
+        # panel or a chat thread); they carry no page chrome to inject.
+        if not name.startswith("frontend/") or name.rsplit("/", 1)[-1].startswith("_"):
             return
-        page = PAGES_BY_TEMPLATE[template.name]
+        page = PAGES_BY_TEMPLATE[name]
         styles, scripts = page_assets(page)
         context.update(frontend_page=page, frontend_styles=styles, frontend_scripts=scripts)
 

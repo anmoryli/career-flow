@@ -3,6 +3,7 @@
 import os
 import sys
 import threading
+import time
 from pathlib import Path
 from uuid import uuid4
 
@@ -104,33 +105,47 @@ app.extensions["resume_compose_provider"] = lambda snapshot: (
 
 
 class TestQueue:
+    """Run each job inline on a thread: browser runs never need a worker."""
+
     def __init__(self, *args, **kwargs):
         pass
 
-    def enqueue(self, function, operation_id, **kwargs):
+    def enqueue(self, kind, task_id, timeout_seconds=None):
         def run():
             with app.app_context():
-                if function == "app.jobs.pdf_import_job":
+                if kind == "pdf-import":
                     from app.services.pdf_import import run_import
 
-                    run_import(operation_id)
-                elif function == "app.jobs.resume_ai_job":
+                    run_import(task_id)
+                elif kind == "resume-ai":
                     from app.services.resume_ai import run_operation
 
-                    run_operation(operation_id)
-                else:
-                    diagnosis.run_operation(operation_id)
+                    run_operation(task_id)
+                elif kind == "diagnosis":
+                    diagnosis.run_operation(task_id)
 
         threading.Thread(target=run, daemon=True).start()
 
 
-import app.web.career as career_routes  # noqa: E402
-import app.web.diagnosis as diagnosis_routes  # noqa: E402
-import app.web.imports as imports_routes  # noqa: E402
+import app.services.task_queue as task_queue_module  # noqa: E402
 
-diagnosis_routes.Queue = TestQueue
-imports_routes.Queue = TestQueue
-career_routes.Queue = TestQueue
+task_queue_module.enqueue = TestQueue().enqueue
+
+
+def fixture_summary(snapshot, result, on_delta):
+    """A deterministic recap that streams, so the chat panel can be asserted."""
+    for piece in (
+        "匹配度 60 分，",
+        "最强项是技能匹配，",
+        "最需要补充的是成果与影响力。",
+        "下一步可以补一条真实项目里的量化结果。",
+    ):
+        time.sleep(0.3)
+        on_delta(piece)
+    return 120
+
+
+app.extensions["diagnosis_summary_provider"] = fixture_summary
 
 
 @app.post("/__test/session")

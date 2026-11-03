@@ -23,8 +23,17 @@ from app.services.career import owned, save_resume
 from app.services.commerce import ensure_job_analysis_capacity
 from app.services.commerce import lock_user as owner_lock
 from app.services.errors import BusinessError
+from app.services.operation_events import publish as publish_event
 
 PROMPT_VERSION = "career-diagnosis-1"
+
+# Stage copy for the analysis chat panel. Kept server-side so a copy change is
+# one edit, not one edit per template.
+STAGE_MESSAGES = {
+    "queued": "分析已排队，稍等一会儿就开始。",
+    "parsing": "正在拆解岗位要求，并回到简历里找对应证据。",
+    "reporting": "正在整理报告结构，逐个核对证据与缺口。",
+}
 
 
 def get_diagnostic(user_id, job_id):
@@ -375,7 +384,22 @@ def run_operation(operation_id):
     from app.services.product import TokenUsage, call_usage, policy, record_event, store_call_usage
     usage_policy, usage_policy_revision = policy()
     calls = []
+    job_title = db.session.scalar(
+        select(JobTarget.title)
+        .join(Diagnostic, Diagnostic.job_id == JobTarget.id)
+        .where(Diagnostic.id == item.diagnostic_id)
+    ) or ""
     db.session.commit()
+    publish_event(
+        operation_id,
+        "stage",
+        {
+            "message": STAGE_MESSAGES[
+                "reporting" if snapshot.get("kind") == "report" else "parsing"
+            ],
+            "kind": snapshot.get("kind") or "analysis",
+        },
+    )
     result = None
     tokens = 0
     attempts = 0
@@ -487,7 +511,19 @@ def run_operation(operation_id):
             break
     owner_lock(user_id)
     item = owned(AIOperation, user_id, operation_id, True)
-    store_call_usage(item,calls,usage_policy_revision)
+    try:
+        store_call_usage(item, calls, usage_policy_revision)
+    except Exception as error:
+        # A ledger lock conflict must not turn a finished analysis into a
+        # failed one; the spend stays visible through the operation's token
+        # counter and the warning below.
+        db.session.rollback()
+        item = owned(AIOperation, user_id, operation_id, True)
+        current_app.logger.warning(
+            "diagnosis_metering_failed operation=%s type=%s",
+            operation_id,
+            type(error).__name__,
+        )
     if item.state != "running":
         db.session.commit()
         return
@@ -548,6 +584,106 @@ def run_operation(operation_id):
             )
         )
     db.session.commit()
+    # Announce only after the outcome is durable: the panel reloads
+    # authoritative state the moment it sees one of these events.
+    if result is None:
+        publish_event(operation_id, "failed", {"message": failure})
+        return
+    publish_event(
+        operation_id,
+        "result",
+        {"operation_id": operation_id, "kind": item.kind},
+    )
+    # A recap is never allowed to keep the panel waiting: whatever happens
+    # here, `done` still has to reach the browser.
+    try:
+        stream_summary(
+            operation_id,
+            snapshot | {"job_title": job_title},
+            result,
+            calls=calls,
+            usage_policy=usage_policy,
+            usage_policy_revision=usage_policy_revision,
+            first_attempt=attempts + 1,
+        )
+    except Exception as error:
+        db.session.rollback()
+        current_app.logger.warning(
+            "diagnosis_summary_persist_failed operation=%s type=%s",
+            operation_id,
+            type(error).__name__,
+        )
+    publish_event(operation_id, "done", {"operation_id": operation_id, "kind": item.kind})
+
+
+def stream_summary(
+    operation_id,
+    snapshot,
+    result,
+    *,
+    calls,
+    usage_policy,
+    usage_policy_revision,
+    first_attempt,
+):
+    """Stream a short recap of a finished analysis into the chat panel.
+
+    Best-effort by design: the analysis is already saved and paid for, so a
+    recap failure only costs the recap. Its tokens are still metered, because
+    they are real spend.
+    """
+    from app.services.model_provider import summarize_diagnosis
+    from app.services.product import call_usage, store_call_usage
+
+    chunks = []
+
+    def on_delta(delta):
+        chunks.append(delta)
+        publish_event(operation_id, "delta", {"text": delta})
+
+    # Fixture servers inject a deterministic recap so browser runs never reach
+    # a paid provider; production uses the real summariser.
+    summarize = (
+        current_app.extensions.get("diagnosis_summary_provider") or summarize_diagnosis
+    )
+    try:
+        usage = summarize(snapshot, result, on_delta)
+    except Exception as error:
+        current_app.logger.warning(
+            "diagnosis_summary_failed operation=%s type=%s",
+            operation_id,
+            type(error).__name__,
+        )
+        if chunks:
+            # Do not leave a half sentence on screen.
+            publish_event(operation_id, "delta_reset", {})
+        return
+    item = db.session.get(AIOperation, operation_id)
+    if item is None:
+        return
+    # Persisted so a reload rebuilds the conversation instead of losing the
+    # recap the user just watched arrive.
+    note = "".join(chunks)[:4000]
+    try:
+        call = call_usage(first_attempt, snapshot["model"], usage, usage_policy, "returned")
+        store_call_usage(item, [call], usage_policy_revision)
+        item.tokens = (item.tokens or 0) + int(usage)
+        item.note = note
+        calls.append(call)
+        db.session.commit()
+    except Exception as error:
+        # Metering sits beside the recap, not in front of it: on a lock
+        # conflict, keep what the user reads back and drop only the ledger row.
+        db.session.rollback()
+        current_app.logger.warning(
+            "diagnosis_summary_metering_failed operation=%s type=%s",
+            operation_id,
+            type(error).__name__,
+        )
+        item = db.session.get(AIOperation, operation_id)
+        if item is not None:
+            item.note = note
+            db.session.commit()
 
 
 def apply_suggestions(user_id, operation_id, data):

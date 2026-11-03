@@ -49,6 +49,8 @@ uv run flask --app wsgi db current
 
 `f1c2d3e4a5b6` 将简历文档扁平化：`resumes` 直接持有 `template`/`document`/`created_at`/`last_save_key`，`job_targets` 改为 `resume_id` 外键并记录 `resume_revision`，`resume_export_grants` 改为 `resume_id` 外键，随后删除 `resume_versions`，业务表降为 29 张。升级时按每个 `resumes.id` 的最大 `revision` 回填文档与排版，降级可反向重建版本表并还原各表外键。隔离 MySQL 测试库已验证升级成功且 Alembic 差异检查无输出。
 
+`a1b2c3d4e5f7` 为 `ai_operations` 增加 `note`（TEXT，非空）：保存岗位分析任务结束后由模型流式生成的对话式总结，刷新页面时用于回放右侧分析助手的气泡内容。MySQL 的 TEXT 列不允许字面默认值，迁移按「先可空添加 → 回填空串 → 收紧为非空」三步执行；降级删除该列。业务表数仍为 29 张，隔离 MySQL 测试库已验证升级与 Alembic 差异检查无输出。
+
 简历文档直接存于 `resumes.document`（JSON）与 `resumes.template`，保存即覆盖并递增 `resumes.revision`；`revision` 仅作乐观并发控制与导出事件去重键，不再保留历史版本表。`job_targets` 通过 `resume_id` 指向简历并以 `resume_revision` 标记分析时的内容戳。用户行锁串行化账务和幂等写入，关键读取使用MySQL当前读，避免认证查询建立的旧快照导致并发重扣。账本的冻结/结算/释放分别记录，任务/流水有唯一约束。
 
 PDF二进制仅在受限导入任务完成前暂存在MEDIUMBLOB；完成/失败/恢复后清空，提取文字和核实后的简历单独保存。应用不在启动时create_all。
