@@ -103,7 +103,7 @@ def save_resume(user_id, data, resume_id=None, parent_id=None, *, source_operati
                 raise BusinessError("简历已在其他窗口更新，请先复制当前内容再重新载入。", 409)
         else:
             if data.revision:
-                raise BusinessError("新简历版本应从零开始。", 409)
+                raise BusinessError("简历保存状态无效，请重新打开编辑器。", 409)
             from app.services.commerce import ensure_resume_capacity
 
             ensure_resume_capacity(user_id)

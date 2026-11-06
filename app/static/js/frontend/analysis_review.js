@@ -91,7 +91,7 @@
           if(result.partial?.proposed){streamText(row.querySelector('[data-review-candidate-text]'),result.partial.proposed);row.querySelector('[data-review-candidate-reason]').textContent='正在生成，完整结果尚未校验。';candidate.hidden=false;}
           if(result.state==='succeeded'){
             const output=result.result;
-            if(!output?.proposed||output.original!==this.original(row))throw new Error('原文版本已变化，请打开完整编辑器核对。');
+            if(!output?.proposed||output.original!==this.original(row))throw new Error('原文已变化，请打开完整编辑器核对。');
             if(output.proposed.length>this.text(row).maxLength)throw new Error('建议超过本段长度上限，请在完整编辑器中精简。');
             streamText(row.querySelector('[data-review-candidate-text]'),output.proposed,true);row.querySelector('[data-review-candidate-reason]').textContent=output.reason||'';
             candidate.dataset.state='succeeded';row.querySelector('[data-review-candidate-state]').textContent='✦ 已完成校验';candidate.hidden=false;adopt.disabled=false;this.status(row,'改写已完成。先比较，再决定是否采用。');return;
@@ -110,7 +110,7 @@
       if(!selected.length&&!addition){this.feedback.dataset.feedbackState='error';this.feedback.textContent='请选择要保存的段落。';this.feedback.focus();return;}
       if(selected.length>30){this.feedback.dataset.feedbackState='error';this.feedback.textContent='一次最多保存 30 段，请减少选择后再保存。';this.feedback.focus();return;}
       if(!this.form.reportValidity())return;
-      this.setBusy(true);this.feedback.dataset.feedbackState='neutral';this.feedback.textContent='正在创建岗位简历版本…';
+      this.setBusy(true);this.feedback.dataset.feedbackState='neutral';this.feedback.textContent='正在保存岗位简历…';
       try{
         const result=await window.cfApi(`/api/operations/${this.form.dataset.applySuggestions}/apply`,{request_key:this.requestKey,confirmed:'yes',title:this.form.elements.title.value,additions:addition?[addition]:[],paragraph_edits:Object.fromEntries(selected.map(row=>[row.dataset.reviewPath,this.text(row).value]))});
         location.href=`/workspace?view=resume-new&resume_id=${result.id}`;

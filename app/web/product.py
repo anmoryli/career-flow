@@ -244,7 +244,7 @@ def administration():
 
     if request.method == "POST":
         settings = ProductPolicy.model_validate_json(request.form.get("settings", ""))
-        draft = admin_config.create_draft(
+        admin_config.create_draft(
             g.user.id,
             "product",
             ConfigDraftInput(
@@ -252,7 +252,7 @@ def administration():
                 settings=settings.model_dump(mode="json"),
             ),
         )
-        flash(f"已保存草稿版本{draft.version}，发布后才对新任务生效。", "success")
+        flash("已保存规则草稿，发布后才对新任务生效。", "success")
         return redirect(url_for("product.administration"), code=303)
     config, _ = policy()
     history = admin_config.history("product")
@@ -275,7 +275,7 @@ def publish_policy(revision_id, action):
         admin_config.rollback(g.user.id, "product", revision_id, True)
     else:
         raise BusinessError("操作不存在。", 404)
-    flash("产品规则已更新，新任务按发布版本执行。", "success")
+    flash("产品规则已更新，新任务按已发布规则执行。", "success")
     return redirect(url_for("product.administration"), code=303)
 
 

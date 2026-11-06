@@ -18,7 +18,7 @@
   <div class="cfa-job-layout">
   <form class="cfa-job-editor" id="job-analysis-form" data-ui-form="job" data-job-form>
     <section class="cfa-task-section">
-      <header class="cfa-task-section-heading" data-job-step="resume"><div><h2>简历</h2><p data-job-source-summary>分析会使用保存的简历版本，保留你的基础内容。</p></div></header>
+      <header class="cfa-task-section-heading" data-job-step="resume"><div><h2>简历</h2><p data-job-source-summary>分析会使用已保存的简历，保留你的基础内容。</p></div></header>
       <div class="cfa-source-choice">
         {% if g.user and resumes %}
         <label class="cf-field"><span>用于本次分析</span><select id="analysis-resume" name="resume_id" required><option value="">选择一份简历</option>{% for item in resumes %}<option value="{{ item.id }}" data-revision="{{ item.revision }}" {% if current_resume and current_resume.id==item.id %}selected{% endif %}>{{ item.title }}</option>{% endfor %}</select></label>

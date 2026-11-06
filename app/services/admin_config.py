@@ -172,7 +172,7 @@ def create_draft(actor_id, category, data, *, activate=False):
         db.session.commit()
     except IntegrityError:
         db.session.rollback()
-        raise BusinessError("配置版本冲突，请刷新后重试。", 409) from None
+        raise BusinessError("配置已更新，请刷新后重试。", 409) from None
     return item
 
 
@@ -260,7 +260,7 @@ def publish(actor_id, category, revision_id, confirm):
         .with_for_update()
     )
     if item is None or category not in SCHEMAS:
-        raise BusinessError("配置版本不存在。", 404)
+        raise BusinessError("配置记录不存在。", 404)
     if item.state != "draft":
         raise BusinessError("只能发布草稿。", 409)
     SCHEMAS[category].model_validate(item.settings)
@@ -300,7 +300,7 @@ def rollback(actor_id, category, revision_id, confirm):
         )
     )
     if source is None or category not in SCHEMAS:
-        raise BusinessError("可回滚版本不存在。", 404)
+        raise BusinessError("可恢复的配置不存在。", 404)
     pointer = db.session.get(ActiveConfig, category, with_for_update=True)
     before = pointer.revision_id if pointer else None
     version = (
@@ -312,7 +312,7 @@ def rollback(actor_id, category, revision_id, confirm):
     item = ConfigRevision(
         category=category,
         version=version,
-        label=f"回滚至第 {source.version} 版",
+        label="恢复配置",
         settings=source.settings,
         encrypted_secret=source.encrypted_secret,
         state="published",
@@ -330,7 +330,7 @@ def rollback(actor_id, category, revision_id, confirm):
         db.session.commit()
     except IntegrityError:
         db.session.rollback()
-        raise BusinessError("配置版本冲突，请刷新后重试。", 409) from None
+        raise BusinessError("配置已更新，请刷新后重试。", 409) from None
     return item
 
 
@@ -361,7 +361,7 @@ def runtime_model(revision_id=None, *, use_environment=False):
         item = active_revision("model")
     if item:
         if item.category != "model" or item.state != "published":
-            raise BusinessError("模型配置版本不可用。", 503)
+            raise BusinessError("模型配置不可用。", 503)
         profiles = _model_profiles(item.settings)
         keys = _model_keys(item)
         return {
