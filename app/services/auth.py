@@ -50,12 +50,24 @@ def digest_reset_code(email: str, code: str) -> str:
     ).hexdigest()
 
 
-def _deliver_code(mail, email, subject, body):
+def _deliver_code(mail, email, subject, code, purpose, note):
     message = EmailMessage()
     message["Subject"] = subject
     message["From"] = mail["sender"]
     message["To"] = email
-    message.set_content(body)
+    plain = (
+        f"职序 CareerFlow\n\n{purpose}\n\n"
+        f"您的验证码：{code}\n\n验证码 10 分钟内有效。{note}\n"
+        "如果这不是您发起的操作，请忽略此邮件。"
+    )
+    message.set_content(plain, subtype="plain", charset="utf-8")
+    message.add_alternative(
+        current_app.jinja_env.get_template("frontend/email/code.html").render(
+            purpose=purpose, code=code, note=note
+        ),
+        subtype="html",
+        charset="utf-8",
+    )
     smtp_class = smtplib.SMTP_SSL if mail["use_ssl"] else smtplib.SMTP
     with smtp_class(mail["host"], mail["port"], timeout=8) as smtp:
         if mail["use_tls"]:
@@ -96,7 +108,9 @@ def send_registration_code(email: str) -> None:
             mail,
             email,
             "职序 CareerFlow 注册验证码",
-            f"您的注册验证码为 {code}，10 分钟内有效。请勿向他人透露。",
+            code,
+            "完成注册",
+            "请勿向他人透露。",
         )
     except (OSError, smtplib.SMTPException):
         # Invalidate only this generation, preserving a newer concurrent send.
@@ -139,7 +153,9 @@ def send_password_reset_code(email: str) -> None:
             mail,
             email,
             "职序 CareerFlow 重置密码验证码",
-            f"您的密码重置验证码为 {code}，10 分钟内有效。若非本人操作，请忽略此邮件。",
+            code,
+            "重置密码",
+            "若非本人操作，无需进行其他处理。",
         )
     except (OSError, smtplib.SMTPException):
         db.session.execute(

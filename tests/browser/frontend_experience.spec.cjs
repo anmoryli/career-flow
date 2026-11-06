@@ -51,7 +51,7 @@ test('product process, reduced motion and linked field errors stay usable',async
   }
  }
  await page.goto('/');
- const steps=page.locator('.cf-faq-list>details');await expect(steps).toHaveCount(4);
+ const steps=page.locator('.cf-faq-list>details');await expect(steps).toHaveCount(8);
  await steps.nth(1).locator('summary').focus();await page.keyboard.press('Enter');await expect(steps.nth(1)).toHaveAttribute('open','');await expect(steps.first()).not.toHaveAttribute('open','');
  await expect(steps.nth(1)).toContainText('原文');
  expect(await page.locator('#main').evaluate(node=>node.getAnimations({subtree:true}).some(animation=>animation.playState==='running'))).toBeFalsy();

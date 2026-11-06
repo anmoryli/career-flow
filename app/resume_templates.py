@@ -64,7 +64,7 @@ SECTION_LABEL_OVERRIDES = {
     "teacher": {"experiences": "教学经历", "projects": "教研与课程"},
     "legal": {"experiences": "执业经历", "projects": "代表项目与案例"},
     "finance": {"certificates": "资质与证书"},
-    "engineering": {"experiences": "项目与工作经历"},
+    "engineer": {"experiences": "项目与工作经历"},
     "graduate": {"experiences": "实习经历", "projects": "校园项目"},
 }
 
@@ -90,8 +90,8 @@ TEMPLATE_CATALOG = (
         note="前端 · 全栈 · 工程化",
         category="tech",
         sample="fullstack",
-        description="深色技术身份区与编号章节，项目居中展示，适合强调技术栈与交付细节。",
-        benefit="技术身份区 / 编号章节",
+        description="深蓝色右侧身份栏配合技术标签，主栏展示工作经历和技术项目。",
+        benefit="技术项目 / 右侧身份栏",
         guide=_guide(
             _STANDARD_ORDER,
             "让面试官在 15 秒内看到技术栈、系统规模和你的角色。",
@@ -109,8 +109,8 @@ TEMPLATE_CATALOG = (
         note="后端 · 服务端 · 架构",
         category="tech",
         sample="backend",
-        description="深靛蓝单栏结构，章节带细线标记，强调稳定性、性能与链路治理。",
-        benefit="稳定性叙事 / 链路视角",
+        description="深蓝色左侧身份栏与文字技能清单，主栏展示后端工作和服务端项目。",
+        benefit="左侧身份栏 / 服务端项目",
         guide=_guide(
             _STANDARD_ORDER,
             "后端简历的核心是稳定性与性能，用故障率、延迟和成本说话。",
@@ -128,8 +128,8 @@ TEMPLATE_CATALOG = (
         note="算法 · 数据科学 · 机器学习",
         category="tech",
         sample="algorithm",
-        description="靛紫色调配等宽标签，模型与实验信息分区呈现，突出指标与链路。",
-        benefit="模型指标 / 实验闭环",
+        description="浅紫色右侧栏与编号章节，实验、模型和项目按段落呈现，技能用文字清单展示。",
+        benefit="实验项目 / 编号章节",
         guide=_guide(
             _STANDARD_ORDER,
             "算法岗看的是「指标提升多少」和「链路你负责哪一段」。",
@@ -147,8 +147,8 @@ TEMPLATE_CATALOG = (
         note="产品 · 设计 · 内容",
         category="product",
         sample="product",
-        description="侧栏身份区与宽松留白，阅读节奏轻，适合产品与创意类岗位。",
-        benefit="身份侧栏 / 轻盈留白",
+        description="浅绿色左侧身份栏与圆形照片位，正文保持清楚的工作、项目和教育分节。",
+        benefit="浅绿身份栏 / 清楚分节",
         guide=_guide(
             _STANDARD_ORDER,
             "产品岗要证明你定义过什么，以及定义之后发生了什么变化。",
@@ -166,8 +166,8 @@ TEMPLATE_CATALOG = (
         note="B 端 · C 端 · 增长产品",
         category="product",
         sample="product",
-        description="双色标题带与成果行，模块边界清晰，适合展示多段产品线与数据结果。",
-        benefit="成果前置 / 模块清晰",
+        description="顶部双色细线、浅色章节标题与时间轴，展示产品工作和项目经历。",
+        benefit="产品经历 / 时间轴",
         guide=_guide(
             _STANDARD_ORDER,
             "先给结论再给过程：一句话说清你负责的产品服务多少人、带来什么变化。",
@@ -185,8 +185,8 @@ TEMPLATE_CATALOG = (
         note="视觉 · 品牌 · UI/UX",
         category="design",
         sample="design",
-        description="大字号标题与作品链接前置，留白充足，方便招聘方直接跳到作品。",
-        benefit="作品优先 / 大字号",
+        description="大字号姓名、作品链接与细线章节，展示设计工作、项目和专业工具。",
+        benefit="作品链接 / 大字号姓名",
         guide=_guide(
             _STANDARD_ORDER,
             "设计简历本身就是一个作品，排版克制比装饰更重要。",
@@ -204,8 +204,8 @@ TEMPLATE_CATALOG = (
         note="市场 · 运营 · 内容 · 增长",
         category="growth",
         sample="marketing",
-        description="暖橙强调色与指标条，活动与数据并列，适合运营与市场岗位。",
-        benefit="指标条 / 活动叙事",
+        description="暖橙色标题与技能标签，活动、渠道和业务结果按经历段落展开。",
+        benefit="活动经历 / 暖橙标题",
         guide=_guide(
             _STANDARD_ORDER,
             "运营简历的说服力来自「花了多少钱、带来多少结果」。",
@@ -223,8 +223,8 @@ TEMPLATE_CATALOG = (
         note="大客户 · 渠道 · 商务拓展",
         category="growth",
         sample="sales",
-        description="酒红强调色与业绩标签，客户与金额信息前置，适合销售与 BD。",
-        benefit="业绩前置 / 客户视角",
+        description="酒红色身份侧栏与客户项目正文，业务经历、技能和资质清楚分区。",
+        benefit="客户项目 / 身份侧栏",
         guide=_guide(
             _STANDARD_ORDER,
             "销售简历第一屏必须出现数字：签约额、完成率、客户数。",
@@ -242,8 +242,8 @@ TEMPLATE_CATALOG = (
         note="通用 · 商务 · 行政 · 社招",
         category="growth",
         sample="product",
-        description="单栏标准阅读顺序，稳重克制，适合大多数社招与商务岗位。",
-        benefit="稳重单栏 / 清晰层级",
+        description="标准单栏、细线章节与右对齐日期，适合通用商务和社会招聘材料。",
+        benefit="标准单栏 / 日期对齐",
         guide=_guide(
             _STANDARD_ORDER,
             "通用型简历的目标是「不扣分」：结构清楚、时间连续、信息完整。",
@@ -261,8 +261,8 @@ TEMPLATE_CATALOG = (
         note="财务 · 审计 · 税务 · 金融分析",
         category="finance",
         sample="finance",
-        description="墨蓝配金的严谨版式，资质与技能分区，适合财务、审计与金融岗。",
-        benefit="严谨版式 / 资质前置",
+        description="居中姓名、墨蓝章节与细线分隔，展示财务经历、专业资质和分析工具。",
+        benefit="居中姓名 / 专业资质",
         guide=_guide(
             [
                 "summary",
@@ -288,8 +288,8 @@ TEMPLATE_CATALOG = (
         note="HRBP · 招聘 · 行政 · 培训",
         category="hr",
         sample="hr",
-        description="暖棕圆角与柔和分区，亲和但不松散，适合人力与行政岗位。",
-        benefit="柔和分区 / 组织视角",
+        description="浅棕色右侧栏与柔和章节标题，展示招聘、组织发展和行政经历。",
+        benefit="组织经历 / 浅棕侧栏",
         guide=_guide(
             _STANDARD_ORDER,
             "人力简历要体现你支持的组织规模，以及你改变了哪些人效指标。",
@@ -307,8 +307,8 @@ TEMPLATE_CATALOG = (
         note="中小学 · 高校 · 教研 · 培训",
         category="education",
         sample="teacher",
-        description="青绿章节标签与课程信息区，教学、教研、育人三条线清楚分开。",
-        benefit="教学三线 / 课程信息",
+        description="青绿色章节与细线时间轴，教学、教研项目和教师资质分别呈现。",
+        benefit="教学经历 / 教研项目",
         guide=_guide(
             [
                 "summary",
@@ -334,8 +334,8 @@ TEMPLATE_CATALOG = (
         note="应届 · 实习 · 校园项目",
         category="education",
         sample="campus",
-        description="紧凑身份带与清晰的教育、实习、项目段落，适合没有全职经验的应届生。",
-        benefit="信息带 / 明确章节",
+        description="浅绿色姓名带与清晰章节，展示教育、实习、校园项目和已有技能。",
+        benefit="姓名信息带 / 校园经历",
         guide=_guide(
             [
                 "summary",
@@ -361,8 +361,8 @@ TEMPLATE_CATALOG = (
         note="临床 · 护理 · 医技 · 药师",
         category="medical",
         sample="medical",
-        description="洁净青蓝与资质前置结构，操作技能与执业证书分区，符合医疗行业习惯。",
-        benefit="资质前置 / 操作清单",
+        description="浅青色资质侧栏与清晰的临床章节，展示执业证书、操作技能和临床经历。",
+        benefit="临床经历 / 资质侧栏",
         guide=_guide(
             [
                 "summary",
@@ -388,8 +388,8 @@ TEMPLATE_CATALOG = (
         note="法务 · 律师 · 合规 · 风控",
         category="legal",
         sample="legal",
-        description="墨黑衬线字体与细线分隔，正式克制，适合法律与合规岗位。",
-        benefit="正式衬线 / 案例导向",
+        description="居中衬线姓名与正式单栏，执业经历和代表项目以细线章节分隔。",
+        benefit="正式单栏 / 执业经历",
         guide=_guide(
             [
                 "summary",
@@ -415,8 +415,8 @@ TEMPLATE_CATALOG = (
         note="结构 · 机械 · 电气 · 生产",
         category="engineering",
         sample="engineering",
-        description="工业灰蓝与参数行布局，项目带规模参数，适合工程与制造岗位。",
-        benefit="参数行 / 项目规模",
+        description="灰蓝色身份侧栏与项目段落，展示工程经历、专业技能和项目参数。",
+        benefit="工程项目 / 参数说明",
         guide=_guide(
             _STANDARD_ORDER,
             "工程简历的关键是项目规模、专业软件与规范熟悉度。",
@@ -434,8 +434,8 @@ TEMPLATE_CATALOG = (
         note="公务员 · 事业单位 · 国企",
         category="public",
         sample="public",
-        description="规则的信息网格与紧凑段落，正式规范；请以招聘方实际格式要求为准。",
-        benefit="信息网格 / 正式排版",
+        description="联系方式网格、浅灰章节条与正式正文；具体格式以招聘方要求为准。",
+        benefit="信息网格 / 正式章节",
         guide=_guide(
             [
                 "summary",
@@ -461,8 +461,8 @@ TEMPLATE_CATALOG = (
         note="总监 · 负责人 · 资深专家",
         category="lead",
         sample="executive",
-        description="醒目姓名与宽阔标题区，段落分组沉稳，突出经营结果与管理幅度。",
-        benefit="宽幅标题 / 经营视角",
+        description="深墨蓝色姓名横幅与完整正文，展示管理经历、经营项目和专业背景。",
+        benefit="姓名横幅 / 管理经历",
         guide=_guide(
             _STANDARD_ORDER,
             "高管简历只回答两个问题：你管多大盘子，你把结果做到了什么程度。",
@@ -480,8 +480,8 @@ TEMPLATE_CATALOG = (
         note="外企 · 双语材料 · 海外岗位",
         category="lead",
         sample="bilingual",
-        description="中英双语章节标题，正文保留原文，不自动翻译或补写你的经历。",
-        benefit="中英标题 / 原文保留",
+        description="中英双语章节标题与标准单栏，正文保留用户原文，不自动翻译经历。",
+        benefit="中英标题 / 原文正文",
         guide=_guide(
             _STANDARD_ORDER,
             "外企简历要双语可读：标题双语，正文写你真正能开口讲的内容。",
@@ -499,8 +499,8 @@ TEMPLATE_CATALOG = (
         note="转行 · 跨领域 · 二次择业",
         category="switch",
         sample="transition",
-        description="时间轴式章节与能力线索，方便对照旧经历与新岗位的共同点。",
-        benefit="时间轴阅读 / 能力线索",
+        description="细线时间轴与能力、项目段落，展示与目标岗位相关的已有经历。",
+        benefit="能力线索 / 已有经历",
         guide=_guide(
             _STANDARD_ORDER,
             "转行简历的任务是翻译：把旧经历翻译成新岗位听得懂的语言。",
@@ -542,11 +542,11 @@ LAYOUT_PLAN = {
         layout=LAYOUT_SPLIT, options=dict(side="right", rail="solid", skills="pills")
     ),
     "backend": dict(layout=LAYOUT_SPLIT, options=dict(side="left", rail="solid", skills="list")),
-    "algorithm": dict(layout=LAYOUT_SPLIT, options=dict(side="right", rail="tint", skills="dots")),
+    "algorithm": dict(layout=LAYOUT_SPLIT, options=dict(side="right", rail="tint", skills="list")),
     "sales": dict(layout=LAYOUT_SPLIT, options=dict(side="left", rail="solid", skills="pills")),
     "hr": dict(layout=LAYOUT_SPLIT, options=dict(side="right", rail="tint", skills="list")),
     "medical": dict(layout=LAYOUT_SPLIT, options=dict(side="left", rail="tint", skills="list")),
-    "engineer": dict(layout=LAYOUT_SPLIT, options=dict(side="left", rail="soft", skills="meter")),
+    "engineer": dict(layout=LAYOUT_SPLIT, options=dict(side="left", rail="soft", skills="list")),
     # timeline: dated spine down the body.
     "product_mgr": dict(layout=LAYOUT_TIMELINE, options=dict(head="left")),
     "teacher": dict(layout=LAYOUT_TIMELINE, options=dict(head="centered")),
@@ -555,8 +555,8 @@ LAYOUT_PLAN = {
     "executive": dict(layout=LAYOUT_BANNER, options=dict(tone="solid")),
     "graduate": dict(layout=LAYOUT_BANNER, options=dict(tone="band")),
     # editorial: oversized name, lead paragraph, numbered chapters.
-    "designer": dict(layout=LAYOUT_EDITORIAL, options=dict(numbered=True)),
-    "marketing": dict(layout=LAYOUT_EDITORIAL, options=dict(numbered=True)),
+    "designer": dict(layout=LAYOUT_EDITORIAL, options=dict(numbered=False)),
+    "marketing": dict(layout=LAYOUT_EDITORIAL, options=dict(numbered=False)),
 }
 
 TEMPLATE_IDS = tuple(item["id"] for item in TEMPLATE_CATALOG)

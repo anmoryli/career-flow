@@ -1,7 +1,7 @@
 {
   "name": "career-flow",
-  "version": "1.0.0",
-  "description": "CareerFlow V1 frontend assets",
+  "version": "1.1.0",
+  "description": "CareerFlow V1.1 frontend assets",
   "directories": {
     "doc": "docs",
     "test": "tests"

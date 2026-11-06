@@ -26,7 +26,7 @@ def create_app(overrides: dict | None = None) -> Flask:
     app.jinja_env.filters["datetime_cn"] = lambda value: (
         (value.replace(tzinfo=UTC) if value.tzinfo is None else value)
         .astimezone(timezone(timedelta(hours=8)))
-        .strftime("%Y-%m-%d %H:%M UTC+8")
+        .strftime("%Y年%m月%d日 %H:%M")
     )
     db.init_app(app)
     migrate.init_app(app, db)

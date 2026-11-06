@@ -96,7 +96,18 @@
 .cf-print-actions small {font-size:10px;color:var(--cf-muted);}
 .cf-print-canvas {width:794px;max-width:100%;margin:auto;}
 .cf-print-canvas .resume-doc {box-shadow:var(--cf-shadow);}
-@media print {.cf-print-page{padding:0!important;background:#fff!important}.cf-print-actions{display:none!important}.cf-print-canvas{width:210mm!important;max-width:none!important;margin:0!important}.cf-print-canvas .resume-doc{width:210mm!important;min-height:297mm;box-shadow:none!important}}
+.cf-print-canvas .cf-resume-canvas{width:100%;max-width:none;margin:0;overflow:visible;background:#fff;}
+@media print {.cf-print-page{padding:0!important;background:#fff!important}.cf-print-actions{display:none!important}.cf-print-canvas{width:210mm!important;max-width:none!important;margin:0!important}.cf-print-canvas .resume-doc{width:210mm!important;min-height:297mm;max-width:210mm!important;padding:26px 30px!important;font-size:11px;line-height:1.48;box-shadow:none!important}.cf-print-canvas .resume-doc .rd-section{margin-top:13px}.cf-print-canvas .resume-doc .rd-entry{margin-bottom:9px}.cf-print-canvas .resume-doc .rd-markdown{line-height:1.55}}
+@media print {
+  .resume-doc.is-fit-print{zoom:var(--print-fit-scale,1)!important;width:calc(210mm / var(--print-fit-scale,1))!important;min-height:calc(297mm / var(--print-fit-scale,1))!important;max-width:none!important;}
+  .resume-doc .rd-section{break-inside:auto!important;}
+  .resume-doc .rd-section-title{break-after:avoid-page;}
+  .resume-doc .rd-entry{break-inside:auto!important;}
+  .resume-doc .rd-entry-top,.resume-doc .rd-entry-sub{break-inside:avoid;break-after:avoid-page;}
+  .resume-doc .rd-bullets li{break-inside:avoid;}
+  .cf-print-canvas .cf-resume-canvas{width:210mm!important;max-width:none!important;margin:0!important;overflow:visible!important;}
+}
+
 /* Additional V1 layouts: shared content/order, distinct print typography and proportions. */
 .tpl-executive .rd-head{padding-bottom:28px;text-align:left}.tpl-executive .rd-identity h1{font-size:38px;letter-spacing:.08em}.tpl-executive .rd-document-content{padding-top:18px}.tpl-executive .rd-section-title{font-size:16px;letter-spacing:.12em;padding-bottom:10px}.tpl-executive .rd-entry{margin-block:20px}.tpl-executive .rd-header-contact{display:flex;flex-wrap:wrap;gap:6px 20px}
 .tpl-graduate .rd-head{background:#edf3ee;padding:22px 26px;margin-bottom:26px}.tpl-graduate .rd-eyebrow{letter-spacing:.18em}.tpl-graduate .rd-section-title{display:inline-block;background:#edf3ee;padding:5px 12px;border:0}.tpl-graduate .rd-entry-top{align-items:baseline}.tpl-graduate .rd-period{font-weight:500}.tpl-graduate .rd-document-content{padding-inline:8px}
@@ -362,8 +373,69 @@
 .resume-doc.lay-editorial .rd-section{margin-top:26px}
 .resume-doc.lay-editorial .rd-editorial-meta .rd-contact-item b{color:#9a928b}
 @media print{
-  .cf-resume-canvas .resume-doc .rd-split,.cf-resume-canvas .resume-doc .rd-banner{margin:-28px -34px 22px}
+  .cf-resume-canvas .resume-doc .rd-split,.cf-resume-canvas .resume-doc .rd-banner{margin:-26px -30px 22px}
   .cf-resume-canvas .resume-doc .rd-split{min-height:0}
   .cf-resume-canvas .resume-doc .rd-split-main{padding:30px 34px 36px}
   .cf-resume-canvas .resume-doc .rd-banner{padding:30px 34px}
 }
+
+/* Screen previews use the same document metrics as A4 output. The display transform
+   fits the available viewport; --print-fit-scale only fits content to A4. */
+
+  .cf-resume-canvas .resume-doc{width:calc(794px / var(--print-fit-scale,1));min-height:calc(1123px / var(--print-fit-scale,1));max-width:none;padding:26px 30px;font-size:11px;line-height:1.48;}
+  .cf-resume-canvas .resume-doc .rd-section{margin-top:13px;}
+  .cf-resume-canvas .resume-doc .rd-entry{margin-bottom:9px;}
+  .cf-resume-canvas .resume-doc .rd-markdown{line-height:1.55;}
+  .cf-resume-canvas .resume-doc .rd-split,.cf-resume-canvas .resume-doc .rd-banner{margin:-26px -30px 22px;}
+  .cf-resume-canvas .resume-doc .rd-split{min-height:0;}
+  .cf-resume-canvas .resume-doc .rd-split-main{padding:30px 34px 36px;}
+  .cf-resume-canvas .resume-doc .rd-banner{padding:30px 34px;}
+  .cf-resume-canvas .resume-doc .rd-photo-frame:has(>img[hidden]){display:none;}
+@media screen {
+  .cf-resume-canvas,.cf-print-canvas .cf-resume-canvas{overflow:hidden;}
+}
+@media print {
+  .cf-resume-canvas .resume-doc{transform:none!important;}
+}
+.resume-doc .rd-rail-solid .rd-contact-item b{color:inherit;opacity:.75;}
+.resume-doc .rd-rail-solid .rd-rail-title{color:inherit;}
+
+/* Visual review: preserve each template's structure while giving the paper a
+   readable type rhythm and continuous sidebar background. Shared by previews
+   and PDF so these adjustments cannot introduce a second layout. */
+.cf-resume-canvas .resume-doc{font-size:12px;line-height:1.65;}
+.cf-resume-canvas .resume-doc .rd-markdown{line-height:1.7;}
+.cf-resume-canvas .resume-doc .rd-entry h3{font-size:13px;}
+.cf-resume-canvas .resume-doc .rd-entry-sub{font-size:11.5px;line-height:1.65;}
+.cf-resume-canvas .resume-doc .rd-entry-sub{display:flex;flex-wrap:wrap;column-gap:10px;row-gap:2px;align-items:baseline;}
+.cf-resume-canvas .resume-doc .rd-entry-sub>:empty{display:none;}
+.cf-resume-canvas .resume-doc .rd-period{font-size:10.5px;line-height:1.65;}
+.cf-resume-canvas .resume-doc .rd-header-contact,
+.cf-resume-canvas .resume-doc .rd-editorial-meta,
+.cf-resume-canvas .resume-doc .rd-banner-contact{font-size:10.5px;line-height:1.7;}
+.cf-resume-canvas .resume-doc .rd-skill-items{font-size:11.5px;}
+.cf-resume-canvas .resume-doc .rd-skill-label{line-height:1.7;}
+.cf-resume-canvas .resume-doc.lay-split{display:flex;flex-direction:column;padding-bottom:0!important;}
+.cf-resume-canvas .resume-doc .rd-split{flex:1;margin-bottom:0;}
+.cf-resume-canvas .resume-doc .rd-split-rail{padding-bottom:34px;}
+.cf-resume-canvas .resume-doc .rd-split-rail .rd-skill-items,
+.cf-resume-canvas .resume-doc .rd-split-rail .rd-compact-list{font-size:10.5px;line-height:1.8;}
+.cf-resume-canvas .resume-doc .rd-split-rail .rd-skill-label{font-size:11px;}
+.cf-resume-canvas .resume-doc .rd-rail-contact{font-size:10px;line-height:1.7;}
+.cf-resume-canvas .resume-doc .rd-rail-title{font-size:11.5px;letter-spacing:.1em;line-height:1.6;}
+.cf-resume-canvas .resume-doc .rd-rail-contact .rd-contact-item b{font-size:9px;}
+.cf-resume-canvas .resume-doc .rd-pill{font-size:10px;padding:2px 7px;line-height:1.7;}
+.cf-resume-canvas .resume-doc.tpl-medical .rd-section-title{background:var(--rd-soft);color:var(--rd-accent);border-bottom:1px solid var(--rd-line);}
+.cf-resume-canvas .resume-doc.tpl-hr .rd-section-title{border-radius:2px;}
+.cf-resume-canvas .resume-doc .rd-contact-item b{white-space:nowrap;flex-shrink:0;color:inherit;opacity:.8;}
+.cf-resume-canvas .resume-doc .rd-rail-contact .rd-contact-item b{min-width:36px;font-size:9.5px;}
+.cf-resume-canvas .resume-doc.tpl-designer .rd-section-title{font-size:12px;letter-spacing:.15em;line-height:1.6;}
+.cf-resume-canvas .resume-doc.tpl-marketing .rd-skill-items>span,
+.cf-resume-canvas .resume-doc.tpl-hr .rd-skill-items>span{font-size:10.5px;}
+.cf-resume-canvas .resume-doc .rd-banner-lead{font-size:12px;line-height:1.75;}
+.cf-resume-canvas .resume-doc[data-size=compact]{font-size:11px;line-height:1.5;}
+.cf-resume-canvas .resume-doc[data-size=compact] .rd-section{margin-top:10px;}
+.cf-resume-canvas .resume-doc[data-size=compact] .rd-entry{margin-bottom:7px;}
+.cf-resume-canvas .resume-doc[data-size=large]{font-size:13px;line-height:1.75;}
+.cf-resume-canvas .resume-doc[data-size=large] .rd-section{margin-top:17px;}
+.cf-resume-canvas .resume-doc[data-size=large] .rd-entry{margin-bottom:12px;}

@@ -79,7 +79,7 @@ def test_every_template_renders_a_visible_photo_slot(app):
 def test_three_templates_have_distinct_visual_structures(app):
     html = render_editor(app)
     # classic keeps the linear head; technical and modern moved to split rails.
-    assert html.count('class="rd-head rd-head-classic"') >= 2
+    assert html.count('class="rd-head rd-head-classic"') == 1
     assert html.count('data-layout="linear"') >= 2
     assert html.count('data-layout="split"') >= 2
     assert "rd-split-rail" in html

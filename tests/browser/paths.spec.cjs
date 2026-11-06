@@ -41,7 +41,7 @@ test('login and register explain what is wrong without leaving the page',async({
   await expect(visitor).toHaveURL(/\/login/);
   await visitor.fill('#password','short');
   await visitor.locator('form[data-ui-form=auth] button[type=submit]').click();
-  await expect(visitor.locator('#password')).toHaveAttribute('minlength','12');
+  await expect(visitor.locator('#password')).toHaveAttribute('minlength','8');
   await visitor.goto('/register');
   await visitor.fill('#email','not-an-email');
   await visitor.locator('form[data-ui-form=auth] button[type=submit]').click();

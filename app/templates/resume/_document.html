@@ -42,7 +42,7 @@
 {% for item in data.projects %}<article class="rd-entry" data-rf-entry="projects.{{ loop.index0 }}">
   <div class="rd-entry-top"><h3 data-rf="projects.{{ loop.index0 }}.name">{{ item.name }}</h3><span class="rd-period" data-rf="projects.{{ loop.index0 }}.period">{{ item.period }}</span></div>
   <div class="rd-entry-sub"><span class="rd-entry-role" data-rf="projects.{{ loop.index0 }}.role">{{ item.role }}</span><span class="rd-techline" data-rf="projects.{{ loop.index0 }}.tech">{{ item.tech }}</span></div>
-  <div class="rd-entry-text rd-markdown" data-rf="projects.{{ loop.index0 }}.description">{{ item.description|resume_markdown }}</div><p class="rd-link" data-rf="projects.{{ loop.index0 }}.link" data-rf-if="projects.{{ loop.index0 }}.link"></p>
+  <div class="rd-entry-text rd-markdown" data-rf="projects.{{ loop.index0 }}.description">{{ item.description|resume_markdown }}</div><p class="rd-link" data-rf="projects.{{ loop.index0 }}.link" data-rf-if="projects.{{ loop.index0 }}.link">{% if item.link %}{% if item.link.startswith('https://') or item.link.startswith('http://') %}<a href="{{ item.link }}" rel="noopener noreferrer">{{ item.link }}</a>{% else %}{{ item.link }}{% endif %}{% endif %}</p>
 </article>{% endfor %}</section>
 {%- endmacro %}
 
@@ -153,10 +153,7 @@
   {{ timeline_body(template, data, labels, default_order) }}
   {% else %}
   {% if template == 'classic' %}
-  <header class="rd-head rd-head-classic">
-    <div class="rd-classic-rule" aria-hidden="true"></div>
-    {{ linear_head(template, data, '个人简历') }}
-  </header>
+  {{ linear_head(template, data, '个人简历') }}
   {% elif template == 'technical' %}
   {{ linear_head(template, data, '技术岗位 · 项目导向') }}
   {% else %}

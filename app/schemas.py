@@ -26,7 +26,7 @@ class EmailInput(Input):
 
 
 class LoginInput(EmailInput):
-    password: str = Field(min_length=12, max_length=128)
+    password: str = Field(min_length=8, max_length=128)
 
     # Password whitespace is significant.
     model_config = ConfigDict(extra="forbid", str_strip_whitespace=False)
@@ -40,16 +40,16 @@ class RegisterInput(LoginInput):
 
 
 class AccountDeleteInput(Input):
-    password: str = Field(min_length=12, max_length=128)
+    password: str = Field(min_length=8, max_length=128)
     confirm: Literal["delete"]
 
     model_config = ConfigDict(extra="forbid", str_strip_whitespace=False)
 
 
 class ChangePasswordInput(Input):
-    current_password: str = Field(min_length=12, max_length=128)
-    new_password: str = Field(min_length=12, max_length=128)
-    confirm_password: str = Field(min_length=12, max_length=128)
+    current_password: str = Field(min_length=8, max_length=128)
+    new_password: str = Field(min_length=8, max_length=128)
+    confirm_password: str = Field(min_length=8, max_length=128)
 
     model_config = ConfigDict(extra="forbid", str_strip_whitespace=False)
 
@@ -62,8 +62,8 @@ class ChangePasswordInput(Input):
 
 class PasswordResetInput(EmailInput):
     code: str = Field(pattern=r"^[0-9]{6}$")
-    new_password: str = Field(min_length=12, max_length=128)
-    confirm_password: str = Field(min_length=12, max_length=128)
+    new_password: str = Field(min_length=8, max_length=128)
+    confirm_password: str = Field(min_length=8, max_length=128)
 
     model_config = ConfigDict(extra="forbid", str_strip_whitespace=False)
 

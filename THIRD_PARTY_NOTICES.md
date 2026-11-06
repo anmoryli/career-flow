@@ -38,6 +38,10 @@ Exact installed versions, upstream metadata and transitive runtime license decla
 
 ## Deferred dependencies
 
+### V1 resume design research
+
+Resume Builder (`dabydat/resume-builder-skill`), CV Builder (`MusannaAmmar/cv-builder-skill`, MIT declaration), TerminalSkills CV Builder (Apache-2.0 declaration), RenderCV (MIT), and Harvard MCS resume guidance were consulted as design references. No third-party template code, fonts, images, scripts, or new runtime dependencies were incorporated. Source links and the scope of adopted design principles are recorded in `docs/RESUME_TEMPLATE_DESIGN_V1.md`.
+
 Promptfoo and external fonts have not been introduced. No blanket commercial-use claim is made for future dependencies or a complete production distribution. Preserve pypdfium2/PDFium and installed Tesseract/language-data notices when packaging the distribution.
 
 ## Added development checks

@@ -105,11 +105,17 @@ def landing_activity():
         return {"resumes": [], "active_jobs": [], "completed_reports": []}
     from app.models import AIOperation, Diagnostic, JobTarget, Resume
 
+    latest_resume_ids = (
+        select(Resume.id, Resume.updated_at)
+        .where(Resume.user_id == g.user.id)
+        .order_by(Resume.updated_at.desc(), Resume.id.desc())
+        .limit(3)
+        .subquery()
+    )
     resumes = db.session.scalars(
         select(Resume)
-        .where(Resume.user_id == g.user.id)
-        .order_by(Resume.updated_at.desc())
-        .limit(3)
+        .join(latest_resume_ids, Resume.id == latest_resume_ids.c.id)
+        .order_by(latest_resume_ids.c.updated_at.desc(), latest_resume_ids.c.id.desc())
     ).all()
     active_rows = db.session.execute(
         select(AIOperation, Diagnostic, JobTarget)
@@ -166,8 +172,8 @@ def send_code():
     rate_limit("code-email", data.email, 1, 60)
     auth.send_registration_code(data.email)
     if request.is_json:
-        return {"message": "若邮箱可以注册，验证码已发送，请检查收件箱。", "retry_after": 60}
-    flash("若邮箱可以注册，验证码已发送，请检查收件箱。", "success")
+        return {"message": "请查收验证码邮件。", "retry_after": 60}
+    flash("请查收验证码邮件。", "success")
     return redirect(url_for("web.register"), code=303)
 
 
@@ -186,7 +192,10 @@ def login():
 
 @web.get("/password/reset")
 def password_reset_page():
-    return render_template("frontend/public/password_reset.html")
+    return render_template(
+        "frontend/public/password_reset.html",
+        reset_email=session.get("password_reset_email", ""),
+    )
 
 
 @web.post("/password/reset/code")
@@ -195,7 +204,8 @@ def password_reset_code():
     data = EmailInput.model_validate(input_data())
     rate_limit("reset-email", data.email, 1, 60)
     auth.send_password_reset_code(data.email)
-    message = "如果该邮箱已有账号，验证码已发送，请检查收件箱。"
+    session["password_reset_email"] = data.email
+    message = "验证码已发送，请查收邮件。"
     if request.is_json:
         return {"message": message, "retry_after": 60}
     flash(message, "success")

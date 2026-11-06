@@ -8,10 +8,9 @@
 <div class="cf-landing-copy cf-hero-copy">
 <span class="cf-eyebrow"><i class="cf-dot"></i>职序 CAREERFLOW / 面向具体岗位的简历准备</span>
 {% if g.user %}<p class="cf-landing-greeting">你好，{{ g.user.display_name }}。上次的准备还在。</p>{% endif %}
-<h1><span class="hl"><span class="hl-in">把经历写清楚，</span></span><span class="hl"><span class="hl-in">让每一句<em>对得上岗位</em>。</span></span></h1>
-<p class="cf-landing-lead">岗位要求、你的原文、候选写法，摆在一起看。<br>你逐段核对，只采用经得起面试追问的修改。</p>
-<div class="cf-actions">{% if tasks %}<a class="cf-button" href="{{ url_for('diagnosis.detail',job_id=tasks[0][2].id) }}">继续正在进行的分析 {{ icon('arrow') }}</a>{% elif findings %}<a class="cf-button" href="{{ url_for('diagnosis.detail',job_id=findings[0][2].id) }}">核对分析，继续修改 {{ icon('arrow') }}</a>{% elif documents %}<a class="cf-button" href="{{ url_for('web.workspace',view='resume-new',resume_id=documents[0].id) }}">接着写，{{ documents[0].title }} {{ icon('arrow') }}</a>{% else %}<a class="cf-button" href="{{ url_for('web.workspace',view='resume-new') }}">开始整理我的经历 {{ icon('arrow') }}</a>{% endif %}<a class="cf-link" href="#how-it-works">看看怎么用 {{ icon('arrow') }}</a></div>
-<ul class="cf-hero-facts"><li>{{ icon('check') }}不代写经历</li><li>{{ icon('check') }}不承诺录用</li><li>{{ icon('check') }}内容随时导出</li></ul>
+<h1><span class="hl"><span class="hl-in">简历有依据，</span></span><span class="hl"><span class="hl-in"><em>岗位匹配</em>看得见。</span></span></h1>
+<p class="cf-landing-lead">围绕真实经历准备每一个求职机会：看清岗位要求与简历证据，核对 AI 改写建议，并为不同岗位保留独立简历版本。</p>
+<div class="cf-actions">{% if tasks %}<a class="cf-button" href="{{ url_for('diagnosis.detail',job_id=tasks[0][2].id) }}">继续正在进行的分析 {{ icon('arrow') }}</a>{% elif findings %}<a class="cf-button" href="{{ url_for('diagnosis.detail',job_id=findings[0][2].id) }}">核对分析，继续修改 {{ icon('arrow') }}</a>{% elif documents %}<a class="cf-button" href="{{ url_for('web.workspace',view='resume-new',resume_id=documents[0].id) }}">接着写，{{ documents[0].title }} {{ icon('arrow') }}</a>{% else %}<a class="cf-button" href="{{ url_for('web.workspace',view='resume-new') }}">开始整理我的经历 {{ icon('arrow') }}</a>{% endif %}<a class="cf-link" href="#highlights">了解产品亮点 {{ icon('arrow') }}</a></div>
 </div>
 
 <div class="cf-hero-visual" aria-hidden="true">
@@ -26,28 +25,28 @@
 </div>
 <div class="cf-trace-row is-candidate">
 <span class="cf-trace-label">候选写法 <em>待你确认</em></span>
-<p>负责订单服务稳定性，将核心接口 P99 从 <mark><span data-count="820">820</span>ms</mark> 降至 <mark><span data-count="210">210</span>ms</mark>，联合支付与风控团队完成灰度上线。</p>
+<p>负责订单服务性能优化。具体改进、效果和协作范围需要补充真实信息。</p>
 </div>
 <footer><span class="cf-chip">采用这段</span><span class="cf-chip is-quiet">保留原文</span><span class="cf-trace-note">示例内容，不写入你的简历</span></footer>
 </figure>
-<aside class="cf-trace-badge">{{ icon('panel') }}每一句都指向原文</aside>
+<aside class="cf-trace-badge">{{ icon('panel') }}对照简历原文</aside>
 <aside class="cf-trace-badge is-lock">{{ icon('lock') }}基础简历原样保留</aside>
 </div>
 </section>
 
-<section class="cf-promise" data-reveal>
-{% for symbol,title,description in [('panel','逐段对照原文','每条建议都指向具体一句，不给你一段笼统评语。'),('lock','基础简历不被覆盖','岗位版本另存，原来的内容随时回得去。'),('check','由你决定采用','看清楚再选，工具不替你按下确认。'),('info','没有的事实不补写','缺数据就提示你补，不替你编数字。')] %}
-<article>{{ icon(symbol) }}<h2>{{ title }}</h2><p>{{ description }}</p></article>
-{% endfor %}
-</section>
-
-<section class="cf-capabilities" data-reveal>
-<header class="cf-section-head"><span class="cf-eyebrow">它具体做了什么</span><h2>把"感觉不对"，换成能核对的三个动作。</h2></header>
-<div class="cf-capability-grid">
-<article>{{ icon('search') }}<h3>拆开岗位要求</h3><p>把职责、能力项、行业词拆成清单，逐条看你的简历有没有对应的事实，而不是笼统打一个分。</p><div class="cf-capability-visual" aria-hidden="true"><span>服务治理</span><span class="is-hit">高并发</span><span>跨团队</span><span class="is-miss">灰度发布</span></div></article>
-<article>{{ icon('eye') }}<h3>逐段比对原文</h3><p>建议落在具体那一段上。原文在左，候选写法在右，差在哪里一眼能看到。</p><div class="cf-capability-visual is-compare" aria-hidden="true"><span>负责用户访谈</span><span>开展访谈并梳理需求</span></div></article>
-<article>{{ icon('history') }}<h3>另存岗位版本</h3><p>确认的修改进入这一版，基础简历保持原样。同一段经历，可以对着不同岗位各准备一版。</p><div class="cf-capability-visual is-stack" aria-hidden="true"><span>基础简历</span><span>岗位版本</span></div></article>
-</div>
+<section class="cf-story" id="highlights">
+<article class="cf-story-scene is-match" data-reveal>
+<div class="cf-story-copy"><span class="cf-eyebrow">岗位诊断</span><h2 class="cf-interactive-title" aria-label="岗位要求，对应到简历里的证据。"><span class="cf-title-line"><span class="cf-title-word" data-text="岗位要求，" aria-hidden="true">岗位要求，</span></span><span class="cf-title-line"><span class="cf-title-word" data-text="对应到简历里的证据。" aria-hidden="true">对应到简历里的证据。</span></span></h2><p>逐项查看岗位需要什么、简历写到了什么，以及哪些信息还需要你补充。简历暂时没写到的内容，会留作待核对。</p></div>
+<div class="cf-story-art" aria-label="岗位要求与简历证据对照示意"><div class="cf-match-window"><header><span>岗位匹配诊断</span><span>后端工程师</span></header><div class="cf-match-row"><span class="cf-match-state is-found">有相关经历</span><strong>服务治理</strong><p>负责订单服务稳定性与性能优化</p></div><div class="cf-match-row"><span class="cf-match-state is-check">待补充信息</span><strong>高并发经验</strong><p>简历尚未说明并发规模</p></div><div class="cf-match-row"><span class="cf-match-state is-found">有相关经历</span><strong>跨团队协作</strong><p>项目描述中有协作记录</p></div></div></div>
+</article>
+<article class="cf-story-scene is-review" data-reveal>
+<div class="cf-story-copy"><span class="cf-eyebrow">简历优化</span><h2 class="cf-interactive-title" aria-label="每条修改建议，都能回到原文核对。"><span class="cf-title-line"><span class="cf-title-word" data-text="每条修改建议，" aria-hidden="true">每条修改建议，</span></span><span class="cf-title-line"><span class="cf-title-word" data-text="都能回到原文核对。" aria-hidden="true">都能回到原文核对。</span></span></h2><p>并排查看原句、候选写法和修改理由。你可以编辑、采用或保留原文；未确认的信息会清楚标出。</p></div>
+<div class="cf-story-art" aria-label="原文与修改建议对照示意"><div class="cf-review-window"><div class="cf-review-label">简历原文</div><p>负责订单服务，做过一些性能优化。</p><div class="cf-review-divider">修改建议 <span>待你确认</span></div><p class="cf-review-proposal">负责订单服务性能优化。具体改进方式与效果，待补充真实信息。</p><footer><span>保留原文</span><b>编辑并采用</b></footer></div></div>
+</article>
+<article class="cf-story-scene is-versions" data-reveal>
+<div class="cf-story-copy"><span class="cf-eyebrow">简历版本</span><h2 class="cf-interactive-title" aria-label="每个岗位的准备，都有自己的版本。"><span class="cf-title-line"><span class="cf-title-word" data-text="每个岗位的准备，" aria-hidden="true">每个岗位的准备，</span></span><span class="cf-title-line"><span class="cf-title-word" data-text="都有自己的版本。" aria-hidden="true">都有自己的版本。</span></span></h2><p>基础简历与岗位版本分别保存。针对一个机会整理的内容，不会覆盖你的基础简历。</p></div>
+<div class="cf-story-art" aria-label="简历版本保存示意"><div class="cf-version-stack"><div class="cf-version-sheet is-back"><span>岗位版本</span><strong>平台研发工程师</strong><small>根据岗位要求整理</small></div><div class="cf-version-sheet is-front"><span>基础简历</span><strong>我的简历</strong><small>原始经历持续保留</small></div><i aria-hidden="true"></i></div></div>
+</article>
 </section>
 
 
@@ -56,18 +55,19 @@
 
 
 
-<section class="cf-fit" data-reveal>
-<article class="cf-fit-good"><span class="cf-eyebrow">{{ icon('check') }}适合</span><h2>已经有真实经历，<br>正在准备一个具体机会。</h2><p>工作、项目、实习都可以。你愿意对着岗位，把做过的事说清楚、说准确，并逐条核对修改。</p></article>
-<article class="cf-fit-bad"><span class="cf-eyebrow">{{ icon('info') }}暂不适合</span><h2>希望凭空生成一段<br>不存在的经历或业绩。</h2><p>这里只整理你真实做过的事。没有可写的事实，我们会提示你先去积累，而不是替你补上。</p></article>
-</section>
+<section class="cf-truth" data-reveal><span class="cf-eyebrow">内容由你确认</span><p>AI 不掌握你未提供的经历与数据。请核实每条建议，再决定是否写入简历。</p></section>
 
 <section class="cf-faq" data-reveal>
 <header class="cf-section-head"><span class="cf-eyebrow">先把疑问说清楚</span><h2>常见问题</h2></header>
 <div class="cf-faq-list">
-<details name="cf-faq" open><summary>它会替我编一段经历吗？{{ icon('chevron') }}</summary><p>不会。缺少的关键事实（量级、时间、协作范围）会以提示的形式留给你补。工具负责组织表达，不负责制造证据。</p></details>
+<details name="cf-faq" open><summary>它会替我编一段经历吗？{{ icon('chevron') }}</summary><p>简历内容应来自你确认过的经历。缺少的时间、数据和协作范围会提示你补充，请核对 AI 建议后再采用。</p></details>
 <details name="cf-faq"><summary>AI 写的句子，我能改吗？{{ icon('chevron') }}</summary><p>可以。每条建议都先给你原文和候选写法，你可以采用、放弃，或在此基础上自己重写。最终留下什么，由你决定。</p></details>
 <details name="cf-faq"><summary>改过的内容会覆盖我的原简历吗？{{ icon('chevron') }}</summary><p>不会。基础简历保持原样，针对岗位的修改另存为新版本，你可以随时回到之前的版本对照。</p></details>
-<details name="cf-faq"><summary>做好的简历能带走吗？{{ icon('chevron') }}</summary><p>可以导出 PDF，版式与编辑器里的预览一致。指定网申表格请使用招聘方要求的格式。</p></details>
+<details name="cf-faq"><summary>做好的简历能带走吗？{{ icon('chevron') }}</summary><p>可以按账号权益导出 PDF。下载后请检查内容与分页；网申表格请按招聘方要求填写。</p></details>
+<details name="cf-faq"><summary>我已经有 PDF 简历，能直接导入吗？{{ icon('chevron') }}</summary><p>可以。上传后先核对提取出的姓名、经历和教育等内容，再保存到编辑器。扫描件的识别效果取决于文件清晰度。</p></details>
+<details name="cf-faq"><summary>岗位匹配会告诉我什么？{{ icon('chevron') }}</summary><p>粘贴岗位描述并选择简历后，可以查看要求与已有经历的对应情况、缺少的信息和下一步修改建议。结果供你参考，不保证录用。</p></details>
+<details name="cf-faq"><summary>不用 AI，也能编辑简历吗？{{ icon('chevron') }}</summary><p>可以。手动填写、修改、预览简历不需要启动 AI。使用 AI 功能前，页面会说明相应的账号权益。</p></details>
+<details name="cf-faq"><summary>忘记密码怎么办？{{ icon('chevron') }}</summary><p>在登录页选择“忘记密码”，用注册邮箱接收验证码，再设置新密码。邮件可能需要一点时间送达，也可以检查垃圾邮件文件夹。</p></details>
 </div>
 </section>
 

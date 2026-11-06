@@ -111,8 +111,8 @@ def run_maintenance():
         current_app.logger.error("task_reclaim_failed type=%s", type(error).__name__)
 
 
-def serve(redis_client, once=False, block_ms=5000, consumer="worker"):
-    """Consume the task stream until stopped (or one pass when once=True)."""
+def serve(redis_client, once=False, block_ms=1000, consumer="worker"):
+    """Consume tasks; keep the poll below Redis's 2-second socket timeout."""
     from app.services import task_queue
 
     task_queue.ensure_group(redis_client)

@@ -1,4 +1,12 @@
 /* Analysis follows the landing-page task journey: prepare, read, refine, keep. */
+@media (min-width:1000px){
+  .cfa-job-layout{display:grid;grid-template-columns:minmax(0,1.55fr) minmax(320px,1fr);align-items:start;gap:28px}
+  .cfa-job-layout .cfa-job-editor{width:100%;min-width:0;margin:0;padding:14px 28px 32px}
+  .cfa-job-layout .cfa-job-library{min-width:0;margin:0;padding:20px 24px;position:sticky;top:20px;max-height:calc(100vh - 40px);overflow:auto;background:var(--cf-surface);border-radius:18px}
+  .cfa-job-layout .cfa-directory-heading{align-items:start;gap:8px;flex-wrap:wrap}
+  .cfa-job-layout .cfa-saved-jobs>article{align-items:start;flex-direction:column;gap:8px}
+  .cfa-job-layout .cfa-saved-jobs>article>div{flex-wrap:wrap}
+}
 .cfa-job-page,.cfa-diagnostic,.cfa-review-page,.cfa-records-page,.cfa-journal {min-width:0;}
 .cfa-task-hero {padding:34px 0 48px;}
 .cfa-task-hero>h1,.cfa-task-hero>div>h1 {max-width:900px;margin:13px 0 19px;font-size:clamp(34px,4.4vw,54px);font-weight:var(--cf-weight-550);line-height:1.22;letter-spacing:-.055em;text-wrap:balance;}
@@ -43,6 +51,7 @@
 .cfa-job-description>.cf-field>textarea:focus {border-color:var(--cf-accent);}
 .cfa-description-footnote {display:flex;align-items:center;justify-content:space-between;gap:18px;margin:10px 0 0;color:var(--cf-muted);font-size:12px;}
 .cfa-job-details {margin:25px 0 0;}
+.cfa-job-description .cfa-job-details {margin:0 0 24px;}
 .cfa-job-details>summary {display:flex;align-items:center;gap:8px;list-style:none;cursor:pointer;color:var(--cf-text);font-size:12px;}
 .cfa-job-details>summary>span {color:var(--cf-muted);font-size:12px;}
 .cfa-job-details>summary>.icon {width:11px;height:11px;margin-left:3px;color:var(--cf-muted);}
@@ -406,3 +415,12 @@
 }
 @media print{.cfa-copilot{display:none!important}.cfa-diagnostic-main[data-copilot-layout]{display:block}}
 @media(prefers-reduced-motion:reduce){.cfa-copilot-msg.is-live>p::after{animation:none}}
+@media(min-width:900px){
+  .cfa-diagnostic-heading{padding-top:8px;padding-bottom:18px}
+  .cfa-source-context{margin-bottom:12px}
+  .cfa-diagnostic-state{margin-bottom:12px}
+  .cfa-result-navigation{margin-bottom:20px}
+}
+.cfa-job-editor>footer{position:static;box-shadow:none;border-top:1px solid var(--cf-border);border-radius:0;padding:20px 0 0}
+.cfa-job-editor .cfa-submit-section{padding-top:8px;padding-bottom:8px}
+@media(max-width:700px){.cfa-job-editor{padding-bottom:24px}.cfa-job-editor>footer{padding:16px 0 0}}

@@ -391,8 +391,15 @@ def run_operation(operation_id):
                     break
         if result is not None or stop_fallback:
             break
-    if result is None and last_error is not None and model_unavailable(last_error):
-        failure_message = "已尝试配置的模型，仍不可用，请稍后重试。"
+    if result is None and last_error is not None:
+        if isinstance(last_error, ValueError) or type(last_error).__name__ == "ValidationError":
+            failure_message = "生成内容未通过校验，本次未采用建议，请重试。"
+        elif model_unavailable(last_error) and getattr(last_error, "status_code", None) not in {
+            401,
+            402,
+            429,
+        }:
+            failure_message = "已尝试配置的模型，仍不可用，请稍后重试。"
     lock_user(user_id)
     item = owned(AIOperation, user_id, operation_id, True)
     store_call_usage(item,calls,usage_policy_revision)
